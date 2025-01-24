@@ -1,0 +1,132 @@
+import lattitle_main as lm
+import pygame
+import math
+import random
+
+import attack
+import defense
+import magic
+
+import players
+import enemies
+
+import item as items
+
+# 行動ゲージがたまるまでにかかるフレーム
+def action_time(itg):
+    return lm.fps * 20 * (1/2) ** (itg/100)
+
+# プレイヤー行動ゲージチャージ
+def player_action_chaege(player):
+
+    for i in range(len(player)):
+
+        # 行動ゲージがたまってない　かつ　生存中
+        if player[i].action < 1000 and player[i].alive == True:
+
+            # 移動中は溜まりにくい
+            if len(player[i].route) >= 2:
+                player[i].action += (1000 * (player[i].Itg_Spd / 100) / action_time(player[i].Itg))
+            else:
+                player[i].action += (1000 / action_time(player[i].Itg))
+        else:
+            # 防御が終了
+            defense.defense_reset(player, i)
+
+# 敵行動ゲージチャージ
+def enemy_action_charge(enemy):
+
+    for i in range(len(enemy)):
+
+        # 行動ゲージがたまっていない
+        if enemy[i].action < 1000:
+
+            # 行動後一定時間経過している
+            if enemy[i].cool_down > 0:
+            
+                # 行動後は行動ゲージが溜まるのが遅い
+                enemy[i].action += (1000 / action_time(enemy[i].Itg)) / 10
+
+                # クールダウン消化
+                enemy[i].cool_down -= 1/lm.fps
+
+            else:
+                enemy[i].action += (1000 / action_time(enemy[i].Itg))
+
+
+# プレイヤーのこうどう 
+def player_action(player, enemy, item, select_player, press_button, picked_item, health_disp, mana_disp):
+
+    #行動ゲージが1000を超えたら行動可能　かつ　ボタンを押している　かつ　行動可能　かつ　プレイヤーを選択中
+    if player[select_player].action >= 1000 and press_button != -1 and player[select_player].can_action == True and select_player != -1:
+
+        # こうげき
+        attack.player_attack(player, enemy, select_player, press_button, health_disp)
+            
+        # ぼうぎょ
+        defense.player_defense(player, select_player, press_button)
+
+        # まほう
+        magic.player_attack(player, enemy, select_player, press_button, health_disp)
+
+        # スキル
+
+
+        # アイテム
+        if picked_item != -1: # アイテムを決定中
+            items.use(item[picked_item], player, enemy, select_player, press_button, health_disp, mana_disp)
+
+
+# 敵のこうどう
+def enemy_action(player, enemy, health_disp):
+
+    for i in range(len(enemy)):
+
+        # 敵の攻撃
+        if enemy[i].action >= 1000 and enemy[i].alive == True:
+            
+            # こうどうを選ぶ
+            enemy[i].action_path.action_choice(enemy, i)
+
+
+        # 削除するやつを一時的に保持
+        pop_temp = []
+
+        # 攻撃のキューを消化
+        for j in range(len(enemy[i].attack)):
+
+            
+            # 表示までの時間を消化
+            if enemy[i].attack[j].until_disp > 0:
+                enemy[i].attack[j].until_disp -= 1/lm.fps
+
+            # 攻撃エリアを表示
+            else:
+                lm.screen.blit(pygame.transform.scale(pygame.image.load("./data_list/images/system/caution.png"), [96*lm.resol[0]/1920, 96*lm.resol[1]/1080]), [(264+enemy[i].attack[j].x*(96+16))*lm.resol[0]/1920, (552+enemy[i].attack[j].y*(96+16))*lm.resol[1]/1080])
+            
+            # 予備動作時間を減らす
+            enemy[i].attack[j].preliminary -= 1/lm.fps
+            
+            # 予備動作時間が終わったら
+            if enemy[i].attack[j].preliminary <= 0:
+
+                # こうげき
+                if enemy[i].attack[j].category == 'attack':
+                    attack.enemy_attack(player, enemy[i], j, health_disp)
+
+                # ぼうぎょ
+                if enemy[i].attack[j].category == 'defense':
+                    print("defense")
+
+                # まほう
+                if enemy[i].attack[j].category == 'magic':
+                    magic.enemy_attack(player, enemy[i], j, health_disp)
+               
+
+                pop_temp.append(j)
+
+        # 後ろから削除するために逆順にする（インデックスエラーを起こさないために）
+        pop_temp.sort(reverse=True) 
+        # 攻撃が終わった奴は削除
+        for j in pop_temp:
+            enemy[i].attack.pop(j)
