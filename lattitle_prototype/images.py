@@ -24,6 +24,11 @@ def init():
     global img_defense
     img_defense = pygame.image.load("./data_list/images/system/defense.png")
 
-    # 名前背景画像（後で変更）
+    # 名前背景画像
     global img_name_back
     img_name_back = pygame.image.load("./data_list/images/system/name_back.png")
+
+
+    # 敵思考枠画像
+    global img_enemy_thought
+    img_enemy_thought = pygame.image.load("./data_list/images/system/enemy_thought.png")

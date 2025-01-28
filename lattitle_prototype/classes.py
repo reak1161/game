@@ -73,6 +73,9 @@ class Player:
         self.Itg = int(list[7][0])
         self.Itg_Spd = float(list[7][1])
 
+        # バフ，デバフ用の配列？を作る。
+        
+
         # 残りHP
         self.left_HP = self.HP
 

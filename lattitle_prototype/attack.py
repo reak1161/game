@@ -93,6 +93,10 @@ def player_attack(player, enemy, select_player, press_button, health_disp):
                 # 0.85～1.0の乱数
                 damage[0] = math.floor(damage[0] * (random.randrange(85, 100+1) / 100))
 
+                # バフ補正
+
+                # デバフ補正
+
                 # 正負反転
                 damage[0] *= -1
 
@@ -150,6 +154,10 @@ def enemy_attack(player, enemy, index, health_disp):
 
                 # 0.85～1.0の乱数
                 damage[0] = math.floor(damage[0] * (random.randrange(85, 100+1) / 100))
+
+                # バフ補正
+
+                # デバフ補正
 
                 # 正負反転
                 damage[0] *= -1

@@ -7,6 +7,9 @@ def speed_up(target, index):
     if target.effect[index].time > 0:
 
         print("スピードアップ")
+        
+        #　ステータス変動の配列をそれぞれ用意する
+        # クラスは名前，固定／倍率，数値の要素
 
     else:
 

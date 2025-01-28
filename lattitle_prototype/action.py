@@ -10,6 +10,8 @@ import magic
 import players
 import enemies
 
+import images
+
 import item as items
 
 # 行動ゲージがたまるまでにかかるフレーム
@@ -70,6 +72,7 @@ def player_action(player, enemy, item, select_player, press_button, picked_item,
         magic.player_attack(player, enemy, select_player, press_button, health_disp)
 
         # スキル
+        # （まほうの自分にかけるバージョンみたいな？差別化）
 
 
         # アイテム
@@ -100,8 +103,14 @@ def enemy_action(player, enemy, health_disp):
             if enemy[i].attack[j].until_disp > 0:
                 enemy[i].attack[j].until_disp -= 1/lm.fps
 
-            # 攻撃エリアを表示
             else:
+                
+                # 技名を表示
+                lm.screen.blit(pygame.transform.scale(images.img_enemy_thought, [96*lm.resol[0]/1920, 96*lm.resol[1]/1080]), [(264+enemy[i].attack[j].x*(96+16))*lm.resol[0]/1920, (552+enemy[i].attack[j].y*(96+16))*lm.resol[1]/1080])
+                # （敵の技名　フォントも作成　サイズも調整　位置も調整）
+
+
+                # 攻撃エリアを表示
                 lm.screen.blit(pygame.transform.scale(pygame.image.load("./data_list/images/system/caution.png"), [96*lm.resol[0]/1920, 96*lm.resol[1]/1080]), [(264+enemy[i].attack[j].x*(96+16))*lm.resol[0]/1920, (552+enemy[i].attack[j].y*(96+16))*lm.resol[1]/1080])
             
             # 予備動作時間を減らす

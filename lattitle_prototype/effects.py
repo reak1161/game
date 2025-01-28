@@ -19,6 +19,8 @@ def player_effect(player, enemy, health_disp, mana_disp):
         # 状態異常を消化
         for j in range(len(player[i].effect)):
         
+            # （残り時間が存在しない状態異常のことも考える）
+            
             # 効果時間が残ってる
             if player[i].effect[j].time > 0:
 
