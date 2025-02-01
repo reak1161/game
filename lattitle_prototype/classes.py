@@ -176,7 +176,11 @@ class Buff_Debuff:
         self.name = str(list[1])
         
         # 効果時間
-        self.time = float(list[2])
+        if type(list[2]) == int:
+            self.time = float(list[2])
+        # 制限時間がない場合
+        else :
+            self.time = list[2]
         
         # その他引数
         self.other_arg = [float(s) for s in list[3:]]
@@ -257,28 +261,31 @@ class Enemy_attack:
 
         # 分類
         self.category = str(list[0])
+
+        # 名前
+        self.name = str(list[1])
         
         # 威力
-        self.power = int(list[1])
+        self.power = int(list[2])
         
         # 属性
-        self.element = str(list[2])
+        self.element = str(list[3])
         
         # 座標
-        self.x = int(list[3])
-        self.y = int(list[4])
+        self.x = int(list[4])
+        self.y = int(list[5])
         
         # 予備動作時間
-        self.preliminary = float(list[5])
+        self.preliminary = float(list[6])
         
         # 表示まで
-        self.until_disp = float(list[6])
+        self.until_disp = float(list[7])
 
         # 追加効果のリスト
         self.effect = []
 
         # 追加効果のリスト
-        for i in range(7, len(list)):
+        for i in range(8, len(list)):
             self.effect.append(Buff_Debuff(list[i]))
             
 

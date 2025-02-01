@@ -18,7 +18,8 @@ class Item:
     # 初期化
     def __init__(self, list):
         self.name = str(list[0])
-        self.amount = int(list[1])
+        self.disp_name = str(list[1])
+        self.amount = int(list[2])
         self.image = pygame.image.load("./data_list/items/images/" + self.name + ".png")
 
 # アイテム一括型変換（初期化）
@@ -168,7 +169,7 @@ def falcon_feather(player, select_player):
 
 
     # すばやさを上げる
-    player[select_player].effect.append(classes.Buff_Debuff(['buff', 'speed_up', 10, 50]))
+    player[select_player].effect.append(classes.Buff_Debuff(['buff', 'speed_up', 10, 0, 50]))
     player[select_player].effect[len(player[select_player].effect)-1].image = pygame.image.load("./data_list/images/effects/speed_up.png")
 
 

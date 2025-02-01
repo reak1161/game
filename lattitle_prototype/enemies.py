@@ -138,6 +138,14 @@ def disp_HP(enemy):
                 pygame.draw.rect(lm.screen, colors.RED, [492*lm.resol[0]/1920, 40*lm.resol[1]/1080, 192*(enemy[i].disp_HP/enemy[i].HP)*lm.resol[0]/1920, 32*lm.resol[1]/1080])
 
             
+    
+        """
+        pygame.draw.rect(screen, colors.RED, [284*resol[0]/1920, 40*resol[1]/1080, 384/384*enemy[0].image.get_rect()[2]*resol[0]/1920, 32/384*enemy[0].image.get_rect()[3]*resol[1]/1080])
+        pygame.draw.rect(screen, colors.GREEN, [60+44,48, 256*((enemy[0].left_HP)/enemy[0].HP)/256*enemy[0].image.get_rect()[2], 24/256*enemy[0].image.get_rect()[3]])
+        """
+
+
+
 
 
 # 今回の敵を追加する

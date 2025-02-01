@@ -1,9 +1,6 @@
-a = [1, 2, 3, 4, 5]
+a = 3
 
-print(a)
+a = int(a)
 
-b = [1, 2, 3]
-
-a.pop(i for i in b)
-
-print(a)
+if type(a) == int:
+    print('hello')

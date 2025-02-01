@@ -9,10 +9,17 @@ def init():
     # コマンドフォント
     global com_font
     com_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(24*resol[1]/1080))
+    # コマンドポップアップフォント
+    global com_pop_font
+    com_pop_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(20*resol[1]/1080))
 
     # 名前フォント
     global name_font
     name_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(32*resol[1]/1080))
+
+    # 名前フォント
+    global action_font
+    action_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(24*resol[1]/1080))
 
     # ダメージフォント
     global damage_font

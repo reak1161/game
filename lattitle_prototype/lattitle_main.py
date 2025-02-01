@@ -19,7 +19,6 @@ import magic
 import colors
 import fonts
 import images
-#import events
 import buttons
 import field
 
@@ -28,12 +27,12 @@ import effects
 import players
 import enemies
 
-#import data_list.items
-import item as items
+import items
 
 import main_menu
 import side_menu
 
+print('!')
 
 # １秒当たりのフレーム数
 fps = 90
@@ -149,8 +148,8 @@ def main():
     item = []
 
     # デフォルトのアイテム
-    default_items = [['potion', 5],
-                     ['mana_potion', 3]]
+    default_items = [['potion', 'ポーション', 5],
+                     ['mana_potion', 'マナポーション', 3]]
 
     # アイテムリストに追加
     item.extend(default_items)
@@ -159,7 +158,7 @@ def main():
     items.init(item)
 
     # アイテム追加（チュートリアル用）
-    items.add(item, ['falcon_feather', 2])
+    items.add(item, ['falcon_feather', 'ハヤブサの羽', 2])
 
     # ページ数　現在のページと最大値
     side_page = 1
@@ -269,14 +268,11 @@ def main():
             # 敵HPを表示
             enemies.disp_HP(enemy)
 
-            """
-            pygame.draw.rect(screen, colors.RED, [284*resol[0]/1920, 40*resol[1]/1080, 384/384*enemy[0].image.get_rect()[2]*resol[0]/1920, 32/384*enemy[0].image.get_rect()[3]*resol[1]/1080])
-            pygame.draw.rect(screen, colors.GREEN, [60+44,48, 256*((enemy[0].left_HP)/enemy[0].HP)/256*enemy[0].image.get_rect()[2], 24/256*enemy[0].image.get_rect()[3]])
-            """
-
-
             # コマンドボタン表示
             command.disp(player, select_player, press_button, buttons.command_button)
+
+            # コマンドポップアップ表示
+            command.command_pop_up(player, select_player, mouse, item, picked_item)
 
                 
             # 盤面
@@ -310,7 +306,7 @@ def main():
             enemies.enemy_passive(enemy)
 
             # プレイヤーの状態異常
-            effects.player_effect(player, enemy, health_disp, mana_disp)
+            effects.player_effect(player, enemy, health_disp, mana_disp, side_display)
 
             # 徐々にHPを変動
             players.HP_fluct(player)

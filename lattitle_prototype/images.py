@@ -28,7 +28,14 @@ def init():
     global img_name_back
     img_name_back = pygame.image.load("./data_list/images/system/name_back.png")
 
+    # コマンド背景画像
+    global img_command_back
+    #img_command_back = pygame.image.load("./data_list/images/system/pop_up_back.png")
+    img_command_back = pygame.image.load("./data_list/images/system/command_back.png")
 
     # 敵思考枠画像
     global img_enemy_thought
     img_enemy_thought = pygame.image.load("./data_list/images/system/enemy_thought.png")
+
+    global img_enemy_thought_right
+    img_enemy_thought_right = pygame.image.load("./data_list/images/system/enemy_thought_right.png")

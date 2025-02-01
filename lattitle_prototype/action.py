@@ -11,8 +11,10 @@ import players
 import enemies
 
 import images
+import fonts
+import colors
 
-import item as items
+import items
 
 # 行動ゲージがたまるまでにかかるフレーム
 def action_time(itg):
@@ -106,8 +108,32 @@ def enemy_action(player, enemy, health_disp):
             else:
                 
                 # 技名を表示
-                lm.screen.blit(pygame.transform.scale(images.img_enemy_thought, [96*lm.resol[0]/1920, 96*lm.resol[1]/1080]), [(264+enemy[i].attack[j].x*(96+16))*lm.resol[0]/1920, (552+enemy[i].attack[j].y*(96+16))*lm.resol[1]/1080])
-                # （敵の技名　フォントも作成　サイズも調整　位置も調整）
+                if enemy[i].category == "boss":
+                    img_temp = pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
+                    img_temp.topleft = [700*lm.resol[0]/1920, 104*lm.resol[1]/1080]
+                    lm.screen.blit(pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
+
+                    action_txt = fonts.action_font.render(enemy[i].attack[j].name, True, colors.BLACK)
+                    action_place = action_txt.get_rect(topleft=(716*lm.resol[0]/1920, 118*lm.resol[1]/1080))
+                    lm.screen.blit(action_txt, action_place)
+                
+                if enemy[i].category == "left":
+                    img_temp = pygame.transform.scale(images.img_enemy_thought, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
+                    img_temp.topright = [260*lm.resol[0]/1920, 104*lm.resol[1]/1080]
+                    lm.screen.blit(pygame.transform.scale(images.img_enemy_thought, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
+
+                    action_txt = fonts.action_font.render(enemy[i].attack[j].name, True, colors.BLACK)
+                    action_place = action_txt.get_rect(topright=(244*lm.resol[0]/1920, 118*lm.resol[1]/1080))
+                    lm.screen.blit(action_txt, action_place)
+
+                if enemy[i].category == "right":
+                    img_temp = pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
+                    img_temp.topleft = [700*lm.resol[0]/1920, 104*lm.resol[1]/1080]
+                    lm.screen.blit(pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
+
+                    action_txt = fonts.action_font.render(enemy[i].attack[j].name, True, colors.BLACK)
+                    action_place = action_txt.get_rect(topleft=(716*lm.resol[0]/1920, 118*lm.resol[1]/1080))
+                    lm.screen.blit(action_txt, action_place)
 
 
                 # 攻撃エリアを表示

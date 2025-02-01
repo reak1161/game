@@ -17,19 +17,19 @@ def detonation(enemy):
         scope_y = random.randrange(4)
 
         # 攻撃
-        point = [['magic', 150, 'Fire', scope_x, scope_y, 5, 0]]
+        point = [['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y, 5, 0]]
 
         # 横方向（端じゃなければ）
         if scope_x > 0:
-            point.append(['magic', 150, 'Fire', scope_x-1, scope_y, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x-1, scope_y, 5, 0])
         if scope_x < 3:
-            point.append(['magic', 150, 'Fire', scope_x+1, scope_y, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x+1, scope_y, 5, 0])
 
         # 縦方向（端じゃなければ）
         if scope_y > 0:
-            point.append(['magic', 150, 'Fire', scope_x, scope_y-1, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y-1, 5, 0])
         if scope_y < 3:
-            point.append(['magic', 150, 'Fire', scope_x, scope_y+1, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y+1, 5, 0])
 
         # 型変換
         classes.Enemy_attack.trans_all(point)
@@ -61,10 +61,10 @@ def hell_flame(enemy):
         scope = random.randrange(2)
 
         # 攻撃
-        point = [['magic', 100, 'Fire', scope+2, 0, 3, 0],
-                 ['magic', 100, 'Fire', scope+2, 1, 3, 0],
-                 ['magic', 100, 'Fire', scope+2, 2, 3, 0],
-                 ['magic', 100, 'Fire', scope+2, 3, 3, 0]]
+        point = [['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 0, 3, 0],
+                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 1, 3, 0],
+                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 2, 3, 0],
+                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 3, 3, 0]]
 
         # 型変換
         classes.Enemy_attack.trans_all(point)
@@ -98,10 +98,10 @@ def eruption(enemy):
 
 
         # 攻撃
-        point = [['magic', 200, 'Fire', scope_x, scope_y, 5, 0],
-                 ['magic', 200, 'Fire', scope_x+1, scope_y, 5, 0],
-                 ['magic', 200, 'Fire', scope_x, scope_y+1, 5, 0],
-                 ['magic', 200, 'Fire', scope_x+1, scope_y+1, 5, 0]]
+        point = [['magic', 'イラプション', 200, 'Fire', scope_x, scope_y, 5, 0],
+                 ['magic', 'イラプション', 200, 'Fire', scope_x+1, scope_y, 5, 0],
+                 ['magic', 'イラプション', 200, 'Fire', scope_x, scope_y+1, 5, 0],
+                 ['magic', 'イラプション', 200, 'Fire', scope_x+1, scope_y+1, 5, 0]]
 
         # 型変換
         classes.Enemy_attack.trans_all(point)

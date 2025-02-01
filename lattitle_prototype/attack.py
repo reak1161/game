@@ -168,7 +168,7 @@ def enemy_attack(player, enemy, index, health_disp):
                 for j in range(len(enemy.attack[index].effect)):
                     
                     enemy.attack[index].effect[j].image = pygame.image.load("./data_list/images/effects/" + enemy.attack[index].effect[j].name + ".png")
-                    print(vars(enemy.attack[index].effect[j]))
+                    #print(vars(enemy.attack[index].effect[j]))
                     player[i].effect.append(enemy.attack[index].effect[j])
 
                 damage.append(1)
