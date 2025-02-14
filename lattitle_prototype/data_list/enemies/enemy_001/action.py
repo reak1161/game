@@ -13,10 +13,10 @@ def tail_rush(enemy):
     scope = random.randrange(4)
 
     # 攻撃
-    point = [['attack', 'しっぽうち', 150, 'Normal', scope, 0, 5, 0],
-             ['attack', 'しっぽうち', 150, 'Normal', scope, 1, 5, 0],
-             ['attack', 'しっぽうち', 150, 'Normal', scope, 2, 5, 0],
-             ['attack', 'しっぽうち', 150, 'Normal', scope, 3, 5, 0]]
+    point = [['attack', 'しっぽうち', 150, 'Normal', scope, 0, 5, 0, None],
+             ['attack', 'しっぽうち', 150, 'Normal', scope, 1, 5, 0, None],
+             ['attack', 'しっぽうち', 150, 'Normal', scope, 2, 5, 0, None],
+             ['attack', 'しっぽうち', 150, 'Normal', scope, 3, 5, 0, None]]
 
     # 型変換
     classes.Enemy_attack.trans_all(point)
@@ -45,11 +45,11 @@ def snake_dash(enemy):
         # 偶数行は順方向
         if i % 2 == 0:
             for j in range(4):
-                point.append(['attack', 'へびダッシュ', 75, 'Normal', j, i, 5+j*0.05+i*0.20, j*0.05+i*0.20])
+                point.append(['attack', 'へびダッシュ', 75, 'Normal', j, i, 5+j*0.05+i*0.20, j*0.05+i*0.20, None])
         # 奇数行は逆方向
         else:
             for j in range(4-1, -1, -1):
-                point.append(['attack', 'へびダッシュ', 75, 'Normal', j, i, 5+(3-j)*0.05+i*0.20, (3-j)*0.05+i*0.20])
+                point.append(['attack', 'へびダッシュ', 75, 'Normal', j, i, 5+(3-j)*0.05+i*0.20, (3-j)*0.05+i*0.20, None])
 
     # 型変換
     classes.Enemy_attack.trans_all(point)
@@ -81,7 +81,7 @@ def tightening(enemy):
     # 攻撃
     # バフデバフはリストで末尾につける？
     # 攻撃は２次元配列で与える
-    point = [['attack', 'しめつけ', 50, 'Normal', scope_x, scope_y, 5, 0, ['debuff', 'cant_move', 10], ['debuff', 'cant_action', 10], ['debuff', 'slip', 10, 1, 1, 10]]]
+    point = [['attack', 'しめつけ', 50, 'Normal', scope_x, scope_y, 5, 0, None, ['debuff', 'cant_move', 10], ['debuff', 'cant_action', 10], ['debuff', 'slip', 10, 1, 1, 10]]]
     
     
     # 型変換

@@ -122,8 +122,14 @@ class Defense:
 
 class Magic:
     def __init__(self, list):
+
+        # 最大魔力
         self.MP = int(list[0])
+
+        # １秒あたりの自動回復量
         self.recover = int(list[1])
+
+        # 魔法効率
         self.efficiency = int(list[2])
 
          # 残り魔力
@@ -131,38 +137,113 @@ class Magic:
 
 class Command_attack:
     def __init__(self, list):
+
+        # 分類
         self.category = str(list[0])
+
+        # 技名
         self.name = str(list[1])
+
+        # 威力
         self.power = int(list[2])
+
+        # 攻撃回数
         self.frequency = int(list[3])
+
+        # チャージ時間
         self.charge_time = float(list[4])
+        # 残りチャージ時間
+        self.left_time = self.charge_time
+        # チャージ中か
+        self.charging = False
+
+        # 攻撃範囲
         self.range = str(list[5])
+
+        # 属性
         self.element = str(list[6])
+
+        # 追加効果のリスト
+        self.effect = []
+
+        # 追加効果のリスト
+        for i in range(7, len(list)):
+            self.effect.append(Buff_Debuff(list[i]))
 
 class Command_defense:
     def __init__(self, list):
+        
+        # 分類
         self.category = str(list[0])
+
+        # 技名
         self.name = str(list[1])
+
+        # 軽減率
         self.reduce_percent = float(list[2])
+
+        # 軽減数
         self.reduce_const = float(list[3])
+
+        # 防御時移動補正
         self.speed = float(list[4])
+
+        # 属性軽減率
         self.element_percent = float(list[5])
+
+        # 属性軽減数
         self.element_const = float(list[6])
+
+        self.left_time = 0 #self.charge_time
+        self.charging = False
 
 class Command_magic:
     def __init__(self, list):
+
+        # 分類
         self.category = str(list[0])
+
+        # 技名
         self.name = str(list[1])
+
+        # 威力
         self.power = int(list[2])
+
+        # 消費魔力（％）
         self.MP_percent = float(list[3])
+
+        # 消費魔力（定数）
         self.MP_const = float(list[4])
+
+        # チャージ時間
         self.charge_time = int(list[5])
+
+        # 残りチャージ時間
+        self.left_time = self.charge_time
+
+        # チャージ中か
+        self.charging = False
+
+        # 攻撃範囲
         self.range = str(list[6])
+
+        # 属性
         self.element = str(list[7])
+
+        # 追加効果のリスト
+        self.effect = []
+
+        # 追加効果のリスト
+        for i in range(8, len(list)):
+            self.effect.append(Buff_Debuff(list[i]))
 
 class Command_item:
     def __init__(self, list):
         self.category = str(list[0])
+        
+        self.left_time = 0 #self.charge_time
+        self.charging = False
+        
 
 
 class Buff_Debuff:
@@ -171,6 +252,10 @@ class Buff_Debuff:
 
         # 分類
         self.category = str(list[0])
+
+        # 対象（使用者：user / 対象者：target）
+        # 効果を受ける対象を書く
+        #self.target = 
 
         # 名前
         self.name = str(list[1])
@@ -253,8 +338,17 @@ class Enemy_passive:
 
     def __init__(self, string):
 
+        # パッシブ名
         self.name = str(string)
+  
+        # 有効か
         self.valid = True
+
+        # 表示時間
+        self.disp = 0.0
+
+        # 表示用パッシブ名
+        self.disp_name = ""
 
 class Enemy_attack:
     def __init__(self, list):
@@ -281,11 +375,14 @@ class Enemy_attack:
         # 表示まで
         self.until_disp = float(list[7])
 
+        # 音
+        self.play_sound = str(list[8])
+
         # 追加効果のリスト
         self.effect = []
 
         # 追加効果のリスト
-        for i in range(8, len(list)):
+        for i in range(9, len(list)):
             self.effect.append(Buff_Debuff(list[i]))
             
 

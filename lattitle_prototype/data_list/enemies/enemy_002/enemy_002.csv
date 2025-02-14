@@ -1,10 +1,10 @@
 ヒョウ,enemy_002
 ice.png
 1000
-250
-400
+230
+350
 100,1,100
-200
+180
 left,middle
 0,1
 Ice
@@ -12,4 +12,4 @@ half_guarantee,resonance
 3
 hail_prism,30,ヘイルプリズム
 ice_sword,30,アイスソード
-avalanche,20,アヴァランチ
+avalanche,20,ゆきなだれ

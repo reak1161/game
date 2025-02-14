@@ -2,19 +2,19 @@ import random
 import classes
 
 # ヘイルプリズム
-# 威力 100 予備動作時間 3秒 クールダウン 3秒
+# 威力 80 予備動作時間 3秒 クールダウン 3秒
 # ランダムに４か所を攻撃
-# 命中したプレイヤーに50%？でしもやけを付与
+# 命中したプレイヤーにしもやけを付与
 def hail_prism(enemy):
 
     # 攻撃する場所
     scope = random.sample(range(0,16), 4)
 
     # 攻撃
-    point = [['attack', 'ヘイルプリズム', 100, 'Ice', scope[0]%4, scope[0]/4, 3, 0, ['debuff', 'frostbite', True, 1]],
-             ['attack', 'ヘイルプリズム', 100, 'Ice', scope[1]%4, scope[1]/4, 3, 0, ['debuff', 'frostbite', True, 1]],
-             ['attack', 'ヘイルプリズム', 100, 'Ice', scope[2]%4, scope[2]/4, 3, 0, ['debuff', 'frostbite', True, 1]],
-             ['attack', 'ヘイルプリズム', 100, 'Ice', scope[3]%4, scope[3]/4, 3, 0, ['debuff', 'frostbite', True, 1]]]
+    point = [['attack', 'ヘイルプリズム', 80, 'Ice', scope[0]%4, scope[0]/4, 3, 0, None, ['debuff', 'frostbite', True, 1]],
+             ['attack', 'ヘイルプリズム', 80, 'Ice', scope[1]%4, scope[1]/4, 3, 0, None, ['debuff', 'frostbite', True, 1]],
+             ['attack', 'ヘイルプリズム', 80, 'Ice', scope[2]%4, scope[2]/4, 3, 0, None, ['debuff', 'frostbite', True, 1]],
+             ['attack', 'ヘイルプリズム', 80, 'Ice', scope[3]%4, scope[3]/4, 3, 0, None, ['debuff', 'frostbite', True, 1]]]
 
     # 型変換
     classes.Enemy_attack.trans_all(point)
@@ -32,6 +32,7 @@ def hail_prism(enemy):
 # アイスソード
 # 威力 75*2 予備動作時間 3秒 クールダウン 5秒
 # 縦横斜めの１列攻撃を２回
+# 命中したプレイヤーにしもやけを付与
 def ice_sword(enemy):
 
     point = []
@@ -44,28 +45,28 @@ def ice_sword(enemy):
 
         # 縦方向の攻撃
         if 0 <= lane <= 3:
-            attack = [['attack', 'アイスソード', 75, 'Ice', lane, 0, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', lane, 1, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', lane, 2, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', lane, 3, 3+i, i]]
+            attack = [['attack', 'アイスソード', 75, 'Ice', lane, 0, 3+i, i, 'ice_sword.mp3', ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', lane, 1, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', lane, 2, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', lane, 3, 3+i, i, None, ['debuff', 'frostbite', True, 1]]]
         # 横方向の攻撃
         elif 4 <= lane <= 7:
-            attack = [['attack', 'アイスソード', 75, 'Ice', 0, lane-4, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 1, lane-4, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 2, lane-4, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 3, lane-4, 3+i, i]]
+            attack = [['attack', 'アイスソード', 75, 'Ice', 0, lane-4, 3+i, i, 'ice_sword.mp3', ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 1, lane-4, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 2, lane-4, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 3, lane-4, 3+i, i, None, ['debuff', 'frostbite', True, 1]]]
         # 左上から右下の攻撃
         elif lane == 8:
-            attack = [['attack', 'アイスソード', 75, 'Ice', 0, 0, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 1, 1, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 2, 2, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 3, 3, 3+i, i]]
+            attack = [['attack', 'アイスソード', 75, 'Ice', 0, 0, 3+i, i, 'ice_sword.mp3', ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 1, 1, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 2, 2, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 3, 3, 3+i, i, None, ['debuff', 'frostbite', True, 1]]]
         # 右上から左下の攻撃
         elif lane == 9:
-            attack = [['attack', 'アイスソード', 75, 'Ice', 3, 0, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 2, 1, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 1, 2, 3+i, i],
-                      ['attack', 'アイスソード', 75, 'Ice', 0, 3, 3+i, i]]
+            attack = [['attack', 'アイスソード', 75, 'Ice', 3, 0, 3+i, i, 'ice_sword.mp3', ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 2, 1, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 1, 2, 3+i, i, None, ['debuff', 'frostbite', True, 1]],
+                      ['attack', 'アイスソード', 75, 'Ice', 0, 3, 3+i, i, None, ['debuff', 'frostbite', True, 1]]]
 
         point.extend(attack)
 
@@ -82,20 +83,21 @@ def ice_sword(enemy):
     enemy.action = 0
 
 
-# アヴァランチ
-# 威力 150 予備動作時間 5秒 クールダウン 5秒
+# ゆきなだれ
+# 威力 120 予備動作時間 5秒 クールダウン 5秒
 # 左側２列を攻撃
+# 命中したプレイヤーにしもやけと凍結を付与
 def avalanche(enemy):
 
     # 攻撃
-    point = [['attack', 'アヴァランチ', 150, 'Ice', 0, 0, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 0, 1, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 0, 2, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 0, 3, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 1, 0, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 1, 1, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 1, 2, 5, 0],
-             ['attack', 'アヴァランチ', 150, 'Ice', 1, 3, 5, 0]]
+    point = [['attack', 'ゆきなだれ', 120, 'Ice', 0, 0, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 0, 1, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 0, 2, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 0, 3, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 1, 0, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 1, 1, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 1, 2, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]],
+             ['attack', 'ゆきなだれ', 120, 'Ice', 1, 3, 5, 0, None, ['debuff', 'frostbite', True, 1], ['debuff', 'frozen', True, 1]]]
 
     # 型変換
     classes.Enemy_attack.trans_all(point)

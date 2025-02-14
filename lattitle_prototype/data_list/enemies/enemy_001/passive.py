@@ -6,9 +6,11 @@ def init(enemy):
 
     # だっぴ　有効
     enemy.passive[1].valid = True
+    enemy.passive[1].disp_name = "　だっぴ　"
 
     # だっぴがーど　無効
     enemy.passive[2].valid = False
+    enemy.passive[2].disp_name = "だっぴがーど"
 
 
 # 半分保証
@@ -47,14 +49,15 @@ def molting(enemy):
                 # こうげき 300 -> 500
                 enemy.Atk = 500
 
-                # ちせい 200 -> 300
-                enemy.Itg = 300
+                # ちせい 200 -> 350
+                enemy.Itg = 350
 
                 # 防御力減少
-                # ぼうぎょ 400 -> 200
-                enemy.Def.defense = 200
+                # ぼうぎょ 400 -> 300
+                enemy.Def.defense = 300
 
                 print("だっぴ")
+                enemy.passive[1].disp = 3
 
                 # だっぴを無効にする
                 enemy.passive[1].valid = False
@@ -78,6 +81,7 @@ def molting_defense(enemy):
         if round(enemy.left_HP) < round(enemy.disp_HP):
             
             print("だっぴがーど")
+            enemy.passive[2].disp = 3
 
             # HPを元に戻す？
             enemy.left_HP = enemy.disp_HP

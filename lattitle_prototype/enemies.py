@@ -34,6 +34,7 @@ def enemy_death(enemy):
         if enemy[i].left_HP <= 0 and enemy[i].alive == True:
 
             enemy[i].alive = False
+            enemy[i].attack = []
 
 
 # 敵を表示
@@ -95,11 +96,13 @@ def disp_HP(enemy):
 
     # （敵の上に表示されるように）
     # 後で修正
+    # ボス用HPフレームを作る
 
     for i in range(len(enemy)):
         
         if enemy[i].category == "boss":
             pygame.draw.rect(lm.screen, colors.SILVER, [288*lm.resol[0]/1920, 40*lm.resol[1]/1080, 384*lm.resol[0]/1920, 32*lm.resol[1]/1080])
+            #lm.screen.blit(pygame.transform.scale(images.img_hp_gauge, [*lm.resol[0]/1920, 64*lm.resol[1]/1080]), [1200*lm.resol[0]/1920, (256+i*(40+128+48))*lm.resol[1]/1080])
 
             # HPが半分以上なら緑
             if enemy[i].disp_HP / enemy[i].HP >= 0.50:
@@ -189,7 +192,58 @@ def enemy_passive(enemy):
     for i in range(len(enemy)):
 
         enemy[i].passive_path.passive_exe(enemy, i)
+
+        for j in range(len(enemy[i].passive)):
+
+            if enemy[i].passive[j].disp > 0:
+
+                # 技名を表示
+                if enemy[i].category == "boss":
+                    img_temp = pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].passive[j].disp_name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
+                    img_temp.topleft = [700*lm.resol[0]/1920, (104+64)*lm.resol[1]/1080]
+                    lm.screen.blit(pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].passive[j].disp_name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
+
+                    passive_txt = fonts.passive_font.render(enemy[i].passive[j].disp_name, True, colors.BLACK)
+                    passive_place = passive_txt.get_rect(center=((700+(36+24*len(enemy[i].passive[j].disp_name))/2)*lm.resol[0]/1920, (118+12+64)*lm.resol[1]/1080))
+                    lm.screen.blit(passive_txt, passive_place)
+                
+                if enemy[i].category == "left":
+                    img_temp = pygame.transform.scale(images.img_enemy_thought, [(36+24*len(enemy[i].passive[j].disp_name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
+                    img_temp.topright = [260*lm.resol[0]/1920, (104+64)*lm.resol[1]/1080]
+                    lm.screen.blit(pygame.transform.scale(images.img_enemy_thought, [(36+24*len(enemy[i].passive[j].disp_name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
+
+                    passive_txt = fonts.passive_font.render(enemy[i].passive[j].disp_name, True, colors.BLACK)
+                    passive_place = passive_txt.get_rect(center=((260-(36+24*len(enemy[i].passive[j].disp_name))/2)*lm.resol[0]/1920, (118+12+64)*lm.resol[1]/1080))
+                    lm.screen.blit(passive_txt, passive_place)
+
+                if enemy[i].category == "right":
+                    img_temp = pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].passive[j].disp_name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
+                    img_temp.topleft = [700*lm.resol[0]/1920, (104+64)*lm.resol[1]/1080]
+                    lm.screen.blit(pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].passive[j].disp_name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
+
+                    passive_txt = fonts.passive_font.render(enemy[i].passive[j].disp_name, True, colors.BLACK)
+                    passive_place = passive_txt.get_rect(center=((700+(36+24*len(enemy[i].passive[j].disp_name))/2)*lm.resol[0]/1920, (118+12+64)*lm.resol[1]/1080))
+                    lm.screen.blit(passive_txt, passive_place)
+
+                # 表示時間を減らす
+                enemy[i].passive[j].disp -= 1/lm.fps
+
+
+# MPの自動回復
+def MP_heal(enemy):
+
+    for i in range(len(enemy)):
         
+        if enemy[i].Mgc.recover > 0:
+
+            if enemy[i].Mgc.left_MP + enemy[i].Mgc.recover * 1/lm.fps <= enemy[i].Mgc.MP:
+
+                enemy[i].Mgc.left_MP += enemy[i].Mgc.recover * 1/lm.fps
+
+            else:
+
+                enemy[i].Mgc.left_MP = enemy[i].Mgc.MP
+
 
 # HPをゆっくり変動させる
 def HP_fluct(enemy):

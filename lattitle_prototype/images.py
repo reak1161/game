@@ -2,6 +2,16 @@ import pygame
 
 def init():
 
+    # ゲージ類画像
+    global img_hp_gauge
+    img_hp_gauge = pygame.image.load("./data_list/images/system/hp_gauge.png")
+
+    global img_mp_gauge
+    img_mp_gauge = pygame.image.load("./data_list/images/system/mp_gauge.png")
+
+    global img_action_gauge
+    img_action_gauge = pygame.image.load("./data_list/images/system/action_gauge.png")
+
     # カーソル画像
     global img_cursor
     img_cursor = pygame.image.load("./data_list/images/system/cursor.png")

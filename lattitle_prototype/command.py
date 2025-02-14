@@ -83,7 +83,7 @@ def command_pop_up(player, select_player, mouse, item, picked_item):
                         command_text_disp('威力:'+str(player[select_player].command[i].power), [406, 340])
                         command_text_disp(player[select_player].command[i].element, [559, 340])
                         #command_text_disp('消費魔力:'+str(player[select_player].command[i].MP_percent)+'%+'+str(player[select_player].command[i].MP_const), [252, 364])
-                        command_text_disp('消費魔力:'+str(player[select_player].Mgc.left_MP * player[select_player].command[i].MP_percent / 100 + player[select_player].command[i].MP_const), [252, 364])
+                        command_text_disp('消費魔力:'+str(round(player[select_player].Mgc.left_MP * player[select_player].command[i].MP_percent / 100 + player[select_player].command[i].MP_const, 1)), [252, 364])
                         command_text_disp('チャージ時間:'+str(player[select_player].command[i].charge_time), [406, 364])
                         command_text_disp('攻撃範囲:'+str(player[select_player].command[i].range), [559, 364])
                         

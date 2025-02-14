@@ -17,19 +17,19 @@ def detonation(enemy):
         scope_y = random.randrange(4)
 
         # 攻撃
-        point = [['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y, 5, 0]]
+        point = [['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y, 5, 0, None]]
 
         # 横方向（端じゃなければ）
         if scope_x > 0:
-            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x-1, scope_y, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x-1, scope_y, 5, 0, None])
         if scope_x < 3:
-            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x+1, scope_y, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x+1, scope_y, 5, 0, None])
 
         # 縦方向（端じゃなければ）
         if scope_y > 0:
-            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y-1, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y-1, 5, 0, None])
         if scope_y < 3:
-            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y+1, 5, 0])
+            point.append(['magic', 'デトネーション', 150, 'Fire', scope_x, scope_y+1, 5, 0, None])
 
         # 型変換
         classes.Enemy_attack.trans_all(point)
@@ -49,7 +49,7 @@ def detonation(enemy):
 
 # ヘルフレイム
 # 威力 100 予備動作時間 3秒 クールダウン 3秒
-# 十字型の爆発を起こす
+# 縦一列に攻撃
 def hell_flame(enemy):
 
     # 魔力消費 50
@@ -61,10 +61,10 @@ def hell_flame(enemy):
         scope = random.randrange(2)
 
         # 攻撃
-        point = [['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 0, 3, 0],
-                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 1, 3, 0],
-                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 2, 3, 0],
-                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 3, 3, 0]]
+        point = [['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 0, 3, 0, None, ['debuff', 'on_fire', 10, 0.25]],
+                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 1, 3, 0, None, ['debuff', 'on_fire', 10, 0.25]],
+                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 2, 3, 0, None, ['debuff', 'on_fire', 10, 0.25]],
+                 ['magic', 'ヘルフレイム', 100, 'Fire', scope+2, 3, 3, 0, None, ['debuff', 'on_fire', 10, 0.25]]]
 
         # 型変換
         classes.Enemy_attack.trans_all(point)
@@ -82,7 +82,7 @@ def hell_flame(enemy):
         enemy.action = 0
 
 
-# イラプション
+# だいふんか
 # 威力 200 予備動作時間 5秒 クールダウン 5秒
 # 2*2の範囲に噴火を起こす
 def eruption(enemy):
@@ -98,10 +98,10 @@ def eruption(enemy):
 
 
         # 攻撃
-        point = [['magic', 'イラプション', 200, 'Fire', scope_x, scope_y, 5, 0],
-                 ['magic', 'イラプション', 200, 'Fire', scope_x+1, scope_y, 5, 0],
-                 ['magic', 'イラプション', 200, 'Fire', scope_x, scope_y+1, 5, 0],
-                 ['magic', 'イラプション', 200, 'Fire', scope_x+1, scope_y+1, 5, 0]]
+        point = [['magic', 'だいふんか', 200, 'Fire', scope_x, scope_y, 5, 0, None],
+                 ['magic', 'だいふんか', 200, 'Fire', scope_x+1, scope_y, 5, 0, None],
+                 ['magic', 'だいふんか', 200, 'Fire', scope_x, scope_y+1, 5, 0, None],
+                 ['magic', 'だいふんか', 200, 'Fire', scope_x+1, scope_y+1, 5, 0, None]]
 
         # 型変換
         classes.Enemy_attack.trans_all(point)

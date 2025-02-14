@@ -6,6 +6,7 @@ def init(enemy):
 
     # 共鳴　無効
     enemy.passive[1].valid = False
+    enemy.passive[1].disp_name = "　共鳴　"
 
 
 # 半分保証
@@ -59,6 +60,7 @@ def resonance(enemy, index):
                             resonance_index = i
 
                             print("共鳴")
+                            enemy[index].passive[1].disp = 5.0
 
     # 共鳴中
     if enemy[index].passive[1].valid == True:

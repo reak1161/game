@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import random
+import pygame
 
 import fonts
 import colors
@@ -164,6 +165,14 @@ def enemy_attack(player, enemy, index, health_disp):
                 damage[0] *= -1
 
                 player[i].left_HP += damage[0]
+
+
+                # 攻撃の追加効果
+                for j in range(len(enemy.attack[index].effect)):
+                    
+                    enemy.attack[index].effect[j].image = pygame.image.load("./data_list/images/effects/" + enemy.attack[index].effect[j].name + ".png")
+                    #print(vars(enemy.attack[index].effect[j]))
+                    player[i].effect.append(enemy.attack[index].effect[j])
 
                 damage.append(1)
                 # 横軸をプレイヤーの位置に

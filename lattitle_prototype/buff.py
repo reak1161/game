@@ -20,7 +20,7 @@ def speed_up(target, index):
 
     else:
 
-        # 元のスピードに戻す。
+        # 元のスピードに戻す
         target.Spd /= ((100 + target.effect[index].other_arg[1]) / 100)
 
 

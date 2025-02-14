@@ -38,7 +38,7 @@ print('!')
 fps = 90
 
 # 解像度
-resol = [1600, 900]
+resol = [1440, 810]
 
 screen = pygame.display.set_mode(resol)
 
@@ -124,8 +124,8 @@ def main():
     colors.init(player)
 
     # 今回の敵
-    current_enemy = ["ヒョウ", "エン"]
-    #current_enemy = ["へび"]
+    #current_enemy = ["ヒョウ", "エン"]
+    current_enemy = ["へび"]
 
     # 今回の敵の情報
     enemy = []
@@ -181,18 +181,20 @@ def main():
         m_btnl, m_btnm, m_btnr = pygame.mouse.get_pressed()
 
 
+        # メインメニュー
         if current_display == "main_menu":
 
             # メインメニューを表示
             main_menu.disp_main_menu()
 
+        # 設定画面
         if current_display == "title_option":
 
             option_txt = fonts.option_font.render("設定", True, colors.BLACK)
             option_place = option_txt.get_rect(center=(960*resol[0]/1920, 330*resol[1]/1080))
             screen.blit(option_txt, option_place)
 
-
+        # 結果
         if current_display == "result":
 
             if game_clear == True:
@@ -253,8 +255,7 @@ def main():
 
             
             # 設定画面　設定画面を開いている間はゲームの時間を停止する
-            pygame.draw.rect(screen, colors.SILVER, buttons.game_option_button)
-
+            #pygame.draw.rect(screen, colors.SILVER, buttons.game_option_button)
 
             # （設定）
 
@@ -267,6 +268,7 @@ def main():
 
             # 敵HPを表示
             enemies.disp_HP(enemy)
+
 
             # コマンドボタン表示
             command.disp(player, select_player, press_button, buttons.command_button)
@@ -315,6 +317,11 @@ def main():
 
             # HPの変動を表示
             attack.disp_health_fluct(health_disp)
+
+            # MPの自動回復
+            players.MP_heal(player)
+
+            enemies.MP_heal(enemy)
 
             # MPの変動を表示
             magic.disp_mana_fluct(mana_disp)
@@ -415,12 +422,14 @@ def main():
             if current_display == "main_menu":
                 
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    # ゲームをプレイ
                     if buttons.game_play_button.collidepoint(event.pos):
                         current_display = "game_play"
                         enemies.enemy_choice(enemy, enemy_data, current_enemy)
                         start_point = []
-                    if buttons.title_option_button.collidepoint(event.pos):
-                        current_display = "title_option"
+                    # 設定画面へ
+                    #if buttons.title_option_button.collidepoint(event.pos):
+                        #current_display = "title_option"
             
             # ゲーム画面
             if current_display == "game_play": 

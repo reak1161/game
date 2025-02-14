@@ -37,6 +37,7 @@ def player_action_chaege(player):
             # 防御が終了
             defense.defense_reset(player, i)
 
+
 # 敵行動ゲージチャージ
 def enemy_action_charge(enemy):
 
@@ -62,6 +63,7 @@ def enemy_action_charge(enemy):
 def player_action(player, enemy, item, select_player, press_button, picked_item, health_disp, mana_disp):
 
     #行動ゲージが1000を超えたら行動可能　かつ　ボタンを押している　かつ　行動可能　かつ　プレイヤーを選択中
+    #if (player[select_player].action >= 1000 and press_button != -1 and player[select_player].can_action == True and select_player != -1) or player[select_player].command[press_button].charging == True:
     if player[select_player].action >= 1000 and press_button != -1 and player[select_player].can_action == True and select_player != -1:
 
         # こうげき
@@ -108,13 +110,14 @@ def enemy_action(player, enemy, health_disp):
             else:
                 
                 # 技名を表示
+                # 後で修正
                 if enemy[i].category == "boss":
                     img_temp = pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]).get_rect()
                     img_temp.topleft = [700*lm.resol[0]/1920, 104*lm.resol[1]/1080]
                     lm.screen.blit(pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
 
                     action_txt = fonts.action_font.render(enemy[i].attack[j].name, True, colors.BLACK)
-                    action_place = action_txt.get_rect(topleft=(716*lm.resol[0]/1920, 118*lm.resol[1]/1080))
+                    action_place = action_txt.get_rect(center=((700+(36+24*len(enemy[i].attack[j].name))/2)*lm.resol[0]/1920, (118+12)*lm.resol[1]/1080))
                     lm.screen.blit(action_txt, action_place)
                 
                 if enemy[i].category == "left":
@@ -123,7 +126,7 @@ def enemy_action(player, enemy, health_disp):
                     lm.screen.blit(pygame.transform.scale(images.img_enemy_thought, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
 
                     action_txt = fonts.action_font.render(enemy[i].attack[j].name, True, colors.BLACK)
-                    action_place = action_txt.get_rect(topright=(244*lm.resol[0]/1920, 118*lm.resol[1]/1080))
+                    action_place = action_txt.get_rect(center=((260-(36+24*len(enemy[i].attack[j].name))/2)*lm.resol[0]/1920, (118+12)*lm.resol[1]/1080))
                     lm.screen.blit(action_txt, action_place)
 
                 if enemy[i].category == "right":
@@ -132,7 +135,7 @@ def enemy_action(player, enemy, health_disp):
                     lm.screen.blit(pygame.transform.scale(images.img_enemy_thought_right, [(36+24*len(enemy[i].attack[j].name))*lm.resol[0]/1920, 64*lm.resol[1]/1080]), img_temp)
 
                     action_txt = fonts.action_font.render(enemy[i].attack[j].name, True, colors.BLACK)
-                    action_place = action_txt.get_rect(topleft=(716*lm.resol[0]/1920, 118*lm.resol[1]/1080))
+                    action_place = action_txt.get_rect(center=((700+(36+24*len(enemy[i].attack[j].name))/2)*lm.resol[0]/1920, (118+12)*lm.resol[1]/1080))
                     lm.screen.blit(action_txt, action_place)
 
 

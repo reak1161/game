@@ -60,59 +60,80 @@ def disp_health_fluct(health_disp):
 
 # 攻撃関数
 def player_attack(player, enemy, select_player, press_button, health_disp):
+
+    #if (player[select_player].command[press_button].category == "attack" and player[select_player].can_attack == True) or player[select_player].command[press_button].charging == True:
     if player[select_player].command[press_button].category == "attack" and player[select_player].can_attack == True:
-
-        resol = lm.resol
     
-        miss_count = 0
+        # チャージ時間を消化
+        if player[select_player].command[press_button].left_time > 0:
 
-        for i in range(len(enemy)):
+            # チャージ中を有効
+            player[select_player].command[press_button].charging = True
 
-            if round(player[select_player].cur_location[0]) in enemy[i].hit_box:
-                
-                # 自分の「こうげき」と相手の「ぼうぎょ」
-                damage = [math.floor(22 * (player[select_player].Atk + 20) / (enemy[i].Def.defense + 20))]
+            # 攻撃までの時間（チャージ時間）
+            player[select_player].command[press_button].left_time -= 1/lm.fps
+            print(player[select_player].command[press_button].left_time)
 
-                # わざの威力
-                damage[0] = math.floor(damage[0] * player[select_player].command[press_button].power / 50 + 5)
+        else:
 
-                # 属性の計算
-                # （弱点なら２倍　耐性なら０．５倍）
-                damage[0] = math.floor(damage[0] * element.element_damage(enemy[i].element, player[select_player].command[press_button].element))
+            resol = lm.resol
+        
+            miss_count = 0
 
-                # 属性一致
-                # （自分の属性とわざの属性が一致してたら１．５倍）
-                if player[select_player].command[press_button].element in player[select_player].element:
-                    damage[0] = math.floor(damage[0] * 1.5)
+            for i in range(len(enemy)):
 
-                # プレイヤーの位置
-                damage[0] = math.floor(damage[0] * player_guard_adjustment(player[select_player].cur_location[1]))
-                # 敵の位置
-                damage[0] = math.floor(damage[0] * enemy_guard_adjustment(enemy[i].guard))
+                if round(player[select_player].cur_location[0]) in enemy[i].hit_box:
+                    
+                    # 自分の「こうげき」と相手の「ぼうぎょ」
+                    damage = [math.floor(22 * (player[select_player].Atk + 20) / (enemy[i].Def.defense + 20))]
 
-                # 0.85～1.0の乱数
-                damage[0] = math.floor(damage[0] * (random.randrange(85, 100+1) / 100))
+                    # わざの威力
+                    damage[0] = math.floor(damage[0] * player[select_player].command[press_button].power / 50 + 5)
 
-                # バフ補正
+                    # 属性の計算
+                    # （弱点なら２倍　耐性なら０．５倍）
+                    damage[0] = math.floor(damage[0] * element.element_damage(enemy[i].element, player[select_player].command[press_button].element))
 
-                # デバフ補正
+                    # 属性一致
+                    # （自分の属性とわざの属性が一致してたら１．５倍）
+                    if player[select_player].command[press_button].element in player[select_player].element:
+                        damage[0] = math.floor(damage[0] * 1.5)
 
-                # 正負反転
-                damage[0] *= -1
+                    # プレイヤーの位置
+                    damage[0] = math.floor(damage[0] * player_guard_adjustment(player[select_player].cur_location[1]))
+                    # 敵の位置
+                    damage[0] = math.floor(damage[0] * enemy_guard_adjustment(enemy[i].guard))
 
-                enemy[i].left_HP += damage[0]
-            else:
-                miss_count += 1
+                    # 0.85～1.0の乱数
+                    damage[0] = math.floor(damage[0] * (random.randrange(85, 100+1) / 100))
 
-        # 全部ミスだったとき
-        if miss_count == len(enemy):
-            damage = ["miss"]
+                    # バフ補正
 
-        player[select_player].action = 0
-        damage.append(1)
-        # 横軸をプレイヤーの攻撃位置に
-        damage.extend([(264+player[select_player].cur_location[0]*(96+16)+random.randrange(96))*resol[0]/1920, (40+32+random.randrange(384-32))*resol[1]/1080])
-        health_disp.append(damage)
+                    # デバフ補正
+
+                    # 正負反転
+                    damage[0] *= -1
+
+                    enemy[i].left_HP += damage[0]
+                else:
+                    miss_count += 1
+
+            # 全部ミスだったとき
+            if miss_count == len(enemy):
+                damage = ["miss"]
+
+            player[select_player].action = 0
+            damage.append(1)
+            # 横軸をプレイヤーの攻撃位置に
+            damage.extend([(264+player[select_player].cur_location[0]*(96+16)+random.randrange(96))*resol[0]/1920, (40+32+random.randrange(384-32))*resol[1]/1080])
+            health_disp.append(damage)
+
+            # チャージ時間を元に戻す
+            player[select_player].command[press_button].left_time = player[select_player].command[press_button].charge_time
+
+            # チャージ中を解除
+            player[select_player].command[press_button].charging = False
+
 
 # 敵の攻撃
 def enemy_attack(player, enemy, index, health_disp):
@@ -170,6 +191,20 @@ def enemy_attack(player, enemy, index, health_disp):
                     enemy.attack[index].effect[j].image = pygame.image.load("./data_list/images/effects/" + enemy.attack[index].effect[j].name + ".png")
                     #print(vars(enemy.attack[index].effect[j]))
                     player[i].effect.append(enemy.attack[index].effect[j])
+
+                # 音（ならないから修正）
+                # mutagenやplaysoundが使えない？
+                """
+                if enemy.attack[index].play_sound != 'None':
+
+                    filename = './data_list/enemies/' + enemy.No + '/sounds/' + enemy.attack[index].play_sound #再生したいmp3ファイル
+                    pygame.mixer.init()
+                    pygame.mixer.music.load(filename) #音源を読み込み
+                    #mp3_length = mp3(filename).info.length #音源の長さ取得
+                    pygame.mixer.music.play(1) #再生開始。1の部分を変えるとn回再生(その場合は次の行の秒数も×nすること)
+                    #time.sleep(mp3_length + 0.25) #再生開始後、音源の長さだけ待つ(0.25待つのは誤差解消)
+                    #pygame.mixer.music.stop() #音源の長さ待ったら再生停止
+                """
 
                 damage.append(1)
                 # 横軸をプレイヤーの位置に
