@@ -64,17 +64,21 @@ def player_attack(player, enemy, select_player, press_button, health_disp):
     #if (player[select_player].command[press_button].category == "attack" and player[select_player].can_attack == True) or player[select_player].command[press_button].charging == True:
     if player[select_player].command[press_button].category == "attack" and player[select_player].can_attack == True:
     
-        # チャージ時間を消化
-        if player[select_player].command[press_button].left_time > 0:
+        # チャージ時間を設定
+        if player[select_player].command[press_button].charge_time > 0 and player[select_player].charging == False:
 
             # チャージ中を有効
-            player[select_player].command[press_button].charging = True
+            player[select_player].charging = True
 
-            # 攻撃までの時間（チャージ時間）
-            player[select_player].command[press_button].left_time -= 1/lm.fps
-            print(player[select_player].command[press_button].left_time)
+            # チャージ時間を設定
+            player[select_player].left_time = player[select_player].command[press_button].charge_time
 
-        else:
+            # チャージ中のコマンド
+            player[select_player].charge_command = press_button
+
+        
+        # 残りチャージ時間が０
+        if player[select_player].left_time <= 0:
 
             resol = lm.resol
         
@@ -128,11 +132,8 @@ def player_attack(player, enemy, select_player, press_button, health_disp):
             damage.extend([(264+player[select_player].cur_location[0]*(96+16)+random.randrange(96))*resol[0]/1920, (40+32+random.randrange(384-32))*resol[1]/1080])
             health_disp.append(damage)
 
-            # チャージ時間を元に戻す
-            player[select_player].command[press_button].left_time = player[select_player].command[press_button].charge_time
-
             # チャージ中を解除
-            player[select_player].command[press_button].charging = False
+            player[select_player].charging = False
 
 
 # 敵の攻撃

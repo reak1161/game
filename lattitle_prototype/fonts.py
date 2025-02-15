@@ -11,7 +11,7 @@ def init():
     com_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(24*resol[1]/1080))
     # コマンドポップアップフォント
     global com_pop_font
-    com_pop_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(20*resol[1]/1080))
+    com_pop_font = pygame.font.Font("data_list/fonts/Nosutaru-dotMPlusH-10-Regular.ttf", int(18*resol[1]/1080))
 
     # 名前フォント
     global name_font

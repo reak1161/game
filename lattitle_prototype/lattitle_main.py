@@ -124,7 +124,7 @@ def main():
     colors.init(player)
 
     # 今回の敵
-    #current_enemy = ["ヒョウ", "エン"]
+    #current_enemy = ["ひょう", "えん"]
     current_enemy = ["へび"]
 
     # 今回の敵の情報

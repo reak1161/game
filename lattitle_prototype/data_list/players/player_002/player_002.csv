@@ -4,10 +4,10 @@ red_man.png
 67
 85
 250,0,100
-50
+76
 80,30
 Fire
 attack,たいあたり,50,1,0,normal,Normal
-defense,ガード,30,0,50,0,0
+defense,てっぺき,50,0,30,0,0
 magic,ファイア,100,10,30,0,normal,Fire
 item

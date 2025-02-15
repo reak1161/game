@@ -18,10 +18,10 @@ def init():
 
     # 選択中画像
     global img_ready
-    img_ready = pygame.image.load("./data_list/images/system/cyan_frame.png")
+    img_ready = pygame.image.load("./data_list/images/system/ready_frame.png")
     
     global img_stay
-    img_stay = pygame.image.load("./data_list/images/system/red_frame.png")
+    img_stay = pygame.image.load("./data_list/images/system/stay_frame.png")
 
     # アイテム選択中画像
     global img_item_frame

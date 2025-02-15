@@ -58,6 +58,8 @@ class Player:
 
     # プレイヤー画像
     image = None
+
+    
     
 
     # ステータス初期化
@@ -74,6 +76,16 @@ class Player:
         self.Itg_Spd = float(list[7][1])
 
         # バフ，デバフ用の配列？を作る。
+
+
+        # 残りチャージ時間
+        self.left_time = 0.0
+
+        # チャージ中か
+        self.charging = False
+
+        # チャージ中のコマンド
+        self.charge_command = -1
         
 
         # 残りHP
@@ -152,10 +164,6 @@ class Command_attack:
 
         # チャージ時間
         self.charge_time = float(list[4])
-        # 残りチャージ時間
-        self.left_time = self.charge_time
-        # チャージ中か
-        self.charging = False
 
         # 攻撃範囲
         self.range = str(list[5])
@@ -169,6 +177,7 @@ class Command_attack:
         # 追加効果のリスト
         for i in range(7, len(list)):
             self.effect.append(Buff_Debuff(list[i]))
+
 
 class Command_defense:
     def __init__(self, list):
@@ -194,8 +203,6 @@ class Command_defense:
         # 属性軽減数
         self.element_const = float(list[6])
 
-        self.left_time = 0 #self.charge_time
-        self.charging = False
 
 class Command_magic:
     def __init__(self, list):
@@ -218,12 +225,6 @@ class Command_magic:
         # チャージ時間
         self.charge_time = int(list[5])
 
-        # 残りチャージ時間
-        self.left_time = self.charge_time
-
-        # チャージ中か
-        self.charging = False
-
         # 攻撃範囲
         self.range = str(list[6])
 
@@ -237,12 +238,11 @@ class Command_magic:
         for i in range(8, len(list)):
             self.effect.append(Buff_Debuff(list[i]))
 
+
 class Command_item:
     def __init__(self, list):
         self.category = str(list[0])
-        
-        self.left_time = 0 #self.charge_time
-        self.charging = False
+
         
 
 

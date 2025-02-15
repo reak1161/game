@@ -62,9 +62,9 @@ def enemy_action_charge(enemy):
 # プレイヤーのこうどう 
 def player_action(player, enemy, item, select_player, press_button, picked_item, health_disp, mana_disp):
 
-    #行動ゲージが1000を超えたら行動可能　かつ　ボタンを押している　かつ　行動可能　かつ　プレイヤーを選択中
+    #行動ゲージが1000を超えたら行動可能　かつ　ボタンを押している　かつ　行動可能　かつ　プレイヤーを選択中　かつ　チャージ中でない
     #if (player[select_player].action >= 1000 and press_button != -1 and player[select_player].can_action == True and select_player != -1) or player[select_player].command[press_button].charging == True:
-    if player[select_player].action >= 1000 and press_button != -1 and player[select_player].can_action == True and select_player != -1:
+    if player[select_player].action >= 1000 and press_button != -1 and player[select_player].can_action == True and select_player != -1 and player[select_player].charging == False:
 
         # こうげき
         attack.player_attack(player, enemy, select_player, press_button, health_disp)
@@ -82,6 +82,34 @@ def player_action(player, enemy, item, select_player, press_button, picked_item,
         # アイテム
         if picked_item != -1: # アイテムを決定中
             items.use(item[picked_item], player, enemy, select_player, press_button, health_disp, mana_disp)
+
+
+    # チャージ中の処理
+    player_charge(player, enemy, select_player, health_disp)
+
+
+# チャージ中の処理
+def player_charge(player, enemy, select_player, health_disp):
+
+    for i in range(len(player)):
+
+        # チャージ中の行動を消化
+        if player[i].charging == True and player[i].action >= 1000:
+
+            #print("charging", player[i].left_time)
+
+            # 残りチャージ時間を減少
+            if player[i].left_time > 0:
+
+                player[i].left_time -= 1/lm.fps
+
+            else:
+
+                # こうげき
+                attack.player_attack(player, enemy, select_player, player[i].charge_command, health_disp)
+
+                # まほう
+                magic.player_attack(player, enemy, select_player, player[i].charge_command, health_disp)
 
 
 # 敵のこうどう

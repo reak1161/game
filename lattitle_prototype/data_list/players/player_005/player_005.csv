@@ -1,0 +1,13 @@
+へいるー,player_005
+ice_man.png
+300
+120
+75
+100,1,100
+95
+140,50
+Ice
+attack,こおりのつぶて,60,1,0,normal,Ice
+defense,アイシールド,40,10,30,0,0
+magic,ブリザード,100,10,30,0,normal,Ice
+item

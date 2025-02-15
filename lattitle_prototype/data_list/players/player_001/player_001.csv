@@ -8,6 +8,6 @@ blue_man.png
 100,50
 Normal
 attack,たいあたり,50,1,0,normal,Normal
-attack,とつげき,120,1,0,normal,Normal
+attack,とつげき,120,1,1,normal,Normal
 magic,ファイア,100,10,30,0,normal,Fire
 item
