@@ -96,7 +96,7 @@ def player_charge(player, enemy, select_player, health_disp):
         # チャージ中の行動を消化
         if player[i].charging == True and player[i].action >= 1000:
 
-            #print("charging", player[i].left_time)
+            print("charging", player[i].left_time)
 
             # 残りチャージ時間を減少
             if player[i].left_time > 0:
@@ -106,10 +106,10 @@ def player_charge(player, enemy, select_player, health_disp):
             else:
 
                 # こうげき
-                attack.player_attack(player, enemy, select_player, player[i].charge_command, health_disp)
+                attack.player_attack(player, enemy, i, player[i].charge_command, health_disp)
 
                 # まほう
-                magic.player_attack(player, enemy, select_player, player[i].charge_command, health_disp)
+                magic.player_attack(player, enemy, i, player[i].charge_command, health_disp)
 
 
 # 敵のこうどう
