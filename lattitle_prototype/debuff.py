@@ -122,7 +122,9 @@ def frozen(target, index):
         # 炎属性か氷属性なら凍結にならない
         # 効果時間即終了
         if 'Fire' in target.element or 'Ice' in target.element:
-            target.effect[index].time = 0
+            target.effect[index].time = False
+            target.can_move = True
+            target.can_action = True
         
 
         # 第１引数は凍結解除までの判定時間

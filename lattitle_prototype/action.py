@@ -85,18 +85,18 @@ def player_action(player, enemy, item, select_player, press_button, picked_item,
 
 
     # チャージ中の処理
-    player_charge(player, enemy, select_player, health_disp)
+    player_charge(player, enemy, health_disp)
 
 
 # チャージ中の処理
-def player_charge(player, enemy, select_player, health_disp):
+def player_charge(player, enemy, health_disp):
 
     for i in range(len(player)):
 
         # チャージ中の行動を消化
         if player[i].charging == True and player[i].action >= 1000:
 
-            print("charging", player[i].left_time)
+            #print("charging", player[i].left_time)
 
             # 残りチャージ時間を減少
             if player[i].left_time > 0:
