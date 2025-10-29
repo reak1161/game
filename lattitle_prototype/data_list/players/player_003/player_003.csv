@@ -1,0 +1,13 @@
+ぽんきち,player_003
+green_man.png
+330
+130
+120
+50,0,100
+200
+50,20
+Electric,Wind
+attack,でんこうせっか,75,1,0,normal,Electric
+attack,しっぷうじんらい,75,1,0,normal,Wind
+defense,ガード,30,0,50,0,0
+item

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>オンラインカードゲーム</title>
+  <style>
+    .card { margin: 5px; padding: 10px; border: 1px solid #000; cursor: pointer; display: inline-block; }
+  </style>
+</head>
+<body>
+  <h1>オンラインカードゲーム</h1>
+  <input id="roomId" placeholder="ルームID" />
+<button onclick="joinRoom()">参加</button>
+<button id="startBtn" onclick="startGame()" style="display:none;">ゲーム開始</button>
+
+<h2 id="turnInfo"></h2>
+<div id="board">場のカード：なし</div>
+<ul id="counts"></ul>
+<div id="hand"></div>
+
+
+  <script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  let myId = null;
+  let roomId = "";
+  let myHand = [];
+  let players = [];
+  let turn = 0;
+
+  function joinRoom() {
+    roomId = document.getElementById("roomId").value;
+    socket.emit("join", roomId);
+  }
+
+  // 参加者情報（ホスト判定もここで）
+  socket.on("joined", (data) => {
+    if (data.yourId) myId = data.yourId; // 初回参加時のみ送られる
+    players = data.players;
+    roomId = data.roomId || roomId;
+
+    // ホスト（players[0]）だけ開始ボタン表示
+    document.getElementById("startBtn").style.display =
+      players[0] === myId ? "inline-block" : "none";
+    renderLobby();
+  });
+
+  // ホストが開始したとき、自分の手札を個別で受け取る
+  socket.on("start", (data) => {
+    myHand = data.hand;
+    players = data.players;
+    turn = data.turn;
+    render();
+  });
+
+  // ルーム全体の公開状態
+  socket.on("state", (data) => {
+    document.getElementById("board").textContent =
+      `場のカード：${data.board ?? "なし"}`;
+    turn = data.turn;
+    renderCounts(data.counts);
+  });
+
+  // 自分または他人のプレイ後の更新
+  socket.on("update", (data) => {
+    if (data.hand) myHand = data.hand; // 自分だけに来る
+    document.getElementById("board").textContent = `場のカード：${data.board}`;
+    turn = data.turn;
+    if (data.counts) renderCounts(data.counts);
+    render();
+  });
+
+  socket.on("end", (winnerId) => {
+    alert(`プレイヤー ${players.indexOf(winnerId) + 1} の勝利！`);
+  });
+
+  function startGame() {
+    socket.emit("start", roomId);
+    document.getElementById("startBtn").style.display = "none";
+  }
+
+  function playCard(card) {
+    if (socket.id !== players[turn]) {
+      alert("あなたのターンではありません");
+      return;
+    }
+    socket.emit("play", { roomId, card });
+  }
+
+  function render() {
+    document.getElementById("turnInfo").textContent = `プレイヤー ${turn + 1} のターン`;
+
+    const handDiv = document.getElementById("hand");
+    handDiv.innerHTML = "";
+    myHand.forEach(card => {
+      const btn = document.createElement("button");
+      btn.className = "card";
+      btn.textContent = card;
+      btn.onclick = () => playCard(card);
+      handDiv.appendChild(btn);
+    });
+  }
+
+  function renderLobby() {
+    document.getElementById("turnInfo").textContent =
+      `参加人数：${players.length}（ホストはプレイヤー1）`;
+  }
+
+  function renderCounts(counts) {
+    const ul = document.getElementById("counts");
+    ul.innerHTML = "";
+    players.forEach((pid, i) => {
+      const li = document.createElement("li");
+      li.textContent = `プレイヤー${i + 1}: ${counts[pid]} 枚`;
+      ul.appendChild(li);
+    });
+  }
+</script>
+
+</body>
+</html>
