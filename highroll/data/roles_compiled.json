@@ -1,0 +1,190 @@
+{
+  "roles": [
+    {
+      "id": "swiftwind",
+      "name": "疾風",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 3,
+        "spe": 13,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "swiftwind_gain_spe_on_attack",
+          "trigger": "afterRoleAttack",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "spe",
+                "value": 1
+              }
+            }
+          ],
+          "text": "攻撃後にSpeトークン+1。"
+        },
+        {
+          "id": "swiftwind_gain_bra_on_spe_threshold",
+          "trigger": "onStatTotalChanged",
+          "condition": {
+            "stat": "spe",
+            "threshold": {
+              "from": 15,
+              "step": 5
+            },
+            "direction": "up"
+          },
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "bra",
+                "value": 1
+              }
+            }
+          ],
+          "text": "Spe合計が15以上の5刻みを跨ぐたびBraトークン+1。"
+        },
+        {
+          "id": "swiftwind_spend_spe_reduce_damage",
+          "trigger": "beforeDamageTaken",
+          "playerChoice": {
+            "spendStatToken": {
+              "stat": "spe",
+              "min": 0,
+              "max": "any"
+            }
+          },
+          "actions": [
+            {
+              "reduceIncomingDamageBy": "spent"
+            }
+          ],
+          "text": "被ダメ時、任意のSpeトークンを消費して同量だけ被ダメ軽減。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "anger",
+      "name": "憤怒",
+      "params": {
+        "hp": 20,
+        "atk": 13,
+        "def": 0,
+        "spe": 5,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "anger_gain_atk_on_damage",
+          "trigger": "afterDamageTaken",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "atk",
+                "value": {
+                  "from": "damageAmount"
+                }
+              }
+            }
+          ],
+          "text": "HPが1減るごとにAtkトークン+1（受けたダメージ分だけ獲得）。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "monster",
+      "name": "怪物",
+      "params": {
+        "hp": 10,
+        "atk": 10,
+        "def": 20,
+        "spe": 10,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "monster_final_duel_curse",
+          "trigger": "onAlivePlayersChanged",
+          "condition": {
+            "alivePlayers": 2
+          },
+          "actions": [
+            {
+              "setMaxHp": 1
+            },
+            {
+              "setHp": {
+                "min": 1
+              }
+            }
+          ],
+          "text": "残り2人になった瞬間、最大HP=1（現在HPも1未満なら1に調整）。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "bomb",
+      "name": "爆弾",
+      "params": {
+        "hp": 20,
+        "atk": 8,
+        "def": 3,
+        "spe": 8,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "bomb_self_blowback",
+          "trigger": "afterDealingDamage",
+          "actions": [
+            {
+              "selfDamage": {
+                "value": {
+                  "ratioOf": "damageDealt",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "与えたダメージの半分（切り捨て）を自傷。"
+        },
+        {
+          "id": "bomb_thorns",
+          "trigger": "afterDamageTaken",
+          "source": "attacker",
+          "actions": [
+            {
+              "dealDamageToSource": {
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "受けたダメージの半分（切り捨て）を相手に反射。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    }
+  ],
+  "ability_conventions": {
+    "statTokensPersist": true,
+    "halfRound": "floor",
+    "speInterruptOrder": "recomputeForUnactedOnChange"
+  }
+}

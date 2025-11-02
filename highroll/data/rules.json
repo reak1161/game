@@ -1,0 +1,8 @@
+{
+  "roleAttackConsumesBra": false,
+  "marketMax": 3,
+  "marketRefillWhenZero": true,
+  "sellPayout": "half_floor",
+  "allowOverhealTempHP": true,
+  "tempHpDecayAtEndRound": false
+}
