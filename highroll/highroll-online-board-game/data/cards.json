@@ -1,0 +1,273 @@
+{
+  "cards": [
+    {
+      "id": "jab",
+      "name": "ジャブ",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "好きなプレイヤー1人に3ダメージ（Defにより軽減される）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_enemy",
+          "value": 3,
+          "fixed": false,
+          "defApplied": true
+        }
+      ],
+      "tags": ["attack","simple"]
+    },
+    {
+      "id": "dynamite",
+      "name": "ダイナマイト",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "全員に5の固定ダメージ（Defを無視）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "all_players",
+          "value": 5,
+          "fixed": true,
+          "ignoreDef": true
+        }
+      ],
+      "tags": ["attack","aoe"]
+    },
+    {
+      "id": "body_press",
+      "name": "ボディプレス",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "自分のDefの半分（切り捨て）のダメージ（Defにより軽減される）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_enemy",
+          "formula": { "type": "selfStatHalf", "stat": "def", "round": "floor" },
+          "fixed": false,
+          "defApplied": true
+        }
+      ],
+      "tags": ["attack","scaling"]
+    },
+
+    {
+      "id": "fortress",
+      "name": "要塞",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "2以下のダメージは受けない（このカードは捨てない）。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "thresholdPrevent",
+          "operator": "<=",
+          "threshold": 2,
+          "preventAll": true,
+          "sacrificeSelf": false
+        }
+      ],
+      "tags": ["defense","threshold"]
+    },
+    {
+      "id": "glass_shield",
+      "name": "ガラスシールド",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "5以上のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "thresholdPrevent",
+          "operator": ">=",
+          "threshold": 5,
+          "preventAll": true,
+          "sacrificeSelf": true,
+          "playerChoice": true,
+          "optional": true
+        }
+      ],
+      "tags": ["defense","sacrifice"]
+    },
+    {
+      "id": "rock_barrier",
+      "name": "ロックバリア",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "4以下のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "thresholdPrevent",
+          "operator": "<=",
+          "threshold": 4,
+          "preventAll": true,
+          "sacrificeSelf": true,
+          "playerChoice": true,
+          "optional": true
+        }
+      ],
+      "tags": ["defense","sacrifice"]
+    },
+
+    {
+      "id": "bloodied_sword",
+      "name": "血塗れの剣",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": false,
+      "text": "装備：Atk+3。［殺人］が装備した場合、さらにAtk+2, Spe+2。",
+      "effects": [
+        { "trigger": "onEquip", "type": "addStatToken", "stat": "atk", "value": 3 },
+        { "trigger": "onEquip", "type": "addStatToken", "stat": "atk", "value": 2, "condition": { "roleId": "murderer" } },
+        { "trigger": "onEquip", "type": "addStatToken", "stat": "spe", "value": 2, "condition": { "roleId": "murderer" } }
+      ],
+      "tags": ["equip","statbuff"]
+    },
+    {
+      "id": "road_breaker",
+      "name": "ロードブレイカー",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": false,
+      "text": "攻撃時：相手の装備を1つ捨てさせる。捨てさせたらこのターンAtk+3を得て、この装備を捨てる。",
+      "effects": [
+        { "trigger": "afterRoleAttack", "type": "forceDiscardEquip", "target": "defender", "count": 1 },
+        { "trigger": "afterRoleAttack", "type": "gainAtkBoostTurn", "value": 3, "condition": { "lastEffect": "forceDiscardEquip", "discardedCountAtLeast": 1 } },
+        { "trigger": "afterRoleAttack", "type": "selfDestroy", "condition": { "lastEffect": "forceDiscardEquip", "discardedCountAtLeast": 1 } }
+      ],
+      "tags": ["equip","interaction"]
+    },
+    {
+      "id": "decoy_armor",
+      "name": "身代わりの鎧",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "HPが最大の時に死亡するダメージを受けるなら、代わりにこの装備を捨て、HP1で生き残る。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "cheatDeathAtFull",
+          "condition": { "hpEqualsMax": true, "fatalIfApplied": true },
+          "sacrificeSelf": true,
+          "setHpTo": 1
+        }
+      ],
+      "tags": ["equip","survive"]
+    },
+
+    {
+      "id": "library_down",
+      "name": "ライブラリダウン",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "手札が5枚以上のプレイヤー1人を選び、その手札をすべて捨てさせる。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "discardAllHand",
+          "target": "chosen_player",
+          "condition": { "targetHandCountAtLeast": 5 }
+        }
+      ],
+      "tags": ["spell","handhate"]
+    },
+    {
+      "id": "wind_veil",
+      "name": "ウィンドベール",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "Spe3につきDefトークン+1を得る（切り捨て）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "def",
+          "valueFormula": { "type": "perN", "stat": "spe", "n": 3, "round": "floor" },
+          "target": "self"
+        }
+      ],
+      "tags": ["spell","scaling"]
+    },
+    {
+      "id": "shady_powder",
+      "name": "やばい粉",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "Atk/Def/Speトークンを各+3。代わりにBraトークン-1。",
+      "effects": [
+        { "trigger": "onPlay", "type": "addStatToken", "stat": "atk", "value": 3, "target": "self" },
+        { "trigger": "onPlay", "type": "addStatToken", "stat": "def", "value": 3, "target": "self" },
+        { "trigger": "onPlay", "type": "addStatToken", "stat": "spe", "value": 3, "target": "self" },
+        { "trigger": "onPlay", "type": "addStatToken", "stat": "bra", "value": -1, "target": "self" }
+      ],
+      "tags": ["spell","riskreward"]
+    },
+    {
+      "id": "twice_boost",
+      "name": "トゥワイスブースト",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "HP以外の基礎ステータス1種を選び、その数値を2倍にする（恒久）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "doubleBaseStat",
+          "playerChoice": { "chooseOneOf": ["atk","def","spe","bra"] },
+        "exclude": ["hp"]
+        }
+      ],
+      "tags": ["spell","statmodify"]
+    },
+    {
+      "id": "tornado",
+      "name": "トルネード",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "全員の手札を捨てる。",
+      "effects": [
+        { "trigger": "onPlay", "type": "discardAllHand", "target": "all_players" }
+      ],
+      "tags": ["spell","global"]
+    },
+    {
+      "id": "trick_room",
+      "name": "トリックルーム",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次のラウンドの終わりまで、Speが遅いプレイヤーから行動する。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "modifyTurnOrder",
+          "mode": "ascendingSpe",
+          "duration": "untilEndOfNextRound"
+        }
+      ],
+      "tags": ["spell","turnorder"]
+    }
+  ]
+}

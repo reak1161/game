@@ -1,0 +1,225 @@
+{
+  "roles": [
+    {
+      "id": "swiftwind",
+      "name": "疾風",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 3,
+        "spe": 13,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "swiftwind_gain_spe_on_attack",
+          "trigger": "afterRoleAttack",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "spe",
+                "value": 1
+              }
+            }
+          ],
+          "text": "攻撃後にSpeトークン+1。"
+        },
+        {
+          "id": "swiftwind_gain_bra_on_spe_threshold",
+          "trigger": "onStatTotalChanged",
+          "condition": {
+            "stat": "spe",
+            "threshold": {
+              "from": 15,
+              "step": 5
+            },
+            "direction": "up"
+          },
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "bra",
+                "value": 1
+              }
+            }
+          ],
+          "text": "Spe合計が15以上の5刻みを跨ぐたびBraトークン+1。"
+        },
+        {
+          "id": "swiftwind_spend_spe_reduce_damage",
+          "trigger": "beforeDamageTaken",
+          "playerChoice": {
+            "spendStatToken": {
+              "stat": "spe",
+              "min": 0,
+              "max": "any"
+            }
+          },
+          "actions": [
+            {
+              "reduceIncomingDamageBy": "spent"
+            }
+          ],
+          "text": "被ダメ時、任意のSpeトークンを消費して同量だけ被ダメ軽減。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "anger",
+      "name": "憤怒",
+      "params": {
+        "hp": 20,
+        "atk": 13,
+        "def": 0,
+        "spe": 5,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "anger_gain_atk_on_damage",
+          "trigger": "afterDamageTaken",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "atk",
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "HPが2減るごとにAtkトークン+1（受けたダメージ/2を切り捨てで獲得）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "monster",
+      "name": "怪物",
+      "params": {
+        "hp": 10,
+        "atk": 10,
+        "def": 20,
+        "spe": 10,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "monster_final_duel_curse",
+          "trigger": "onAlivePlayersChanged",
+          "condition": {
+            "alivePlayers": 2
+          },
+          "actions": [
+            {
+              "setMaxHp": 1
+            },
+            {
+              "setHp": {
+                "min": 1
+              }
+            }
+          ],
+          "text": "残り2人になった瞬間、最大HP=1（現在HPも1未満なら1に調整）。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "bomb",
+      "name": "爆弾",
+      "params": {
+        "hp": 20,
+        "atk": 8,
+        "def": 3,
+        "spe": 8,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "bomb_self_blowback",
+          "trigger": "afterDealingDamage",
+          "actions": [
+            {
+              "selfDamage": {
+                "value": {
+                  "ratioOf": "damageDealt",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "与えたダメージの半分（切り捨て）を自傷。"
+        },
+        {
+          "id": "bomb_thorns",
+          "trigger": "afterDamageTaken",
+          "source": "attacker",
+          "actions": [
+            {
+              "dealDamageToSource": {
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "受けたダメージの半分（切り捨て）を相手に反射。"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "murderer",
+      "name": "殺人",
+      "params": { "hp": 20, "atk": 7, "def": 3, "spe": 8, "bra": 2 },
+      "abilities": [
+        {
+        "id": "murderer_gain_on_kill",
+        "trigger": "onKill",                     // 自分の行動で相手を脱落させた直後
+        "actions": [
+          { "addStatToken": { "stat": "atk", "value": 1 } },
+          { "addStatToken": { "stat": "spe", "value": 1 } },
+          { "addStatToken": { "stat": "bra", "value": 1 } }
+        ],
+        "text": "殺害するたび、Atk+1 / Spe+1 / Bra+1（トークン）を得る。"
+      }
+      // 血塗れの剣との相性はカード側の condition: { roleId: "murderer" } で適用済み
+    ],
+    "tags": ["basic","synergy:bloodied_sword"]
+    },
+    {
+      "id": "discharge",
+      "name": "放電",
+      "params": { "hp": 20, "atk": 5, "def": 5, "spe": 5, "bra": 2 },
+      "text": "ターン終わりに余ったBraを蓄電トークンとして蓄積し、自分のターン中に放電して(蓄電^2)の感電トークンを他プレイヤーに配る。感電トークンは5個につきBra 1を封じ、消費される。",
+      "tags": ["advanced"]
+    },
+    {
+      "id": "doctor",
+      "name": "医師",
+      "params": { "hp": 20, "atk": 4, "def": 5, "spe": 5, "bra": 2 },
+      "text": "Braを1消費して治療/麻酔/手術/整形のいずれかを実行できる支援ロール。",
+      "tags": ["advanced","support"]
+    }
+  ],
+  "ability_conventions": {
+    "statTokensPersist": true,
+    "halfRound": "floor",
+    "speInterruptOrder": "recomputeForUnactedOnChange"
+  }
+}
