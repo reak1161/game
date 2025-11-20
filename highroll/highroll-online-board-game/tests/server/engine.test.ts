@@ -358,6 +358,12 @@ describe('GameEngine', () => {
             const baseBra = victimRuntime.baseStats.bra;
             expect(engine.getState().braTokens[target.id]).toBe(Math.max(0, baseBra - 1));
             expect(victimRuntime.roleState?.shockTokens).toBe(4);
+
+            rotateTo(engine, discharge.id);
+            const internalState = engine as unknown as { state: GameState };
+            internalState.state.braTokens[discharge.id] = 2;
+            engine.endTurn(discharge.id);
+            expect(engine.getState().board.playerStates[discharge.id].roleState?.chargeTokens).toBe(5);
         });
 
         it('executes doctor actions', () => {

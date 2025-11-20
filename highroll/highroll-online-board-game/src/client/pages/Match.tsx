@@ -144,10 +144,6 @@ const Match: React.FC = () => {
         setSelectedTargetId(fallback ?? null);
     }, [state, localPlayerId, selectedTargetId]);
 
-    React.useEffect(() => {
-        setRoleActionChoices({});
-    }, [localPlayer?.roleId]);
-
     if (!id) {
         return <div style={{ padding: 16 }}>マッチIDが不正です。</div>;
     }
@@ -176,6 +172,10 @@ const Match: React.FC = () => {
     const isLocalDefeated = Boolean(localPlayerRuntime?.isDefeated);
     const localRoleActions = getRoleActions(localPlayer?.roleId);
     const dischargeExists = Boolean(state?.players.some((p) => p.roleId === 'discharge'));
+
+    React.useEffect(() => {
+        setRoleActionChoices({});
+    }, [localPlayer?.roleId]);
 
     const requireLocalPlayer = (): string | null => {
         if (!localPlayerId) {
@@ -380,6 +380,12 @@ const Match: React.FC = () => {
                 return { disabled: true, reason: '脱落したプレイヤーは対象にできません' };
             }
         }
+        if (action.id === 'doctor_surgery' && selectedTargetId) {
+            const targetRuntime = runtimeStates[selectedTargetId];
+            if (targetRuntime?.roleState?.surgeryPhase) {
+                return { disabled: true, reason: '選択中のプレイヤーは手術中です' };
+            }
+        }
         if (action.choices?.length) {
             const choiceValues = roleActionChoices[action.id] ?? {};
             for (const choice of action.choices) {
@@ -444,6 +450,13 @@ const Match: React.FC = () => {
         const roleInfo = player.roleId ? ROLE_LOOKUP.get(player.roleId) : undefined;
         const runtime = runtimeStates[player.id];
         const roleRuntime = runtime?.roleState;
+        const surgeryPhase = roleRuntime?.surgeryPhase;
+        const surgeryText =
+            surgeryPhase === 'immobilize'
+                ? '手術準備中（次のターンは行動不可）'
+                : surgeryPhase === 'heal'
+                ? '手術回復待ち（次のターン開始時にHP+15）'
+                : null;
         const chargeTokens = roleRuntime?.chargeTokens ?? 0;
         const shockTokens = roleRuntime?.shockTokens ?? 0;
         const stats = runtime
@@ -519,6 +532,9 @@ const Match: React.FC = () => {
                 {runtime?.isDefeated && (
                     <div style={{ marginTop: 4, fontSize: 12, color: '#dc2626' }}>戦闘不能</div>
                 )}
+                {surgeryText && !runtime?.isDefeated && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#c026d3' }}>{surgeryText}</div>
+                )}
                 {roleInfo?.text && (
                     <p style={{ marginTop: 8, fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>{roleInfo.text}</p>
                 )}
@@ -580,8 +596,8 @@ const Match: React.FC = () => {
     };
 
     const handWrapperStyle: React.CSSProperties = {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        display: 'flex',
+        flexWrap: 'wrap',
         gap: 12,
     };
 
@@ -595,7 +611,12 @@ const Match: React.FC = () => {
         color: active ? '#fff' : '#0f172a',
         cursor: active ? 'pointer' : 'not-allowed',
         boxShadow: active ? '0 6px 15px rgba(37, 99, 235, 0.35)' : 'none',
-        minHeight: 120,
+        minHeight: 150,
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        justifyContent: 'space-between',
     });
 
     const tooltipStyle: React.CSSProperties = {
@@ -802,25 +823,24 @@ const Match: React.FC = () => {
                                             (!targetRequired || !!selectedTargetId) &&
                                             (!statChoiceRequired || !!selectedStatChoice);
                                         return (
-                                            <button
+                                            <div
                                                 key={cardKey}
-                                                onClick={() => handlePlay(cardId)}
-                                                disabled={!canPlay}
-                                                style={cardButtonStyle(canPlay)}
+                                                style={{ position: 'relative', width: 180 }}
                                                 onMouseEnter={() => setHoverCardKey(cardKey)}
                                                 onMouseLeave={() => setHoverCardKey((prev) => (prev === cardKey ? null : prev))}
-                                                title={info?.text ?? `${cardId} の説明がありません`}
                                             >
-                                                <div style={{ fontSize: 12, opacity: 0.8 }}>{info?.category?.toUpperCase() ?? 'CARD'} ・ {info?.kind ?? 'skill'}</div>
-                                                <div style={{ fontWeight: 700, fontSize: 18, marginTop: 4 }}>{info?.name ?? cardId}</div>
-                                                <div style={{ fontSize: 12, marginTop: 4 }}>コスト: {info?.cost ?? 1}</div>
+                                                <button onClick={() => handlePlay(cardId)} disabled={!canPlay} style={cardButtonStyle(canPlay)}>
+                                                    <div style={{ fontSize: 12, opacity: 0.8 }}>{info?.category?.toUpperCase() ?? 'CARD'} ・ {info?.kind ?? 'skill'}</div>
+                                                    <div style={{ fontWeight: 700, fontSize: 18, marginTop: 4 }}>{info?.name ?? cardId}</div>
+                                                    <div style={{ fontSize: 12, marginTop: 4 }}>コスト {info?.cost ?? 1}</div>
+                                                </button>
                                                 {hoverCardKey === cardKey && (
                                                     <div style={tooltipStyle}>
                                                         <strong>{info?.name ?? cardId}</strong>
                                                         <p style={{ marginTop: 4, lineHeight: 1.4 }}>{info?.text ?? '説明がありません。'}</p>
                                                     </div>
                                                 )}
-                                            </button>
+                                            </div>
                                         );
                                     })}
                                 </div>

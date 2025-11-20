@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_crypto_1 = require("node:crypto");
 const express_1 = require("express");
 const matchRoutes_1 = require("./matchRoutes");
+const gatewayContext_1 = require("../sockets/gatewayContext");
 const DEFAULT_DECK_ID = 'default_60';
 const router = (0, express_1.Router)();
 const lobbies = new Map();
@@ -108,9 +109,18 @@ router.post('/:id/start', (req, res) => {
     const players = lobby.players.map((player) => ({
         name: player.name,
         roleId: player.roleId,
+        playerId: player.id,
     }));
-    const { matchId } = (0, matchRoutes_1.createMatch)(players, { deckId: lobby.deckId });
+    const { matchId, engine } = (0, matchRoutes_1.createMatch)(players, { deckId: lobby.deckId });
+    try {
+        engine.start();
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+        return;
+    }
     lobbies.delete(lobby.id);
+    (0, gatewayContext_1.emitLobbyEvent)(lobby.id, 'lobbyStarted', { lobbyId: lobby.id, matchId });
     res.status(200).json({ matchId });
 });
 router.post('/:id/role', (req, res) => {

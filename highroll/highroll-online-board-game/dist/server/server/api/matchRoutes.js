@@ -34,10 +34,12 @@ const createMatch = (players = [], options = {}) => {
         if (!name) {
             return;
         }
-        const player = engine.addPlayer(name);
+        const player = engine.addPlayer(name, normalized.playerId);
         if (normalized.roleId) {
             engine.setPlayerRole(player.id, normalized.roleId);
         }
+        // Lobby フロー経由では Ready ボタンがまだないため自動的に準備完了扱いにする
+        engine.markPlayerReady(player.id, true);
     });
     exports.matches.set(matchId, engine);
     return { matchId, engine };
@@ -150,13 +152,13 @@ router.post('/:id/play', (req, res) => {
     const engine = getEngineOr404(req.params.id, res);
     if (!engine)
         return;
-    const { playerId, cardId } = req.body;
+    const { playerId, cardId, targets, choices } = req.body;
     if (!playerId || !cardId) {
         res.status(400).json({ message: 'playerId and cardId are required.' });
         return;
     }
     try {
-        engine.playCard(playerId, cardId);
+        engine.playCard(playerId, cardId, { targets, choices });
         res.status(200).json({ state: engine.getState() });
     }
     catch (error) {
@@ -174,6 +176,40 @@ router.post('/:id/endTurn', (req, res) => {
     }
     try {
         engine.endTurn(playerId);
+        res.status(200).json({ state: engine.getState() });
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+router.post('/:id/roleAttack', (req, res) => {
+    const engine = getEngineOr404(req.params.id, res);
+    if (!engine)
+        return;
+    const { playerId, targetId, struggle } = req.body;
+    if (!playerId || !targetId) {
+        res.status(400).json({ message: 'playerId and targetId are required.' });
+        return;
+    }
+    try {
+        engine.roleAttack(playerId, targetId, { struggle: Boolean(struggle) });
+        res.status(200).json({ state: engine.getState() });
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+router.post('/:id/roleAction', (req, res) => {
+    const engine = getEngineOr404(req.params.id, res);
+    if (!engine)
+        return;
+    const { playerId, actionId, targetId, choices } = req.body;
+    if (!playerId || !actionId) {
+        res.status(400).json({ message: 'playerId and actionId are required.' });
+        return;
+    }
+    try {
+        engine.roleAction(playerId, actionId, { targetId, choices });
         res.status(200).json({ state: engine.getState() });
     }
     catch (error) {

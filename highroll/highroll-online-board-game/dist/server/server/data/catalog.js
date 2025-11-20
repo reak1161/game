@@ -31,10 +31,42 @@ const readJson = (filename) => {
 };
 let cachedRoles;
 let cachedCards;
+const readRolesFile = (filename) => {
+    const filePath = node_path_1.default.join(dataRoot, filename);
+    if (!node_fs_1.default.existsSync(filePath)) {
+        return undefined;
+    }
+    const data = readJson(filename);
+    return Array.isArray(data.roles) ? data.roles : undefined;
+};
 const getRolesCatalog = () => {
     if (!cachedRoles) {
-        const data = readJson('roles.json');
-        cachedRoles = Array.isArray(data.roles) ? data.roles : [];
+        const baseRoles = readRolesFile('roles.json') ?? [];
+        const compiledRoles = readRolesFile('roles_compiled.json') ?? [];
+        const merged = new Map();
+        baseRoles.forEach((role) => {
+            if (role?.id) {
+                merged.set(role.id, role);
+            }
+        });
+        compiledRoles.forEach((role) => {
+            if (!role?.id) {
+                return;
+            }
+            const existing = merged.get(role.id);
+            if (existing) {
+                merged.set(role.id, {
+                    ...existing,
+                    ...role,
+                    params: role.params ?? existing.params,
+                    tags: role.tags ?? existing.tags,
+                });
+            }
+            else {
+                merged.set(role.id, role);
+            }
+        });
+        cachedRoles = Array.from(merged.values());
     }
     return cachedRoles;
 };

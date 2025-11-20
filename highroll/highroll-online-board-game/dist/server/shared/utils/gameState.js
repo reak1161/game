@@ -1,6 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setMatchStatus = exports.updatePlayerScore = exports.consumeBra = exports.setBraTokens = exports.advanceTurnState = exports.setTurnOrder = exports.playCardFromHand = exports.drawFromSharedDeck = exports.setSharedDeck = exports.setPlayerRole = exports.setPlayerReady = exports.addPlayerToState = exports.createPlayer = exports.createInitialGameState = void 0;
+exports.setMatchStatus = exports.updatePlayerScore = exports.updatePlayerRuntimeState = exports.setPlayerRuntimeState = exports.consumeBra = exports.setBraTokens = exports.advanceTurnState = exports.setTurnOrder = exports.playCardFromHand = exports.drawFromSharedDeck = exports.setSharedDeck = exports.setPlayerRole = exports.setPlayerReady = exports.addPlayerToState = exports.createPlayer = exports.createInitialGameState = void 0;
+const createInitialBoardState = () => ({
+    playerStates: {},
+});
 const shuffle = (items) => {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -28,7 +31,7 @@ const createInitialGameState = (matchId, initialPlayers = []) => ({
     currentTurn: 0,
     status: 'waiting',
     winnerId: undefined,
-    board: {},
+    board: createInitialBoardState(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
     deckId: undefined,
@@ -36,12 +39,14 @@ const createInitialGameState = (matchId, initialPlayers = []) => ({
     sharedDiscard: [],
     hands: {},
     braTokens: {},
+    roleAttackUsed: {},
+    logs: [],
     currentPlayerId: undefined,
     turnOrder: [],
 });
 exports.createInitialGameState = createInitialGameState;
-const createPlayer = (name) => ({
-    id: generateId(),
+const createPlayer = (name, id) => ({
+    id: id ?? generateId(),
     name,
     score: 0,
     isReady: false,
@@ -167,6 +172,22 @@ const consumeBra = (state, playerId, amount = 1) => {
     });
 };
 exports.consumeBra = consumeBra;
+const setPlayerRuntimeState = (state, playerId, runtime) => withTimestamp({
+    ...state,
+    board: {
+        ...state.board,
+        playerStates: {
+            ...state.board.playerStates,
+            [playerId]: runtime,
+        },
+    },
+});
+exports.setPlayerRuntimeState = setPlayerRuntimeState;
+const updatePlayerRuntimeState = (state, playerId, updater) => {
+    const updated = updater(state.board.playerStates[playerId]);
+    return (0, exports.setPlayerRuntimeState)(state, playerId, updated);
+};
+exports.updatePlayerRuntimeState = updatePlayerRuntimeState;
 const updatePlayerScore = (state, playerId, delta) => withTimestamp({
     ...state,
     players: state.players.map((player) => player.id === playerId ? { ...player, score: player.score + delta } : player),

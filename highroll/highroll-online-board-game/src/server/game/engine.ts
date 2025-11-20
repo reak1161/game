@@ -33,6 +33,7 @@ import type {
     Player,
     PlayerRuntimeState,
     Role,
+    RoleParams,
     RoleAbility,
     RoleAbilitySpendTokenChoice,
     RoleAbilityThreshold,
@@ -315,6 +316,9 @@ export class GameEngine {
                 }));
                 break;
             case 'doctor_surgery':
+                if (runtime.roleState?.surgeryPhase) {
+                    throw new Error('このプレイヤーは既に手術中です。');
+                }
                 this.updateRoleState(resolvedTarget, (prev) => ({
                     ...prev,
                     surgeryPhase: 'immobilize',
@@ -324,7 +328,7 @@ export class GameEngine {
             case 'doctor_reshape': {
                 const statDown = String(choices?.statDown ?? '');
                 const statUp = String(choices?.statUp ?? '');
-                const allowedStats: StatKey[] = ['hp', 'atk', 'def', 'spe', 'bra'];
+                const allowedStats: StatKey[] = ['hp', 'atk', 'def', 'spe'];
                 if (!allowedStats.includes(statDown as StatKey) || !allowedStats.includes(statUp as StatKey)) {
                     throw new Error('ステータスの選択が不正です。');
                 }
@@ -639,20 +643,45 @@ export class GameEngine {
         });
     }
 
-    private applyDoubleBaseStatEffect(playerId: string, effect: DoubleBaseStatEffect, options?: PlayCardOptions): void {
-        const available = (effect.playerChoice?.chooseOneOf ?? []) as StatKey[];
-        const excluded = new Set(effect.exclude ?? []);
-        const validChoices = available.filter((stat) => !excluded.has(stat));
-        if (validChoices.length === 0) {
-            return;
-        }
-        const requested = options?.choices?.stat;
-        if (!requested || typeof requested !== 'string' || !validChoices.includes(requested as StatKey)) {
-            throw new Error('このカードを使う前に強化するステータスを選択してください。');
-        }
-        const stat = requested as StatKey;
-        this.mutatePlayerBaseStat(playerId, stat, (current) => current * 2);
+private applyDoubleBaseStatEffect(playerId: string, effect: DoubleBaseStatEffect, options?: PlayCardOptions): void {
+
+    const available = (effect.playerChoice?.chooseOneOf ?? []) as StatKey[];
+
+    const excluded = new Set(effect.exclude ?? []);
+
+    const validChoices = available.filter((stat) => !excluded.has(stat));
+
+    if (validChoices.length === 0) {
+
+        return;
+
     }
+
+    const requested = options?.choices?.stat;
+
+    if (!requested || typeof requested !== 'string') {
+
+        throw new Error('このカードを使う前に強化するステータスを選択してください。');
+
+    }
+
+    const chosenStat = requested as StatKey;
+
+    if (!validChoices.includes(chosenStat)) {
+
+        throw new Error('このカードでは選択できないステータスです。');
+
+    }
+
+    const runtime = this.ensureRuntimeExists(playerId);
+
+    const baseValue = runtime.baseStats[chosenStat] ?? 0;
+
+    const targetStat = chosenStat as CombatStatKey | 'bra';
+
+    this.addStatTokensToPlayer(playerId, targetStat, baseValue);
+
+}
 
     private shouldApplyOptionalEffect(effect: CardEffect, effectIndex: number, options?: PlayCardOptions): boolean {
         if (!effect.optional) {

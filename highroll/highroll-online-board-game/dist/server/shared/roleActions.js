@@ -1,8 +1,8 @@
-import type { RoleActionDefinition, StatKey } from './types';
-
-export const ROLE_ACTION_BASE_STATS: StatKey[] = ['hp', 'atk', 'def', 'spe'];
-
-export const ROLE_ACTIONS: Record<string, RoleActionDefinition[]> = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getRoleActions = exports.ROLE_ACTIONS = exports.ROLE_ACTION_BASE_STATS = void 0;
+exports.ROLE_ACTION_BASE_STATS = ['hp', 'atk', 'def', 'spe'];
+exports.ROLE_ACTIONS = {
     discharge: [
         {
             id: 'discharge_release',
@@ -44,22 +44,22 @@ export const ROLE_ACTIONS: Record<string, RoleActionDefinition[]> = {
                     key: 'statDown',
                     label: '減らすステータス',
                     type: 'stat',
-                    options: ROLE_ACTION_BASE_STATS,
+                    options: exports.ROLE_ACTION_BASE_STATS,
                 },
                 {
                     key: 'statUp',
                     label: '増やすステータス',
                     type: 'stat',
-                    options: ROLE_ACTION_BASE_STATS,
+                    options: exports.ROLE_ACTION_BASE_STATS,
                 },
             ],
         },
     ],
 };
-
-export const getRoleActions = (roleId?: string): RoleActionDefinition[] => {
+const getRoleActions = (roleId) => {
     if (!roleId) {
         return [];
     }
-    return ROLE_ACTIONS[roleId] ?? [];
+    return exports.ROLE_ACTIONS[roleId] ?? [];
 };
+exports.getRoleActions = getRoleActions;
