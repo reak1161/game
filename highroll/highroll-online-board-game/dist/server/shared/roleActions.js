@@ -3,6 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRoleActions = exports.ROLE_ACTIONS = exports.ROLE_ACTION_BASE_STATS = void 0;
 exports.ROLE_ACTION_BASE_STATS = ['hp', 'atk', 'def', 'spe'];
 exports.ROLE_ACTIONS = {
+    flame: [
+        {
+            id: 'flame_apply_burn',
+            label: '炎上付与',
+            description: '対象に炎上1を与える（ターン終了時に炎上ダメージを受けカウント-1）。',
+            costBra: 1,
+            requiresTarget: 'any',
+        },
+    ],
     discharge: [
         {
             id: 'discharge_release',

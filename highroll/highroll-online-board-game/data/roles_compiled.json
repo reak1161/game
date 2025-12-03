@@ -214,7 +214,22 @@
       "name": "医師",
       "params": { "hp": 20, "atk": 4, "def": 5, "spe": 5, "bra": 2 },
       "text": "Braを1消費して治療/麻酔/手術/整形のいずれかを実行できる支援ロール。",
-      "tags": ["advanced","support"]
+    "tags": ["advanced","support"]
+    }
+    ,
+    {
+      "id": "flame",
+      "name": "火炎",
+      "params": { "hp": 20, "atk": 3, "def": 5, "spe": 7, "bra": 2 },
+      "text": "Braを消費して炎上を付与。炎上はターン終了時に炎上値だけダメージを与え、1減少。火炎自身は炎上ダメージの代わりに回復する。",
+      "tags": ["advanced"]
+    },
+    {
+      "id": "resonate",
+      "name": "反響",
+      "params": { "hp": 20, "atk": 5, "def": 3, "spe": 6, "bra": 1 },
+      "text": "攻撃が1/2ダメージの連続攻撃になり、ヒットごとに自傷1。",
+      "tags": ["advanced"]
     }
   ],
   "ability_conventions": {

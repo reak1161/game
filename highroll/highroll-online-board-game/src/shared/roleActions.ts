@@ -3,6 +3,15 @@ import type { RoleActionDefinition, StatKey } from './types';
 export const ROLE_ACTION_BASE_STATS: StatKey[] = ['hp', 'atk', 'def', 'spe'];
 
 export const ROLE_ACTIONS: Record<string, RoleActionDefinition[]> = {
+    flame: [
+        {
+            id: 'flame_apply_burn',
+            label: '炎上付与',
+            description: '対象に炎上1を与える（ターン終了時に炎上ダメージを受けカウント-1）。',
+            costBra: 1,
+            requiresTarget: 'any',
+        },
+    ],
     discharge: [
         {
             id: 'discharge_release',

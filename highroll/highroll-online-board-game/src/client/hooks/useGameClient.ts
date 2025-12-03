@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { GameState } from '@/shared/types';
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:4000';
+import { SOCKET_URL } from '@client/config/api';
 
 const useGameClient = (roomId: string | null) => {
     const [socket, setSocket] = useState<Socket | null>(null);
@@ -13,7 +12,7 @@ const useGameClient = (roomId: string | null) => {
             return undefined;
         }
 
-        const newSocket = io(SERVER_URL, {
+        const newSocket = io(SOCKET_URL ?? undefined, {
             transports: ['websocket'],
             withCredentials: true,
             query: { roomId },

@@ -105,6 +105,10 @@ export interface RoleAbilityActionDealDamageToSource {
     };
 }
 
+export interface RoleStateBurn {
+    burnStacks?: number;
+}
+
 export type RoleAbilityAction =
     | RoleAbilityActionAddStatToken
     | RoleAbilityActionReduceDamage
@@ -177,6 +181,7 @@ export interface RoleRuntimeState {
     pendingBraPenalty?: number;
     surgeryPhase?: 'immobilize' | 'heal';
     scheduledHealAmount?: number;
+    burnStacks?: number;
 }
 
 export interface BoardState {
@@ -216,8 +221,10 @@ export type GameLogEntry =
     | { type: 'turnStart'; playerId: string; timestamp: number }
     | { type: 'cardPlay'; playerId: string; cardId: string; targets?: string[]; timestamp: number }
     | { type: 'roleAttack'; attackerId: string; targetId: string; damage: number; isStruggle?: boolean; selfInflicted?: number; timestamp: number }
+    | { type: 'roleAttackHit'; attackerId: string; targetId: string; damage: number; hitIndex: number; totalHits: number; timestamp: number }
     | { type: 'playerDefeated'; playerId: string; timestamp: number }
-    | { type: 'roleAction'; playerId: string; actionId: string; targetId?: string; description?: string; timestamp: number };
+    | { type: 'roleAction'; playerId: string; actionId: string; targetId?: string; description?: string; timestamp: number }
+    | { type: 'statusEffect'; playerId: string; effect: 'burn'; amount: number; kind: 'damage' | 'heal'; timestamp: number };
 
 export type CardTrigger = 'onPlay' | 'onEquip' | 'beforeDamageTaken' | 'afterRoleAttack';
 

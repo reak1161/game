@@ -5,6 +5,63 @@
   min-height: 100vh;
 }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.backLink {
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.statusChip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid #0f172a;
+  font-weight: 700;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.metaBadge {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.errorText {
+  color: #b91c1c;
+}
+
 .matchGrid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 340px);
@@ -50,6 +107,12 @@
   gap: 16px;
 }
 
+.compactSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .statusCard {
   background: #f8fafc;
   border-radius: 16px;
@@ -75,6 +138,12 @@
   flex-wrap: wrap;
 }
 
+.targetRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .primaryButton {
   padding: 8px 16px;
   border: none;
@@ -88,6 +157,10 @@
 .primaryButton:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+}
+
+.dangerButton {
+  background: #f97316;
 }
 
 .secondaryButton {
@@ -106,70 +179,39 @@
   cursor: not-allowed;
 }
 
-.handGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.cardButton {
-  position: relative;
-  border: 1px solid #cbd5f5;
-  border-radius: 14px;
-  padding: 14px;
-  text-align: left;
-  min-height: 130px;
-  background: linear-gradient(135deg, #1d4ed8, #9333ea);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
-}
-
-.cardButtonDisabled {
-  background: #f1f5f9;
-  color: #0f172a;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.cardMeta {
-  font-size: 12px;
-  opacity: 0.85;
-}
-
-.cardName {
-  font-size: 16px;
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.cardCost {
-  font-size: 12px;
-  margin-top: 4px;
-}
-
-.cardTooltip {
-  position: absolute;
-  top: 100%;
-  left: 0;
+.choiceRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-top: 8px;
-  background: #0f172a;
-  color: #fff;
-  padding: 8px 10px;
-  border-radius: 8px;
-  width: 240px;
-  z-index: 5;
+}
+
+.choiceLabel {
   font-size: 12px;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  min-width: 160px;
+  background: #fff;
 }
 
 .playerList {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .playerCard {
@@ -214,12 +256,208 @@
   color: #475569;
 }
 
+.defeatedText {
+  margin-top: 6px;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.surgeryText {
+  margin-top: 6px;
+  color: #7c3aed;
+  font-size: 12px;
+}
+
+.effectChips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.effectChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.roleText {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.playerDetail {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.detailLabel {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 2px;
+}
+
+.detailValue {
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.installList ul {
+  padding-left: 16px;
+  margin: 6px 0 0;
+}
+
+.installItem {
+  margin-bottom: 6px;
+}
+
+.installName {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.installMeta {
+  font-size: 12px;
+  color: #475569;
+}
+
+.installText {
+  font-size: 12px;
+  color: #475569;
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
 .viewOnlyBanner {
   border: 1px dashed #fdba74;
   background: #fff7ed;
   color: #b45309;
   padding: 12px;
   border-radius: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionBadge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+}
+
+.sectionBadgeDanger {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+}
+
+.roleActionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.roleActionCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.roleActionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.roleActionCost {
+  font-size: 12px;
+  color: #475569;
+}
+
+.roleActionText {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.roleActionMeta {
+  font-size: 11px;
+  color: #475569;
+}
+
+.roleActionButton {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #34d399;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.roleActionButton:disabled {
+  background: #cbd5f5;
+  cursor: not-allowed;
+}
+
+.roleActionReason {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #dc2626;
+}
+
+.handSection {
+  overflow: hidden;
+}
+
+.customCardRow {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.textInput {
+  flex: 1;
+  min-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.mutedText {
+  color: #94a3b8;
 }
 
 .turnLog {
@@ -245,6 +483,25 @@
   background: #f5f3ff;
   color: #5b21b6;
   font-weight: 600;
+}
+
+.logPanel {
+  max-height: calc(100vh - 180px);
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.metaBadge,
+.statusChip,
+.sectionBadge,
+.sectionBadgeDanger {
+  white-space: nowrap;
+}
+
+.handGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .heroLink {

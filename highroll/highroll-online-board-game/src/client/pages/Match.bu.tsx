@@ -1,12 +1,11 @@
-﻿import React from 'react';
-import { Link, useParams } from 'react-router-dom';
-import type { CardDefinition, GameLogEntry, GameState, Player, PlayerRuntimeState, RoleActionDefinition } from '@shared/types';
+import React from 'react';
+import { useParams, Link } from 'react-router-dom';
+import type { CardDefinition, GameLogEntry, GameState, Player, PlayerRuntimeState, RoleActionDefinition, StatKey } from '@shared/types';
 import { drawCards, endTurn, getMatch, playCard, roleAction as performRoleAction, roleAttack } from '@client/api/matches';
 import cardsCatalogRaw from '../../../data/cards.json' with { type: 'json' };
 import rolesCatalogRaw from '../../../data/roles.json' with { type: 'json' };
 import { clearRememberedMatchPlayer, getRememberedMatchPlayer, rememberMatchPlayer } from '@client/utils/matchPlayer';
 import { getRoleActions, ROLE_ACTION_BASE_STATS } from '@shared/roleActions';
-import styles from './Match.module.css';
 
 type CardsFile = {
     cards: CardDefinition[];
@@ -29,6 +28,25 @@ type RolesFile = {
     roles: RoleEntry[];
 };
 
+const CARD_LOOKUP = new Map<string, CardDefinition>(((cardsCatalogRaw as CardsFile).cards ?? []).map((card) => [card.id, card]));
+const ROLE_LOOKUP = new Map<string, RoleEntry>(((rolesCatalogRaw as RolesFile).roles ?? []).map((role) => [role.id, role]));
+const statusColors: Record<string, string> = {
+    waiting: '#eab308',
+    inProgress: '#22c55e',
+    finished: '#ef4444',
+};
+const STAT_OPTIONS: Array<'atk' | 'def' | 'spe' | 'bra'> = ['atk', 'def', 'spe', 'bra'];
+
+const cardNeedsTarget = (card?: CardDefinition | null): boolean =>
+    Boolean(
+        card?.effects?.some(
+            (effect) => effect.target === 'chosen_enemy' || effect.target === 'chosen_player'
+        )
+    );
+
+const cardNeedsStatChoice = (card?: CardDefinition | null): boolean =>
+    Boolean(card?.effects?.some((effect) => effect.type === 'doubleBaseStat'));
+
 type StatusEffectChip = {
     key: string;
     icon: string;
@@ -37,25 +55,6 @@ type StatusEffectChip = {
     color: string;
     tooltip: string;
 };
-
-type PlayChoicesPayload = Record<string, string | number | boolean | string[] | number[]>;
-
-const CARD_LOOKUP = new Map<string, CardDefinition>(((cardsCatalogRaw as CardsFile).cards ?? []).map((card) => [card.id, card]));
-const ROLE_LOOKUP = new Map<string, RoleEntry>(((rolesCatalogRaw as RolesFile).roles ?? []).map((role) => [role.id, role]));
-
-const statusColors: Record<string, string> = {
-    waiting: '#eab308',
-    inProgress: '#22c55e',
-    finished: '#ef4444',
-};
-
-const STAT_OPTIONS: Array<'atk' | 'def' | 'spe' | 'bra'> = ['atk', 'def', 'spe', 'bra'];
-
-const cardNeedsTarget = (card?: CardDefinition | null): boolean =>
-    Boolean(card?.effects?.some((effect) => effect.target === 'chosen_enemy' || effect.target === 'chosen_player'));
-
-const cardNeedsStatChoice = (card?: CardDefinition | null): boolean =>
-    Boolean(card?.effects?.some((effect) => effect.type === 'doubleBaseStat'));
 
 const buildStatusEffects = (runtime?: PlayerRuntimeState, roleId?: string): StatusEffectChip[] => {
     if (!runtime?.roleState) return [];
@@ -85,7 +84,7 @@ const buildStatusEffects = (runtime?: PlayerRuntimeState, roleId?: string): Stat
             label: '感電',
             value: shock,
             color: '#eab308',
-            tooltip: `感電${shock}: 5ごとにBraを1失い、その度に感電を消費`,
+            tooltip: `感電${shock}: 5ごとにBraを1失い、その分感電を消費`,
         });
     }
 
@@ -122,11 +121,19 @@ const buildStatusEffects = (runtime?: PlayerRuntimeState, roleId?: string): Stat
     return effects;
 };
 
+type PlayChoicesPayload = Record<string, string | number | boolean | string[] | number[]>;
+
 const groupInstallsByPlayer = (
     runtimeStates: Record<string, PlayerRuntimeState | undefined>,
     cardLookup: Map<string, CardDefinition>
-): Record<string, Array<{ instanceId: string; cardId: string; name: string; text?: string; category?: string; kind?: string }>> => {
-    const result: Record<string, Array<{ instanceId: string; cardId: string; name: string; text?: string; category?: string; kind?: string }>> = {};
+): Record<
+    string,
+    Array<{ instanceId: string; cardId: string; name: string; text?: string; category?: string; kind?: string }>
+> => {
+    const result: Record<
+        string,
+        Array<{ instanceId: string; cardId: string; name: string; text?: string; category?: string; kind?: string }>
+    > = {};
     Object.entries(runtimeStates).forEach(([playerId, runtime]) => {
         if (!runtime || !runtime.installs.length) {
             return;
@@ -147,6 +154,7 @@ const groupInstallsByPlayer = (
 };
 
 type StoredPlayerInfo = ReturnType<typeof getRememberedMatchPlayer>;
+
 const Match: React.FC = () => {
     const { id } = useParams();
     const [state, setState] = React.useState<GameState | null>(null);
@@ -162,18 +170,17 @@ const Match: React.FC = () => {
     const [selectedStatChoice, setSelectedStatChoice] = React.useState<'atk' | 'def' | 'spe' | 'bra' | ''>('');
     const [roleActionChoices, setRoleActionChoices] = React.useState<Record<string, Record<string, string>>>({});
     const [roleActionBusy, setRoleActionBusy] = React.useState(false);
-
     const localPlayerId = localPlayerInfo?.id ?? null;
     const localPlayerName = localPlayerInfo?.name;
 
     const refresh = React.useCallback(() => {
         if (!id) return;
         getMatch(id)
-            .then(({ state: nextState }) => {
-                setState(nextState);
-                if (localPlayerId && !nextState.players.some((p) => p.id === localPlayerId)) {
+            .then(({ state }) => {
+                setState(state);
+                if (localPlayerId && !state.players.some((p) => p.id === localPlayerId)) {
                     if (localPlayerName) {
-                        const fallback = nextState.players.find((p) => p.name === localPlayerName);
+                        const fallback = state.players.find((p) => p.name === localPlayerName);
                         if (fallback) {
                             rememberMatchPlayer(id, fallback.id, fallback.name);
                             setLocalPlayerInfo({ id: fallback.id, name: fallback.name });
@@ -204,20 +211,29 @@ const Match: React.FC = () => {
         if (selectedTargetId && state.players.some((p) => p.id === selectedTargetId)) {
             return;
         }
-        const fallback = state.players.find((p) => p.id !== localPlayerId)?.id ?? state.players[0]?.id ?? null;
+        const fallback =
+            state.players.find((p) => p.id !== localPlayerId)?.id ??
+            state.players[0]?.id ??
+            null;
         setSelectedTargetId(fallback ?? null);
     }, [state, localPlayerId, selectedTargetId]);
 
     if (!id) {
-        return <div className={styles.page}>マッチIDが不正です。</div>;
+        return <div style={{ padding: 16 }}>マッチIDが不正です。</div>;
     }
 
     const currentPlayerId = state?.currentPlayerId ?? state?.turnOrder?.[state?.currentTurn ?? 0];
     const isCurrentPlayer = (playerId: string) => currentPlayerId === playerId;
     const hands = state?.hands ?? {};
     const runtimeStates = state?.board?.playerStates ?? {};
-    const installsByPlayer = React.useMemo(() => (state ? groupInstallsByPlayer(runtimeStates, CARD_LOOKUP) : {}), [state, runtimeStates]);
-    const playerName = React.useCallback((pid: string | undefined) => state?.players.find((p) => p.id === pid)?.name ?? '不明なプレイヤー', [state?.players]);
+    const installsByPlayer = React.useMemo(
+        () => (state ? groupInstallsByPlayer(runtimeStates, CARD_LOOKUP) : {}),
+        [state, runtimeStates]
+    );
+    const playerName = React.useCallback(
+        (pid: string | undefined) => state?.players.find((p) => p.id === pid)?.name ?? '不明なプレイヤー',
+        [state?.players]
+    );
     const isPlayerDefeated = (pid: string) => Boolean(runtimeStates[pid]?.isDefeated);
     const braTokens = state?.braTokens ?? {};
     const roleAttackUsed = state?.roleAttackUsed ?? {};
@@ -249,16 +265,20 @@ const Match: React.FC = () => {
     const attackIsStruggle = currentBraValue <= 0;
     const attackButtonLabel = attackIsStruggle ? '悪あがき' : 'ロール攻撃';
     const roleAttackAlreadyUsed = localPlayerId ? Boolean(roleAttackUsed[localPlayerId]) : true;
-    const canAttackTarget = !!selectedTargetId && !selectedTargetIsSelf && !selectedTargetDefeated && state?.players.some((p) => p.id === selectedTargetId);
-    const roleAttackDisabled = !localPlayer || isLocalDefeated || !isCurrentPlayer(localPlayer.id) || roleAttackAlreadyUsed || !canAttackTarget;
-
+    const canAttackTarget =
+        !!selectedTargetId && !selectedTargetIsSelf && !selectedTargetDefeated && state?.players.some((p) => p.id === selectedTargetId);
+    const roleAttackDisabled =
+        !localPlayer ||
+        isLocalDefeated ||
+        !isCurrentPlayer(localPlayer.id) ||
+        roleAttackAlreadyUsed ||
+        !canAttackTarget;
     const describeTargets = (ids?: string[]) => {
         if (!ids || ids.length === 0) {
             return '';
         }
         return ids.map((pid) => playerName(pid)).join(', ');
     };
-
     const formatLogEntry = (entry: GameLogEntry): string => {
         switch (entry.type) {
             case 'turnStart':
@@ -267,7 +287,7 @@ const Match: React.FC = () => {
                 const cardInfo = CARD_LOOKUP.get(entry.cardId);
                 const targetText = describeTargets(entry.targets);
                 const cardName = cardInfo?.name ?? entry.cardId;
-                return `${playerName(entry.playerId)}が「${cardName}」を${targetText ? `${targetText}に` : ''}使用`;
+                return `${playerName(entry.playerId)}がカード「${cardName}」を${targetText ? `${targetText}に` : ''}使用`;
             }
             case 'roleAttack': {
                 const detail = entry.isStruggle ? '（悪あがき）' : '';
@@ -286,7 +306,7 @@ const Match: React.FC = () => {
             }
             case 'statusEffect': {
                 const kindText = entry.kind === 'heal' ? '回復' : 'ダメージ';
-                return `${playerName(entry.playerId)}の継続効果: ${entry.amount}${kindText}`;
+                return `${playerName(entry.playerId)}の炎上: ${entry.amount}${kindText}`;
             }
             default:
                 return '';
@@ -297,8 +317,8 @@ const Match: React.FC = () => {
         const playerId = requireLocalPlayer();
         if (!playerId) return;
         try {
-            const { state: nextState } = await drawCards(id, playerId, count);
-            setState(nextState);
+            const { state } = await drawCards(id, playerId, count);
+            setState(state);
         } catch (err) {
             alert('ドローに失敗しました: ' + (err as Error).message);
         }
@@ -344,8 +364,8 @@ const Match: React.FC = () => {
             if (choicesPayload) {
                 params.choices = choicesPayload;
             }
-            const { state: nextState } = await playCard(id, playerId, cardId, params);
-            setState(nextState);
+            const { state } = await playCard(id, playerId, cardId, params);
+            setState(state);
         } catch (err) {
             alert('カードをプレイできませんでした: ' + (err as Error).message);
         }
@@ -364,8 +384,8 @@ const Match: React.FC = () => {
         }
         const struggle = (braTokens[playerId] ?? 0) <= 0;
         try {
-            const { state: nextState } = await roleAttack(id, playerId, selectedTargetId, struggle);
-            setState(nextState);
+            const { state } = await roleAttack(id, playerId, selectedTargetId, struggle);
+            setState(state);
         } catch (err) {
             alert('ロール攻撃に失敗しました: ' + (err as Error).message);
         }
@@ -375,8 +395,8 @@ const Match: React.FC = () => {
         const playerId = requireLocalPlayer();
         if (!playerId) return;
         try {
-            const { state: nextState } = await endTurn(id, playerId);
-            setState(nextState);
+            const { state } = await endTurn(id, playerId);
+            setState(state);
         } catch (err) {
             alert('ターン終了に失敗しました: ' + (err as Error).message);
         }
@@ -398,11 +418,11 @@ const Match: React.FC = () => {
         const targetId = action.requiresTarget ? selectedTargetId : undefined;
         setRoleActionBusy(true);
         try {
-            const { state: nextState } = await performRoleAction(id, playerId, action.id, {
+            const { state } = await performRoleAction(id, playerId, action.id, {
                 targetId: targetId ?? undefined,
                 choices: roleActionChoices[action.id],
             });
-            setState(nextState);
+            setState(state);
         } catch (err) {
             alert('ロールアクションの実行に失敗しました: ' + (err as Error).message);
         } finally {
@@ -460,13 +480,13 @@ const Match: React.FC = () => {
                 choiceValues.statUp &&
                 choiceValues.statDown === choiceValues.statUp
             ) {
-                return { disabled: true, reason: '異なるステータスを選んでください' };
+                return { disabled: true, reason: '異なるステータスを選択してください' };
             }
         }
         if (action.id === 'discharge_release') {
             const charge = localPlayerRuntime?.roleState?.chargeTokens ?? 0;
             if (charge <= 0) {
-                return { disabled: true, reason: 'チャージトークンがありません' };
+                return { disabled: true, reason: '蓄電トークンがありません' };
             }
         }
         return { disabled: false };
@@ -478,16 +498,19 @@ const Match: React.FC = () => {
         }
         const choiceValues = roleActionChoices[action.id] ?? {};
         return (
-            <div className={styles.choiceRow}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
                 {action.choices.map((choice) => {
                     const options = choice.options ?? ROLE_ACTION_BASE_STATS;
                     return (
-                        <label key={`${action.id}-${choice.key}`} className={styles.choiceLabel}>
+                        <label
+                            key={`${action.id}-${choice.key}`}
+                            style={{ fontSize: 11, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4 }}
+                        >
                             {choice.label}
                             <select
                                 value={choiceValues[choice.key] ?? ''}
                                 onChange={(e) => updateRoleActionChoice(action.id, choice.key, e.target.value)}
-                                className={styles.select}
+                                style={{ padding: 6, borderRadius: 8, border: '1px solid #cbd5f5', minWidth: 140 }}
                             >
                                 <option value="">未選択</option>
                                 {options.map((opt) => (
@@ -511,7 +534,7 @@ const Match: React.FC = () => {
         const surgeryPhase = roleRuntime?.surgeryPhase;
         const surgeryText =
             surgeryPhase === 'immobilize'
-                ? '手術準備中（このターンは行動不可）'
+                ? '手術準備中（次のターンは行動不可）'
                 : surgeryPhase === 'heal'
                 ? '手術回復待ち（次のターン開始時にHP+15）'
                 : null;
@@ -542,19 +565,29 @@ const Match: React.FC = () => {
         return (
             <li
                 key={player.id}
-                className={styles.playerCard}
+                style={{
+                    borderRadius: 16,
+                    padding: 16,
+                    background: '#fff',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 15px rgba(15,23,42,0.05)',
+                }}
                 onMouseEnter={() => setHoveredPlayerId(player.id)}
                 onMouseLeave={() => setHoveredPlayerId((prev) => (prev === player.id ? null : prev))}
             >
-                <div className={styles.playerHeader}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                     <div>
-                        <div className={styles.playerName}>{player.name}</div>
-                        <div className={styles.playerRole}>ロール: {roleInfo?.name ?? '未設定'}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>{player.name}</div>
+                        <div style={{ fontSize: 13, color: '#475569' }}>
+                            ロール: {roleInfo?.name ?? '未選択'}
+                        </div>
                     </div>
-                    {controlling && <span className={styles.controlBadge}>このタブで操作中</span>}
+                    {controlling && (
+                        <span style={{ padding: '6px 12px', borderRadius: 999, background: '#dbeafe', color: '#1d4ed8', fontSize: 12 }}>このタブが操作中</span>
+                    )}
                 </div>
                 {stats && (
-                    <div className={styles.statLine}>
+                    <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 12, color: '#475569' }}>
                         <span>
                             HP {stats.hp}
                             {runtime && runtime.tempHp > 0 && ` (+Temp ${runtime.tempHp})`}
@@ -565,26 +598,39 @@ const Match: React.FC = () => {
                         <span>Bra {stats.bra}</span>
                     </div>
                 )}
-                <div className={styles.statLine}>
-                    <span>Bra トークン: {braTokens[player.id] ?? 0}</span>
-                    <span>手札 {hands[player.id]?.length ?? 0}枚</span>
+                <div style={{ marginTop: 8, fontSize: 12, color: '#475569' }}>
+                    Bra 残り: {braTokens[player.id] ?? 0} / 手札 {hands[player.id]?.length ?? 0} 枚
                 </div>
                 {dischargeExists && (chargeTokens > 0 || shockTokens > 0) && (
-                    <div className={styles.statLine}>
-                        {player.roleId === 'discharge' && chargeTokens > 0 && <span>チャージ: {chargeTokens}</span>}
-                        {shockTokens > 0 && <span>感電: {shockTokens}</span>}
+                    <div style={{ marginTop: 4, fontSize: 12, color: '#1e293b' }}>
+                        {player.roleId === 'discharge' && chargeTokens > 0 && <span>蓄電: {chargeTokens}</span>}
+                        {shockTokens > 0 && (
+                            <span style={{ marginLeft: player.roleId === 'discharge' && chargeTokens > 0 ? 8 : 0 }}>
+                                感電: {shockTokens}
+                            </span>
+                        )}
                     </div>
                 )}
-                {runtime?.isDefeated && <div className={styles.defeatedText}>脱落</div>}
-                {surgeryText && <div className={styles.surgeryText}>{surgeryText}</div>}
+                {runtime?.isDefeated && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: '#dc2626' }}>戦闘不能</div>
+                )}
                 {statusEffects.length > 0 && (
-                    <div className={styles.effectChips}>
+                    <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {statusEffects.map((effect) => (
                             <span
                                 key={`${player.id}-${effect.key}`}
                                 title={effect.tooltip}
-                                className={styles.effectChip}
-                                style={{ background: effect.color }}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '4px 8px',
+                                    borderRadius: 999,
+                                    background: effect.color,
+                                    color: '#0f172a',
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                }}
                             >
                                 <span aria-hidden>{effect.icon}</span>
                                 <span>{effect.label}</span>
@@ -593,36 +639,55 @@ const Match: React.FC = () => {
                         ))}
                     </div>
                 )}
-                {roleInfo?.text && <p className={styles.roleText}>{roleInfo.text}</p>}
+                {roleInfo?.text && (
+                    <p style={{ marginTop: 8, fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>{roleInfo.text}</p>
+                )}
                 {showDetail && runtime && (
-                    <div className={styles.playerDetail}>
-                        <div className={styles.detailGrid}>
-                            <div>
-                                <div className={styles.detailLabel}>ターン中ボーナス</div>
-                                <div className={styles.detailValue}>
-                                    Atk {runtime.turnBoosts.atk}, Def {runtime.turnBoosts.def}, Spe {runtime.turnBoosts.spe}, Bra {runtime.turnBoosts.bra}
-                                </div>
-                            </div>
-                            <div>
-                                <div className={styles.detailLabel}>トークン</div>
-                                <div className={styles.detailValue}>
-                                    Atk {runtime.statTokens.atk}, Def {runtime.statTokens.def}, Spe {runtime.statTokens.spe}, Bra {runtime.statTokens.bra}
-                                </div>
+                    <div
+                        style={{
+                            marginTop: 12,
+                            padding: 12,
+                            borderRadius: 12,
+                            background: '#0f172a',
+                            color: '#e2e8f0',
+                            fontSize: 12,
+                        }}
+                    >
+                        <strong>基礎 / 追加トークン内訳</strong>
+                        <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
+                            {STAT_OPTIONS.map((stat) => {
+                                const base = runtime.baseStats[stat];
+                                const token = runtime.statTokens[stat];
+                                const boost = runtime.turnBoosts[stat];
+                                const sum = base + token + boost;
+                                return (
+                                    <div key={`${player.id}-${stat}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                                        <span style={{ textTransform: 'uppercase' }}>{stat}</span>
+                                        <span>
+                                            基礎 {base}
+                                            {token !== 0 && ` / トークン ${token > 0 ? `+${token}` : token}`}
+                                            {boost !== 0 && ` / ブースト ${boost > 0 ? `+${boost}` : boost}`}
+                                            <strong style={{ marginLeft: 4 }}>⇒ {sum}</strong>
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                                <span>TempHP</span>
+                                <span>{runtime.tempHp}</span>
                             </div>
                         </div>
                         {installsForPlayer.length > 0 && (
-                            <div className={styles.installList}>
-                                <div className={styles.detailLabel}>設置カード</div>
-                                <ul>
+                            <div style={{ marginTop: 12 }}>
+                                <strong>設置カード</strong>
+                                <ul style={{ marginTop: 8, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
                                     {installsForPlayer.map((install) => (
-                                        <li key={install.instanceId} className={styles.installItem}>
-                                            <div className={styles.installName}>{install.name}</div>
+                                        <li key={install.instanceId} style={{ lineHeight: 1.4 }}>
+                                            {install.name}
                                             {install.category && (
-                                                <div className={styles.installMeta}>
-                                                    {install.category.toUpperCase()} ・ {install.kind ?? 'skill'}
-                                                </div>
+                                                <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 6 }}>{install.category}</span>
                                             )}
-                                            {install.text && <p className={styles.installText}>{install.text}</p>}
+                                            {install.text && <div style={{ fontSize: 11, color: '#cbd5f5' }}>{install.text}</div>}
                                         </li>
                                     ))}
                                 </ul>
@@ -636,9 +701,8 @@ const Match: React.FC = () => {
 
     const handWrapperStyle: React.CSSProperties = {
         display: 'flex',
+        flexWrap: 'wrap',
         gap: 12,
-        overflowX: 'auto',
-        paddingBottom: 6,
     };
 
     const cardButtonStyle = (active: boolean): React.CSSProperties => ({
@@ -652,12 +716,11 @@ const Match: React.FC = () => {
         cursor: active ? 'pointer' : 'not-allowed',
         boxShadow: active ? '0 6px 15px rgba(37, 99, 235, 0.35)' : 'none',
         minHeight: 150,
-        width: 180,
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
         justifyContent: 'space-between',
-        flexShrink: 0,
     });
 
     const tooltipStyle: React.CSSProperties = {
@@ -674,168 +737,184 @@ const Match: React.FC = () => {
         boxShadow: '0 6px 12px rgba(15, 23, 42, 0.25)',
         fontSize: 12,
     };
+
     return (
-        <div className={styles.page}>
-            <header className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>Match {id}</h1>
-                    <p className={styles.subtitle}>ロビーID: {id}</p>
-                </div>
-                <div className={styles.headerMeta}>
-                    {state && (
-                        <>
-                            <span className={styles.statusChip} style={{ borderColor: statusColors[state.status] ?? '#0f172a' }}>
-                                {state.status}
-                            </span>
-                            <span className={styles.metaBadge}>手番: {currentPlayerName}</span>
-                            <span className={styles.metaBadge}>{deckInfo}</span>
-                        </>
-                    )}
-                    <Link to="/" className={styles.backLink}>
-                        ロビーへ戻る
-                    </Link>
-                </div>
-            </header>
-
-            {error && <p className={styles.errorText}>エラー: {error}</p>}
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h1 style={{ fontSize: 26 }}>Match {id}</h1>
+                <Link to="/">ロビーへ戻る</Link>
+            </div>
+            {error && <p style={{ color: '#b91c1c' }}>エラー: {error}</p>}
             {!state && !error && <p>読み込み中...</p>}
-
             {state && (
-                <div className={styles.matchGrid}>
-                    <div className={styles.mainColumn}>
-                        <section className={`${styles.sectionCard} ${styles.compactSection}`}>
-                            <div className={styles.statusGrid}>
-                                <div className={styles.statusCard}>
-                                    <div className={styles.statusLabel}>ステータス</div>
-                                    <div className={styles.statusValue} style={{ color: statusColors[state.status] ?? '#0f172a' }}>
-                                        {state.status}
-                                    </div>
-                                </div>
-                                <div className={styles.statusCard}>
-                                    <div className={styles.statusLabel}>現在の手番</div>
-                                    <div className={styles.statusValue}>{currentPlayerName}</div>
-                                </div>
-                                <div className={styles.statusCard}>
-                                    <div className={styles.statusLabel}>山札 / 捨て札</div>
-                                    <div className={styles.statusValue}>{deckInfo}</div>
-                                </div>
-                                <button onClick={refresh} className={styles.secondaryButton}>
-                                    手動更新
+                <div style={{ marginTop: 16, display: 'grid', gap: 16 }}>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        <div style={{ padding: 12, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', minWidth: 180 }}>
+                            <div style={{ fontSize: 12, color: '#64748b' }}>ステータス</div>
+                            <div style={{ fontWeight: 700, color: statusColors[state.status] ?? '#0f172a', fontSize: 20 }}>{state.status}</div>
+                        </div>
+                        <div style={{ padding: 12, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', minWidth: 220 }}>
+                            <div style={{ fontSize: 12, color: '#64748b' }}>現在の手番</div>
+                            <div style={{ fontWeight: 700, fontSize: 20 }}>{currentPlayerName}</div>
+                        </div>
+                        <div style={{ padding: 12, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', minWidth: 220 }}>
+                            <div style={{ fontSize: 12, color: '#64748b' }}>山札 / 捨て札</div>
+                            <div style={{ fontWeight: 700, fontSize: 20 }}>{deckInfo}</div>
+                        </div>
+                        <button onClick={refresh} style={{ padding: '8px 16px', borderRadius: 10, border: '1px solid #cbd5f5', background: '#fff' }}>
+                            手動更新
+                        </button>
+                    </div>
+
+                    <section style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <h2 style={{ margin: 0 }}>プレイヤー一覧</h2>
+                        {localPlayer ? <span style={{ color: '#16a34a' }}>このタブは {localPlayer.name} を操作中</span> : <span style={{ color: '#b91c1c' }}>このタブには操作権がありません</span>}
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
+                        {state.players.map((player) => renderPlayerCard(player))}
+                    </ul>
+                </section>
+
+                {!localPlayer && (
+                    <section style={{ border: '1px dashed #fecaca', borderRadius: 16, padding: 16, background: '#fff7ed' }}>
+                        <p style={{ margin: 0, color: '#b45309' }}>このブラウザは観戦モードです。ロビー参加時に割り当てられたプレイヤーのみ操作できます。</p>
+                    </section>
+                )}
+
+                    {localPlayer && (
+                        <section style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' }}>
+                            <h2 style={{ marginTop: 0 }}>{localPlayer.name} の操作</h2>
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+                                <button
+                                    onClick={() => handleDraw(1)}
+                                    disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: 8,
+                                        border: 'none',
+                                        background: isCurrentPlayer(localPlayer.id) && !isLocalDefeated ? '#2563eb' : '#94a3b8',
+                                        color: '#fff',
+                                    }}
+                                >
+                                    1枚ドロー
+                                </button>
+                                <button
+                                    onClick={handleRoleAttack}
+                                    disabled={roleAttackDisabled}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: 8,
+                                        border: 'none',
+                                        background: roleAttackDisabled ? '#94a3b8' : attackIsStruggle ? '#f97316' : '#22c55e',
+                                        color: '#fff',
+                                    }}
+                                >
+                                    {attackButtonLabel}
+                                </button>
+                                <button
+                                    onClick={handleEndTurn}
+                                    disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: 8,
+                                        border: '1px solid #cbd5f5',
+                                        background: isCurrentPlayer(localPlayer.id) && !isLocalDefeated ? '#fff8e1' : '#fff',
+                                    }}
+                                >
+                                    ターンを終了
                                 </button>
                             </div>
-                            {localPlayer && (
-                                <>
-                                    <div className={styles.controlsRow}>
-                                        <button
-                                            onClick={() => handleDraw(1)}
-                                            disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated}
-                                            className={styles.primaryButton}
-                                        >
-                                            1枚ドロー
-                                        </button>
-                                        <button
-                                            onClick={handleRoleAttack}
-                                            disabled={roleAttackDisabled}
-                                            className={`${styles.primaryButton} ${attackIsStruggle ? styles.dangerButton : ''}`}
-                                        >
-                                            {attackButtonLabel}
-                                        </button>
-                                        <button
-                                            onClick={handleEndTurn}
-                                            disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated}
-                                            className={styles.secondaryButton}
-                                        >
-                                            ターンを終える
-                                        </button>
-                                    </div>
-                                    <div className={styles.targetRow}>
-                                        <label className={styles.choiceLabel}>
-                                            カード対象
-                                            <select
-                                                value={selectedTargetId ?? ''}
-                                                onChange={(e) => setSelectedTargetId(e.target.value || null)}
-                                                className={styles.select}
-                                            >
-                                                <option value="">対象未選択</option>
-                                                {(state?.players ?? []).map((player) => (
-                                                    <option key={player.id} value={player.id} disabled={isPlayerDefeated(player.id)}>
-                                                        {player.name}
-                                                        {isPlayerDefeated(player.id) ? ' (脱落)' : ''}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <label className={styles.choiceLabel}>
-                                            ステータス選択（必要時）
-                                            <select
-                                                value={selectedStatChoice}
-                                                onChange={(e) => setSelectedStatChoice((e.target.value as typeof selectedStatChoice) || '')}
-                                                className={styles.select}
-                                            >
-                                                <option value="">未選択</option>
-                                                {STAT_OPTIONS.map((stat) => (
-                                                    <option key={stat} value={stat}>
-                                                        {stat.toUpperCase()}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                    </div>
-                                    {localRoleActions.length > 0 && (
-                                        <div className={styles.roleActionGrid}>
-                                            {localRoleActions.map((action) => {
-                                                const availability = getRoleActionAvailability(action);
-                                                return (
-                                                    <div key={action.id} className={styles.roleActionCard}>
-                                                        <div className={styles.roleActionHeader}>
-                                                            <strong>{action.label}</strong>
-                                                            <span className={styles.roleActionCost}>Bra消費: {action.costBra ?? 0}</span>
-                                                        </div>
-                                                        {action.description && (
-                                                            <p className={styles.roleActionText}>{action.description}</p>
-                                                        )}
-                                                        {action.requiresTarget && (
-                                                            <div className={styles.roleActionMeta}>
-                                                                対象: {selectedTargetId ? playerName(selectedTargetId) : '未選択'}
-                                                            </div>
-                                                        )}
-                                                        {renderRoleActionChoiceControls(action)}
-                                                        <button
-                                                            onClick={() => handleRoleAction(action)}
-                                                            disabled={availability.disabled}
-                                                            className={styles.roleActionButton}
-                                                        >
-                                                            実行
-                                                        </button>
-                                                        {availability.disabled && availability.reason && (
-                                                            <div className={styles.roleActionReason}>{availability.reason}</div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </section>
-
-                        <section className={`${styles.sectionCard} ${styles.playersSection}`}>
-                            <div className={styles.sectionHeader}>
-                                <h2>プレイヤー情報</h2>
-                                {localPlayer ? (
-                                    <span className={styles.sectionBadge}>このタブは {localPlayer.name} を操作中</span>
-                                ) : (
-                                    <span className={styles.sectionBadgeDanger}>このタブには操作権がありません</span>
-                                )}
+                            <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                <label style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    カード対象
+                                    <select
+                                        value={selectedTargetId ?? ''}
+                                        onChange={(e) => setSelectedTargetId(e.target.value || null)}
+                                        style={{ padding: 6, borderRadius: 8, border: '1px solid #cbd5f5', minWidth: 160 }}
+                                    >
+                                        <option value="">対象未選択</option>
+                                        {(state?.players ?? []).map((player) => (
+                                            <option key={player.id} value={player.id} disabled={isPlayerDefeated(player.id)}>
+                                                {player.name}
+                                                {isPlayerDefeated(player.id) ? ' (脱落)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    ステータス選択（必要時）
+                                    <select
+                                        value={selectedStatChoice}
+                                        onChange={(e) => setSelectedStatChoice((e.target.value as typeof selectedStatChoice) || '')}
+                                        style={{ padding: 6, borderRadius: 8, border: '1px solid #cbd5f5', minWidth: 160 }}
+                                    >
+                                        <option value="">未選択</option>
+                                        {STAT_OPTIONS.map((stat) => (
+                                            <option key={stat} value={stat}>
+                                                {stat.toUpperCase()}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
                             </div>
-                            <ul className={styles.playerList}>{state.players.map((player) => renderPlayerCard(player))}</ul>
-                        </section>
-
-                        {localPlayer && (
-                            <section className={`${styles.sectionCard} ${styles.handSection}`}>
-                                <h2 className={styles.sectionTitle}>手札</h2>
+                            {localRoleActions.length > 0 && (
+                                <div style={{ marginTop: 16, width: '100%' }}>
+                                    <h3 style={{ margin: '8px 0', fontSize: 16 }}>ロール専用アクション</h3>
+                                    <div style={{ display: 'grid', gap: 12 }}>
+                                        {localRoleActions.map((action) => {
+                                            const availability = getRoleActionAvailability(action);
+                                            return (
+                                                <div
+                                                    key={action.id}
+                                                    style={{
+                                                        border: '1px solid #e2e8f0',
+                                                        borderRadius: 12,
+                                                        padding: 12,
+                                                        background: '#f8fafc',
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                                        <strong>{action.label}</strong>
+                                                        <span style={{ fontSize: 12, color: '#475569' }}>Bra消費: {action.costBra ?? 0}</span>
+                                                    </div>
+                                                    {action.description && (
+                                                        <p style={{ marginTop: 6, fontSize: 12, color: '#475569', lineHeight: 1.4 }}>{action.description}</p>
+                                                    )}
+                                                    {action.requiresTarget && (
+                                                        <div style={{ fontSize: 11, color: '#475569' }}>
+                                                            対象: {selectedTargetId ? playerName(selectedTargetId) : '未選択'}
+                                                        </div>
+                                                    )}
+                                                    {renderRoleActionChoiceControls(action)}
+                                                    <button
+                                                        onClick={() => handleRoleAction(action)}
+                                                        disabled={availability.disabled}
+                                                        style={{
+                                                            marginTop: 8,
+                                                            padding: '6px 12px',
+                                                            borderRadius: 8,
+                                                            border: 'none',
+                                                            background: availability.disabled ? '#cbd5f5' : '#34d399',
+                                                            color: '#0f172a',
+                                                            cursor: availability.disabled ? 'not-allowed' : 'pointer',
+                                                        }}
+                                                    >
+                                                        実行
+                                                    </button>
+                                                    {availability.disabled && availability.reason && (
+                                                        <div style={{ marginTop: 4, fontSize: 11, color: '#dc2626' }}>{availability.reason}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                            <div>
+                                <h3>手札</h3>
                                 <div style={handWrapperStyle}>
-                                    {(hands[localPlayer.id] ?? []).length === 0 && <span className={styles.mutedText}>手札なし</span>}
+                                    {(hands[localPlayer.id] ?? []).length === 0 && <span style={{ color: '#94a3b8' }}>手札なし</span>}
                                     {(hands[localPlayer.id] ?? []).map((cardId, idx) => {
                                         const cardKey = `${cardId}-${idx}`;
                                         const info = CARD_LOOKUP.get(cardId);
@@ -855,9 +934,7 @@ const Match: React.FC = () => {
                                                 onMouseLeave={() => setHoverCardKey((prev) => (prev === cardKey ? null : prev))}
                                             >
                                                 <button onClick={() => handlePlay(cardId)} disabled={!canPlay} style={cardButtonStyle(canPlay)}>
-                                                    <div style={{ fontSize: 12, opacity: 0.8 }}>
-                                                        {info?.category?.toUpperCase() ?? 'CARD'} ・ {info?.kind ?? 'skill'}
-                                                    </div>
+                                                    <div style={{ fontSize: 12, opacity: 0.8 }}>{info?.category?.toUpperCase() ?? 'CARD'} ・ {info?.kind ?? 'skill'}</div>
                                                     <div style={{ fontWeight: 700, fontSize: 18, marginTop: 4 }}>{info?.name ?? cardId}</div>
                                                     <div style={{ fontSize: 12, marginTop: 4 }}>コスト {info?.cost ?? 1}</div>
                                                 </button>
@@ -871,54 +948,49 @@ const Match: React.FC = () => {
                                         );
                                     })}
                                 </div>
-                                <div className={styles.customCardRow}>
+                                <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                                     <input
                                         value={customCardId}
                                         onChange={(e) => setCustomCardId(e.target.value)}
                                         placeholder="カードIDを入力"
-                                        className={styles.textInput}
+                                        style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}
                                     />
                                     <button
                                         onClick={() => handlePlay(customCardId)}
                                         disabled={!isCurrentPlayer(localPlayer.id) || !customCardId || isLocalDefeated}
-                                        className={styles.secondaryButton}
+                                        style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5f5', background: '#fff' }}
                                     >
                                         入力カードをプレイ
                                     </button>
                                 </div>
-                            </section>
-                        )}
-
-                        {!localPlayer && (
-                            <section className={`${styles.sectionCard} ${styles.viewOnlyBanner}`}>
-                                <p>このブラウザは観戦モードです。ロビー参加時に割り当てられたプレイヤーのみ操作できます。</p>
-                            </section>
-                        )}
-                    </div>
-
-                    <aside className={styles.sidebar}>
-                        <section className={styles.sectionCard}>
-                            <h2 className={styles.sectionTitle}>ターンログ</h2>
-                            <div className={styles.logPanel}>
-                                {logsToDisplay.length === 0 ? (
-                                    <p className={styles.mutedText}>まだログはありません。</p>
-                                ) : (
-                                    <ul className={styles.turnLog}>
-                                        {logsToDisplay.map((entry, idx) => (
-                                            <li
-                                                key={`${entry.type}-${entry.timestamp}-${idx}`}
-                                                className={`${styles.turnLogItem} ${
-                                                    entry.type === 'turnStart' && entry.playerId === currentPlayerId ? styles.turnLogCurrent : ''
-                                                }`}
-                                            >
-                                                {formatLogEntry(entry)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
                             </div>
                         </section>
-                    </aside>
+                    )}
+
+                    <section style={{ border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' }}>
+                        <h2 style={{ marginTop: 0 }}>ターンログ</h2>
+                        {logsToDisplay.length === 0 ? (
+                            <p style={{ color: '#94a3b8', margin: 0 }}>まだログはありません。</p>
+                        ) : (
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {logsToDisplay.map((entry, idx) => (
+                                    <li
+                                        key={`${entry.type}-${entry.timestamp}-${idx}`}
+                                        style={{
+                                            padding: '6px 8px',
+                                            borderRadius: 8,
+                                            background: '#f8fafc',
+                                            border: '1px solid #e2e8f0',
+                                            fontSize: 12,
+                                            color: '#0f172a',
+                                        }}
+                                    >
+                                        {formatLogEntry(entry)}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
                 </div>
             )}
         </div>

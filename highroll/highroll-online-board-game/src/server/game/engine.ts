@@ -163,6 +163,12 @@ export class GameEngine {
             throw new Error('対象プレイヤーは既に倒れています。');
         }
 
+        const player = this.getPlayer(playerId);
+        if (player?.roleId === 'resonate') {
+            this.resonateRoleAttack(playerId, targetId, isStruggle);
+            return;
+        }
+
         const atk = getEffectiveStatValue(attackerRuntime, 'atk');
         const def = getEffectiveStatValue(defenderRuntime, 'def');
         const damage = Math.max(1, atk - def);
@@ -245,6 +251,9 @@ export class GameEngine {
                 break;
             case 'doctor':
                 this.executeDoctorAction(playerId, actionId, targetId, options?.choices);
+                break;
+            case 'flame':
+                this.executeFlameAction(playerId, actionId, targetId);
                 break;
             default:
                 throw new Error('このロールは専用アクションを持っていません。');
@@ -346,6 +355,91 @@ export class GameEngine {
             default:
                 throw new Error('未知のアクションです。');
         }
+    }
+
+    private resonateRoleAttack(playerId: string, targetId: string, isStruggle: boolean): void {
+        const attackerRuntime = this.ensureRuntimeExists(playerId);
+        const defenderRuntime = this.ensureRuntimeExists(targetId);
+        const atk = getEffectiveStatValue(attackerRuntime, 'atk');
+        const def = getEffectiveStatValue(defenderRuntime, 'def');
+        const baseDamage = Math.max(1, atk - def);
+        let damage = Math.max(1, Math.floor(baseDamage / 2));
+        let totalDealt = 0;
+        let hits = 0;
+        while (damage >= 1) {
+            const dealt = this.applyDamageToPlayer(playerId, targetId, damage);
+            totalDealt += dealt;
+            hits += 1;
+            this.logEvent({
+                type: 'roleAttackHit',
+                attackerId: playerId,
+                targetId,
+                damage: dealt,
+                hitIndex: hits,
+                totalHits: 0, // will fill after loop
+                timestamp: Date.now(),
+            });
+            damage = Math.floor(damage / 2);
+        }
+
+        // Backfill totalHits
+        this.state = {
+            ...this.state,
+            logs: this.state.logs.map((entry) =>
+                entry.type === 'roleAttackHit' && entry.attackerId === playerId && entry.targetId === targetId && !entry.totalHits
+                    ? { ...entry, totalHits: hits }
+                    : entry
+            ),
+            updatedAt: Date.now(),
+        };
+
+        if (!isStruggle) {
+            this.state = consumeBra(this.state, playerId, 1);
+        }
+        this.setRoleAttackUsed(playerId, true);
+
+        let selfInflicted: number | undefined;
+        if (hits > 0) {
+            selfInflicted = this.applyDamageToPlayer(playerId, playerId, hits);
+        }
+        if (isStruggle) {
+            const selfDamage = Math.max(1, Math.floor(attackerRuntime.maxHp / 4));
+            selfInflicted = (selfInflicted ?? 0) + this.applyDamageToPlayer(playerId, playerId, selfDamage);
+        }
+
+        this.logEvent({
+            type: 'roleAttack',
+            attackerId: playerId,
+            targetId,
+            damage: totalDealt,
+            isStruggle,
+            selfInflicted,
+            timestamp: Date.now(),
+        });
+
+        if (isStruggle) {
+            const runtimeAfter = this.getRuntime(playerId);
+            if (runtimeAfter && !runtimeAfter.isDefeated) {
+                this.endTurn(playerId);
+            }
+        }
+    }
+
+    private executeFlameAction(playerId: string, actionId: string, targetId?: string): void {
+        if (actionId !== 'flame_apply_burn') {
+            throw new Error('未知のアクションです。');
+        }
+        if (!targetId) {
+            throw new Error('対象を選択してください。');
+        }
+        const targetRuntime = this.getRuntime(targetId);
+        if (!targetRuntime || targetRuntime.isDefeated) {
+            throw new Error('無効な対象です。');
+        }
+        this.updateRoleState(targetId, (prev) => ({
+            ...prev,
+            burnStacks: (prev.burnStacks ?? 0) + 1,
+        }));
     }
 
     start(): void {
@@ -1472,6 +1566,36 @@ private applyDoubleBaseStatEffect(playerId: string, effect: DoubleBaseStatEffect
                     chargeTokens: (prev.chargeTokens ?? 0) + remaining,
                 }));
             }
+        }
+        const runtime = this.getRuntime(playerId);
+        const burn = runtime?.roleState?.burnStacks ?? 0;
+        if (burn > 0) {
+            const selfFlame = player.roleId === 'flame';
+            if (selfFlame) {
+                this.applyHealToPlayer(playerId, burn);
+                this.logEvent({
+                    type: 'statusEffect',
+                    playerId,
+                    effect: 'burn',
+                    amount: burn,
+                    kind: 'heal',
+                    timestamp: Date.now(),
+                });
+            } else {
+                this.applyDamageToPlayer(playerId, playerId, burn);
+                this.logEvent({
+                    type: 'statusEffect',
+                    playerId,
+                    effect: 'burn',
+                    amount: burn,
+                    kind: 'damage',
+                    timestamp: Date.now(),
+                });
+            }
+            this.updateRoleState(playerId, (prev) => {
+                const next = Math.max(0, (prev.burnStacks ?? 0) - 1);
+                return next > 0 ? { ...prev, burnStacks: next } : { ...prev, burnStacks: undefined };
+            });
         }
     }
 }

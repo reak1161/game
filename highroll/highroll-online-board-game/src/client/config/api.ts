@@ -1,13 +1,15 @@
-const normalizeBase = (raw?: string | null): string => {
+const normalizeBase = (raw?: string | null): string | undefined => {
     if (!raw) {
-        return '';
+        return undefined;
     }
     return raw.endsWith('/') ? raw.slice(0, -1) : raw;
 };
 
-const defaultDevServer = import.meta.env.DEV ? 'http://localhost:4000' : undefined;
+const envServerUrl = normalizeBase(import.meta.env.VITE_SERVER_URL);
+const defaultSameOrigin = !import.meta.env.DEV && typeof window !== 'undefined' ? window.location.origin : undefined;
+const defaultDevBase = import.meta.env.DEV ? '' : undefined;
 
-export const API_BASE = normalizeBase(import.meta.env.VITE_SERVER_URL ?? defaultDevServer);
+export const API_BASE = envServerUrl ?? defaultDevBase ?? defaultSameOrigin ?? '';
 
 export const withApiBase = (path: string): string => (API_BASE ? `${API_BASE}${path}` : path);
 
