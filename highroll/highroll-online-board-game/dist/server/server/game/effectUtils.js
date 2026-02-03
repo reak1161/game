@@ -14,27 +14,37 @@ const emptyModifiers = () => ({
     spe: 0,
     bra: 0,
 });
-const createRuntimeStateFromRole = (playerId, role) => ({
-    playerId,
-    roleId: role.id,
-    hp: role.params.hp,
-    maxHp: role.params.hp,
-    tempHp: 0,
-    baseStats: cloneRoleParams(role.params),
-    statTokens: emptyModifiers(),
-    turnBoosts: emptyModifiers(),
-    installs: [],
-    roleState: {},
-});
+const createRuntimeStateFromRole = (playerId, role) => {
+    const roleState = {};
+    if (role.id === 'efficiency') {
+        roleState.cardEffectMultiplier = 2;
+    }
+    return {
+        playerId,
+        roleId: role.id,
+        hp: role.params.hp,
+        maxHp: role.params.hp,
+        tempHp: 0,
+        baseStats: cloneRoleParams(role.params),
+        statTokens: emptyModifiers(),
+        turnBoosts: emptyModifiers(),
+        installs: [],
+        roleState,
+    };
+};
 exports.createRuntimeStateFromRole = createRuntimeStateFromRole;
 const getEffectiveStatValue = (runtime, stat) => {
     if (!runtime) {
         return 0;
     }
     const key = stat;
-    return ((runtime.baseStats[key] ?? 0) +
+    const raw = (runtime.baseStats[key] ?? 0) +
         (runtime.statTokens[stat] ?? 0) +
-        (runtime.turnBoosts[stat] ?? 0));
+        (runtime.turnBoosts[stat] ?? 0);
+    if (runtime.roleId === 'giant' && (stat === 'def' || stat === 'spe')) {
+        return Math.min(raw, 0);
+    }
+    return raw;
 };
 exports.getEffectiveStatValue = getEffectiveStatValue;
 const applyRounding = (value, mode) => {

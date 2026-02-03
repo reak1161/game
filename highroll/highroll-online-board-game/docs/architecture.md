@@ -39,6 +39,14 @@ The server-side is built using Express and handles API requests and WebSocket co
 
 The `shared` directory contains common types and utility functions that facilitate communication between the client and server, ensuring type safety and code reusability.
 
+## Timed Effects & Status Chips
+
+To keep UX consistent, any **time-limited effect** (e.g. “until end of next turn”, “during next round”, “until Round N”) should be represented similarly to status effects (Burn/Stun) and shown as **status chips** on the Match screen.
+
+- **Server is the source of truth**: store the duration in `GameState` or `RoleRuntimeState` (e.g. `xxxUntilRound`, remaining turns counters, `nextRoundPriority`).
+- **Server clears expired state** when turns/rounds advance, so the UI automatically stops showing the chip.
+- **Client renders chips** from state (via `buildStatusEffects(...)`) with a compact label + tooltip details.
+
 ## Conclusion
 
 This architecture provides a modular and scalable structure for developing an online multiplayer board game, allowing for easy maintenance and future enhancements.

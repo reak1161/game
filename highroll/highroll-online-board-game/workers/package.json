@@ -1,0 +1,15 @@
+{
+  "name": "highroll-workers",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260203.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.0.0"
+  }
+}

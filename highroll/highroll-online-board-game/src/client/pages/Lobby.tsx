@@ -1,10 +1,9 @@
 import React from 'react';
-import { io, type Socket } from 'socket.io-client';
 import type { DeckSummary, LobbySummary, MatchmakingStatus, Role } from '@shared/types';
 import { useNavigate } from 'react-router-dom';
 import { fetchDecks, fetchRoles } from '@client/api/catalog';
 import RoleSelect from '@client/components/RoleSelect';
-import { createMatchWithRole } from '@client/api/matches';
+import { createSoloMatchVsCpu } from '@client/api/matches';
 import {
     cancelMatchmaking,
     createLobby,
@@ -13,13 +12,20 @@ import {
     getMatchmakingStatus,
     joinLobby,
     setLobbyRole,
-    startLobby,
 } from '@client/api/lobbies';
-import { SOCKET_URL, withApiBase } from '@client/config/api';
-import { rememberMatchPlayer, rememberLobbyPlayer, clearRememberedLobbyPlayer, getRememberedLobbyPlayer } from '@client/utils/matchPlayer';
+import { withApiBase } from '@client/config/api';
+import { rememberMatchPlayer, rememberLobbyPlayer } from '@client/utils/matchPlayer';
+import patchNotesMarkdown from '../../../docs/patch_notes_public.md?raw';
 
-type LobbyOwnerContext = { lobbyId: string; ownerPlayerId: string; ownerPlayerName: string } | null;
-type PlayerLobbyContext = { lobbyId: string; playerId: string; playerName: string } | null;
+const NAME_REGEX = /^[0-9A-Za-z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+$/;
+const NAME_MAX_LENGTH = 8;
+const normalizeName = (value?: string | null): string | null => {
+    const trimmed = value?.trim() ?? '';
+    if (!trimmed) return null;
+    if ([...trimmed].length > NAME_MAX_LENGTH) return null;
+    if (!NAME_REGEX.test(trimmed)) return null;
+    return trimmed;
+};
 
 const Lobby: React.FC = () => {
     const [roles, setRoles] = React.useState<Role[]>([]);
@@ -33,14 +39,22 @@ const Lobby: React.FC = () => {
     const [queueName, setQueueName] = React.useState('');
     const [joinPlayerName, setJoinPlayerName] = React.useState('');
     const [joinPassword, setJoinPassword] = React.useState('');
+    // CPU設定はロビー作成後（ロビー画面）で行う。ここは互換のため残しているが、UIは非表示。
+    const [cpuCount, setCpuCount] = React.useState(0);
+    const [cpuLevel, setCpuLevel] = React.useState<'easy' | 'normal' | 'hard'>('normal');
     const [ticketId, setTicketId] = React.useState<string | null>(null);
     const [queueStatus, setQueueStatus] = React.useState<MatchmakingStatus | null>(null);
-    const [ownedLobby, setOwnedLobby] = React.useState<LobbyOwnerContext>(null);
-    const [playerLobbyContext, setPlayerLobbyContext] = React.useState<PlayerLobbyContext>(null);
-    const [subscribedLobbyId, setSubscribedLobbyId] = React.useState<string | null>(null);
-    const [socket, setSocket] = React.useState<Socket | null>(null);
     const [apiStatus, setApiStatus] = React.useState<'unknown' | 'online' | 'offline'>('unknown');
     const [apiMessage, setApiMessage] = React.useState<string | null>(null);
+    const [showPatchNotes, setShowPatchNotes] = React.useState(false);
+    const patchNotesForDisplay = React.useMemo(() => {
+        const marker = /^## v/m;
+        const match = marker.exec(patchNotesMarkdown);
+        if (!match || match.index == null) {
+            return patchNotesMarkdown.trim();
+        }
+        return patchNotesMarkdown.slice(match.index).trim();
+    }, [patchNotesMarkdown]);
 
     const rememberPlayerControl = React.useCallback((matchId: string, playerId?: string | null, playerName?: string | null) => {
         if (matchId && playerId) {
@@ -48,64 +62,7 @@ const Lobby: React.FC = () => {
         }
     }, []);
 
-    const rememberLobbyControl = React.useCallback((lobbyId: string, playerId?: string | null, playerName?: string | null) => {
-        if (lobbyId && playerId) {
-            rememberLobbyPlayer(lobbyId, playerId, playerName ?? undefined);
-        }
-    }, []);
-
     const navigate = useNavigate();
-
-    React.useEffect(() => {
-        const lobbySocket = io(SOCKET_URL ?? undefined, {
-            transports: ['websocket'],
-            withCredentials: true,
-        });
-        setSocket(lobbySocket);
-        return () => lobbySocket.disconnect();
-    }, []);
-
-    React.useEffect(() => {
-        if (!socket) {
-            return;
-        }
-
-        const handleLobbyStarted = (payload: { lobbyId: string; matchId: string }) => {
-            if (payload?.lobbyId === subscribedLobbyId) {
-                const rememberedLobbyPlayer = getRememberedLobbyPlayer(payload.lobbyId);
-                const controllingPlayerId = playerLobbyContext?.playerId ?? rememberedLobbyPlayer?.id ?? ownedLobby?.ownerPlayerId ?? null;
-                const controllingPlayerName = playerLobbyContext?.playerName ?? rememberedLobbyPlayer?.name ?? ownedLobby?.ownerPlayerName ?? null;
-                rememberPlayerControl(payload.matchId, controllingPlayerId, controllingPlayerName);
-                if (payload.lobbyId) {
-                    clearRememberedLobbyPlayer(payload.lobbyId);
-                }
-                setSubscribedLobbyId(null);
-                setOwnedLobby(null);
-                setPlayerLobbyContext(null);
-                navigate(`/match/${payload.matchId}`);
-            }
-        };
-
-        socket.on('lobbyStarted', handleLobbyStarted);
-        return () => {
-            socket.off('lobbyStarted', handleLobbyStarted);
-        };
-    }, [socket, subscribedLobbyId, navigate, playerLobbyContext, ownedLobby, rememberPlayerControl, getRememberedLobbyPlayer, clearRememberedLobbyPlayer]);
-
-    React.useEffect(() => {
-        if (!socket) {
-            return;
-        }
-
-        if (subscribedLobbyId) {
-            socket.emit('joinLobby', subscribedLobbyId);
-            return () => {
-                socket.emit('leaveLobby', subscribedLobbyId);
-            };
-        }
-
-        return undefined;
-    }, [socket, subscribedLobbyId]);
 
     const handleNetworkFailure = React.useCallback((message?: string) => {
         setApiStatus('offline');
@@ -210,9 +167,18 @@ const Lobby: React.FC = () => {
             alert('ロールを選択してください。');
             return;
         }
+        const resolvedPlayerName = normalizeName(playerName);
+        if (playerName.trim() && !resolvedPlayerName) {
+            alert('プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+            return;
+        }
         try {
-            const { matchId, state } = await createMatchWithRole(selectedRoleId, playerName || 'Player', selectedDeckId);
-            const owner = state.players?.[0];
+            const { matchId, playerId, state } = await createSoloMatchVsCpu(
+                selectedRoleId,
+                resolvedPlayerName ?? 'Player',
+                selectedDeckId
+            );
+            const owner = state.players.find((p) => p.id === playerId) ?? state.players?.[0];
             rememberPlayerControl(matchId, owner?.id, owner?.name);
             navigate(`/match/${matchId}`);
         } catch (error) {
@@ -222,10 +188,19 @@ const Lobby: React.FC = () => {
     };
 
     const handleCreateLobby = async () => {
-        const ownerNameResolved = (playerName || 'ホスト').trim() || 'ホスト';
+        const ownerNameResolved = normalizeName(playerName) ?? 'ホスト';
+        if (playerName.trim() && ownerNameResolved === 'ホスト') {
+            alert('プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+            return;
+        }
+        const lobbyNameResolved = normalizeName(lobbyName);
+        if (lobbyName.trim() && !lobbyNameResolved) {
+            alert('ロビー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+            return;
+        }
         try {
             const { lobbyId, ownerPlayerId } = await createLobby({
-                lobbyName,
+                lobbyName: lobbyNameResolved ?? undefined,
                 ownerName: ownerNameResolved,
                 password: password || undefined,
                 deckId: selectedDeckId,
@@ -235,11 +210,9 @@ const Lobby: React.FC = () => {
                 await setLobbyRole(lobbyId, ownerPlayerId, selectedRoleId);
             }
 
-            setOwnedLobby({ lobbyId, ownerPlayerId, ownerPlayerName: ownerNameResolved });
-            setPlayerLobbyContext({ lobbyId, playerId: ownerPlayerId, playerName: ownerNameResolved });
-            setSubscribedLobbyId(lobbyId);
-            rememberLobbyControl(lobbyId, ownerPlayerId, ownerNameResolved);
+            rememberLobbyPlayer(lobbyId, ownerPlayerId, ownerNameResolved);
             refreshLobbies();
+            navigate(`/lobby/${lobbyId}`);
         } catch (error) {
             flagNetworkError(error);
             alert(`ロビー作成に失敗しました: ${(error as Error).message}`);
@@ -247,7 +220,7 @@ const Lobby: React.FC = () => {
     };
 
     const handleJoinLobby = async (lobby: LobbySummary) => {
-        const resolvedName = (joinPlayerName || playerName || '').trim();
+        const resolvedName = normalizeName(joinPlayerName || playerName);
         if (!resolvedName) {
             alert('参加するプレイヤー名を入力してください。');
             return;
@@ -258,45 +231,36 @@ const Lobby: React.FC = () => {
         }
         const pw = lobby.isPrivate ? joinPassword.trim() : undefined;
         try {
-            const result = await joinLobby(lobby.id, { name: resolvedName, password: pw, roleId: selectedRoleId ?? undefined });
+            const result = await joinLobby(lobby.id, {
+                name: resolvedName,
+                password: pw,
+                roleId: selectedRoleId ?? undefined,
+            });
             if (selectedRoleId && result?.player?.id) {
                 await setLobbyRole(lobby.id, result.player.id, selectedRoleId);
             }
-            setPlayerLobbyContext({ lobbyId: lobby.id, playerId: result?.player?.id, playerName: resolvedName });
-            setSubscribedLobbyId(lobby.id);
-            rememberLobbyControl(lobby.id, result?.player?.id ?? undefined);
+            if (result?.player?.id) {
+                rememberLobbyPlayer(lobby.id, result.player.id, resolvedName);
+            }
             if (!lobby.isPrivate) {
                 setJoinPassword('');
             }
             setJoinPlayerName(resolvedName);
-            alert('ロビーに参加しました。ホストが開始するまでお待ちください。');
+            navigate(`/lobby/${lobby.id}`);
         } catch (error) {
             flagNetworkError(error);
             alert(`ロビー参加に失敗しました: ${(error as Error).message}`);
         }
     };
 
-    const handleStartOwnedLobby = async () => {
-        if (!ownedLobby) {
-            alert('開始できるロビーがありません。');
+    const handleMatchmaking = async () => {
+        const resolvedQueueName = normalizeName(queueName || playerName);
+        if ((queueName || playerName || '').trim() && !resolvedQueueName) {
+            alert('プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
             return;
         }
         try {
-            const { matchId } = await startLobby(ownedLobby.lobbyId, ownedLobby.ownerPlayerId);
-            rememberPlayerControl(matchId, ownedLobby.ownerPlayerId, ownedLobby.ownerPlayerName);
-            clearRememberedLobbyPlayer(ownedLobby.lobbyId);
-            setOwnedLobby(null);
-            setSubscribedLobbyId(null);
-            navigate(`/match/${matchId}`);
-        } catch (error) {
-            flagNetworkError(error);
-            alert(`ロビーの開始に失敗しました: ${(error as Error).message}`);
-        }
-    };
-
-    const handleMatchmaking = async () => {
-        try {
-            const { ticketId: newTicket } = await enqueueMatchmaking(queueName || playerName || 'プレイヤー', selectedRoleId ?? undefined, selectedDeckId);
+            const { ticketId: newTicket } = await enqueueMatchmaking(resolvedQueueName ?? 'プレイヤー', selectedRoleId ?? undefined, selectedDeckId);
             setTicketId(newTicket);
             setQueueStatus('waiting');
         } catch (error) {
@@ -329,8 +293,32 @@ const Lobby: React.FC = () => {
     return (
         <div className="lobby container" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px 64px', minHeight: '100vh' }}>
             <section style={{ background: 'linear-gradient(120deg, #0f172a, #1e3a8a)', borderRadius: 24, padding: '32px 40px', color: '#fff', boxShadow: '0 15px 35px rgba(15,23,42,0.3)' }}>
-                <h1 style={{ fontSize: 32, margin: 0 }}>Highroll Lobby</h1>
-                <p style={{ marginTop: 12, color: '#e2e8f0' }}>ロールとデッキを選び、友だちとロビーまたは自動マッチングで対戦を始めましょう。</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                    <div>
+                        <h1 style={{ fontSize: 32, margin: 0 }}>ホーム</h1>
+                        <p style={{ marginTop: 12, color: '#e2e8f0' }}>ロールとデッキを選び、友だちとロビーまたは自動マッチングで対戦を始めましょう。</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                            onClick={() => {
+                                setShowPatchNotes(true);
+                                window.setTimeout(() => {
+                                    document.getElementById('patch-notes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }, 0);
+                            }}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: 10,
+                                border: '1px solid rgba(226,232,240,0.5)',
+                                background: 'rgba(15, 23, 42, 0.25)',
+                                color: '#fff',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            パッチノート
+                        </button>
+                    </div>
+                </div>
             </section>
             {apiStatus === 'offline' && (
                 <section style={{ ...sectionStyle, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16 }}>
@@ -389,7 +377,7 @@ const Lobby: React.FC = () => {
                 <h2 style={{ fontSize: 20, marginBottom: 8 }}>ロビー参加情報</h2>
                 <p style={{ color: '#64748b', marginBottom: 12 }}>既存ロビーへ参加するときに使用するプレイヤー名・パスワード（鍵付きのみ）を設定します。</p>
                 <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                    <input value={joinPlayerName} onChange={(e) => setJoinPlayerName(e.target.value)} placeholder="参加用プレイヤー名" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                    <input value={joinPlayerName} onChange={(e) => setJoinPlayerName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="参加用プレイヤー名" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
                     <input value={joinPassword} onChange={(e) => setJoinPassword(e.target.value)} placeholder="参加用パスワード（鍵付きのみ）" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
                 </div>
             </section>
@@ -397,23 +385,43 @@ const Lobby: React.FC = () => {
             <section style={sectionStyle}>
                 <h2 style={{ fontSize: 20, marginBottom: 8 }}>ロビー作成</h2>
                 <div style={{ display: 'grid', gap: 8 }}>
-                    <input value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder="プレイヤー名" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                    <input value={lobbyName} onChange={(e) => setLobbyName(e.target.value)} placeholder="ロビー名" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <input value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="プレイヤー名" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <input value={lobbyName} onChange={(e) => setLobbyName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="ロビー名" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
                     <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="パスワード（任意）" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <div style={{ display: 'none', gap: 8, flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#475569', minWidth: 180 }}>
+                            CPU人数（0〜5）
+                            <select
+                                value={cpuCount}
+                                onChange={(e) => setCpuCount(Number(e.target.value))}
+                                style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                            >
+                                {[0, 1, 2, 3, 4, 5].map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#475569', minWidth: 180 }}>
+                            CPU強さ
+                            <select
+                                value={cpuLevel}
+                                onChange={(e) => setCpuLevel(e.target.value as 'easy' | 'normal' | 'hard')}
+                                style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                            >
+                                <option value="easy">EASY</option>
+                                <option value="normal">NORMAL</option>
+                                <option value="hard">HARD</option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={handleCreateLobby} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0f172a', color: '#fff' }}>
                         ロビーを作成
                     </button>
-                    {ownedLobby && (
-                        <button onClick={handleStartOwnedLobby} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5f5', background: '#fff' }}>
-                            自分のロビーを開始
-                        </button>
-                    )}
                 </div>
-                {ownedLobby && (
-                    <p style={{ marginTop: 8, color: '#0f172a' }}>Lobby ID: {ownedLobby.lobbyId}</p>
-                )}
             </section>
 
             <section style={sectionStyle}>
@@ -457,7 +465,7 @@ const Lobby: React.FC = () => {
             <section style={sectionStyle}>
                 <h2 style={{ fontSize: 20 }}>自動マッチング</h2>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                    <input value={queueName} onChange={(e) => setQueueName(e.target.value)} placeholder="マッチング用プレイヤー名" style={{ flex: 1, minWidth: 200, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <input value={queueName} onChange={(e) => setQueueName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="マッチング用プレイヤー名" style={{ flex: 1, minWidth: 200, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
                     <button onClick={handleMatchmaking} disabled={Boolean(ticketId)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: ticketId ? '#94a3b8' : '#16a34a', color: '#fff' }}>
                         {ticketId ? '待機中' : 'マッチングに参加'}
                     </button>
@@ -469,6 +477,40 @@ const Lobby: React.FC = () => {
                 </div>
                 {ticketId && (
                     <p style={{ marginTop: 8 }}>ステータス: {queueStatus ?? 'checking...'} （チケット: {ticketId}）</p>
+                )}
+            </section>
+
+            <section id="patch-notes" style={sectionStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <h2 style={{ fontSize: 20, margin: 0 }}>パッチノート</h2>
+                    <button
+                        onClick={() => setShowPatchNotes((prev) => !prev)}
+                        style={{ border: '1px solid #cbd5f5', background: '#fff', padding: '6px 12px', borderRadius: 10 }}
+                    >
+                        {showPatchNotes ? '閉じる' : '開く'}
+                    </button>
+                </div>
+                {showPatchNotes ? (
+                    <pre
+                        style={{
+                            marginTop: 12,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            fontSize: 12,
+                            lineHeight: 1.6,
+                            color: '#0f172a',
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 12,
+                            padding: 12,
+                            maxHeight: 520,
+                            overflow: 'auto',
+                        }}
+                    >
+                        {patchNotesForDisplay}
+                    </pre>
+                ) : (
+                    <p style={{ marginTop: 8, color: '#64748b' }}>「開く」を押すと、最新版の更新履歴を表示します。</p>
                 )}
             </section>
         </div>

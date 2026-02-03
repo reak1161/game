@@ -4,8 +4,10 @@
   "description": "An online multiplayer board game project.",
   "main": "dist/server/index.js",
   "scripts": {
-    "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\"",
-    "dev:client": "vite --host 0.0.0.0",
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:cf": "concurrently \"npm:dev:cf:api\" \"npm:dev:client\"",
+    "dev:client": "wait-on -l http://127.0.0.1:4000/health && vite --host 0.0.0.0",
+    "dev:cf:api": "npm --prefix workers run dev -- --port 4000",
     "dev:server": "ts-node-dev --respawn --project tsconfig.server.json src/server/index.ts",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
@@ -42,7 +44,8 @@
     "ts-jest": "^29.2.5",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "wait-on": "^8.0.0"
   },
   "keywords": [
     "board game",

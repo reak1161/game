@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three Turn Will Be End</title>
+    <link rel="stylesheet" href="./styles.css?v=2" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div>
+          <h1>Three Turn Will Be End</h1>
+          <p class="subtitle">3ターンで終わるサバイバル推理カードゲーム（オンライン版）</p>
+        </div>
+        <div class="status-pill" id="connectionStatus">disconnected</div>
+      </header>
+
+      <main class="layout">
+        <section class="panel" id="lobby">
+          <div class="panel-header">
+            <h2>ロビー</h2>
+            <div id="roomCodeDisplay" class="room-code"></div>
+          </div>
+          <div class="form-row">
+            <label>プレイヤー名</label>
+            <input id="nameInput" type="text" placeholder="名前を入力" />
+          </div>
+          <div class="form-row">
+            <label>ルームコード</label>
+            <input id="roomInput" type="text" placeholder="例: ABCD" />
+          </div>
+          <div class="button-row">
+            <button id="createRoomBtn" class="btn primary">ルーム作成</button>
+            <button id="joinRoomBtn" class="btn ghost">ルーム参加</button>
+          </div>
+          <div class="player-list" id="playerList"></div>
+          <div class="host-actions">
+            <button id="startGameBtn" class="btn accent">ゲーム開始（ホストのみ）</button>
+          </div>
+          <div class="notice" id="lobbyNotice"></div>
+        </section>
+
+        <section class="panel game-panel" id="gamePanel">
+          <div class="panel-header">
+            <h2>ゲーム</h2>
+            <div class="round-info" id="roundInfo"></div>
+          </div>
+          <div class="meta-bar" id="gameMeta"></div>
+          <div class="game-grid">
+            <div class="board">
+              <div class="top-bar" id="turnInfo"></div>
+              <div class="attack-zone">
+                <h3>攻撃ゾーン</h3>
+                <div class="attack-cards" id="attackZone"></div>
+              </div>
+              <div class="hand-area">
+                <div class="hand-header">
+                  <h3>手札</h3>
+                  <div class="declare-buttons" id="declareButtons"></div>
+                </div>
+                <div class="hand-cards" id="handCards"></div>
+                <div class="hand-actions">
+                  <span id="selectionInfo"></span>
+                  <button id="playBtn" class="btn primary">プレイ</button>
+                </div>
+              </div>
+            </div>
+            <div class="side">
+              <div class="prompt-panel" id="promptPanel"></div>
+              <div class="log-panel">
+                <h3>ログ</h3>
+                <div id="logList" class="log-list"></div>
+              </div>
+              <div class="error-panel" id="errorBox"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./main.js?v=2"></script>
+  </body>
+</html>

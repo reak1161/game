@@ -28,6 +28,7 @@ export default defineConfig({
       '/api': {
         target: API_URL,
         changeOrigin: true,
+        ws: true,
       },
       '/socket.io': {
         target: API_URL,

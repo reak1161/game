@@ -1,9 +1,19 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { CardDefinition, GameLogEntry, GameState, Player, PlayerRuntimeState, RoleActionDefinition, StatKey } from '@shared/types';
+import type {
+    CardDefinition,
+    CardEffect,
+    CardTarget,
+    GameLogEntry,
+    GameState,
+    Player,
+    PlayerRuntimeState,
+    RoleActionDefinition,
+    StatKey,
+} from '@shared/types';
 import { drawCards, endTurn, getMatch, playCard, roleAction as performRoleAction, roleAttack } from '@client/api/matches';
-import cardsCatalogRaw from '../../../data/cards.json' with { type: 'json' };
-import rolesCatalogRaw from '../../../data/roles.json' with { type: 'json' };
+import cardsCatalogRaw from '../../../data/cards.json';
+import rolesCatalogRaw from '../../../data/roles.json';
 import { clearRememberedMatchPlayer, getRememberedMatchPlayer, rememberMatchPlayer } from '@client/utils/matchPlayer';
 import { getRoleActions, ROLE_ACTION_BASE_STATS } from '@shared/roleActions';
 
@@ -37,10 +47,12 @@ const statusColors: Record<string, string> = {
 };
 const STAT_OPTIONS: Array<'atk' | 'def' | 'spe' | 'bra'> = ['atk', 'def', 'spe', 'bra'];
 
+const effectHasTarget = (effect: CardEffect): effect is CardEffect & { target: CardTarget } => 'target' in effect;
+
 const cardNeedsTarget = (card?: CardDefinition | null): boolean =>
     Boolean(
         card?.effects?.some(
-            (effect) => effect.target === 'chosen_enemy' || effect.target === 'chosen_player'
+            (effect) => effectHasTarget(effect) && (effect.target === 'chosen_enemy' || effect.target === 'chosen_player')
         )
     );
 

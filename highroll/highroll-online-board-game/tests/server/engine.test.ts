@@ -1,14 +1,16 @@
 /** @jest-environment node */
 import GameEngine from '../../src/server/game/engine';
 import type { GameState } from '../../src/shared/types';
+import { getCardsCatalog, getRolesCatalog } from '../../src/server/data/catalog';
 
 describe('GameEngine', () => {
     const matchId = 'match-test';
     const defaultRole = 'swiftwind';
     const alternateRole = 'anger';
+    const catalog = { roles: getRolesCatalog(), cards: getCardsCatalog() };
 
     it('initializes with waiting status', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const state = engine.getState();
 
         expect(state.status).toBe('waiting');
@@ -17,7 +19,7 @@ describe('GameEngine', () => {
     });
 
     it('allows players to join and marks them ready', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const player = engine.addPlayer('Alice');
 
         engine.markPlayerReady(player.id, true);
@@ -29,7 +31,7 @@ describe('GameEngine', () => {
     });
 
     it('starts the game when all players are ready', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -45,7 +47,7 @@ describe('GameEngine', () => {
     });
 
     it('throws if attempting to start when players are not ready', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         engine.addPlayer('Alice');
         engine.setPlayerRole(engine.getState().players[0].id, defaultRole);
 
@@ -53,7 +55,7 @@ describe('GameEngine', () => {
     });
 
     it('ends the game and stores winner when provided', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -71,7 +73,7 @@ describe('GameEngine', () => {
     });
 
     it('applies damage when casting attack cards', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -90,7 +92,7 @@ describe('GameEngine', () => {
     });
 
     it('grants stat tokens when buff cards resolve', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -108,7 +110,7 @@ describe('GameEngine', () => {
     });
 
     it('performs role attacks and logs the result', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -132,7 +134,7 @@ describe('GameEngine', () => {
     });
 
     it('allows struggle attacks when Bra is zero and ends the turn', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -163,7 +165,7 @@ describe('GameEngine', () => {
     });
 
     it('eliminates players at 0 HP and ends the match when one remains', () => {
-        const engine = new GameEngine(matchId);
+        const engine = new GameEngine(matchId, [], { catalog });
         const alice = engine.addPlayer('Alice');
         const bob = engine.addPlayer('Bob');
         engine.setPlayerRole(alice.id, defaultRole);
@@ -187,7 +189,7 @@ describe('GameEngine', () => {
 
     describe('role abilities', () => {
         it('applies swiftwind bonuses on attacks and stat thresholds', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const swift = engine.addPlayer('Swift');
             const target = engine.addPlayer('Target');
             engine.setPlayerRole(swift.id, 'swiftwind');
@@ -208,7 +210,7 @@ describe('GameEngine', () => {
         });
 
         it('lets swiftwind spend speed tokens to reduce incoming damage', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const swift = engine.addPlayer('Swift');
             const target = engine.addPlayer('Target');
             engine.setPlayerRole(swift.id, 'swiftwind');
@@ -230,7 +232,7 @@ describe('GameEngine', () => {
         });
 
         it('grants anger attack tokens equal to received damage', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const swift = engine.addPlayer('Swift');
             const anger = engine.addPlayer('Anger');
             engine.setPlayerRole(swift.id, 'swiftwind');
@@ -247,7 +249,7 @@ describe('GameEngine', () => {
         });
 
         it('applies the monster duel curse when only two players remain', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const monster = engine.addPlayer('Monster');
             const swift = engine.addPlayer('Swift');
             const anger = engine.addPlayer('Anger');
@@ -272,7 +274,7 @@ describe('GameEngine', () => {
         });
 
         it('causes bomb to self-damage and reflect damage onto attackers', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const bomb = engine.addPlayer('Bomb');
             const anger = engine.addPlayer('Anger');
             engine.setPlayerRole(bomb.id, 'bomb');
@@ -299,7 +301,7 @@ describe('GameEngine', () => {
         });
 
         it('rewards murderer with stat tokens after a kill', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const murderer = engine.addPlayer('Murderer');
             const victim = engine.addPlayer('Victim');
             engine.setPlayerRole(murderer.id, 'murderer');
@@ -333,7 +335,7 @@ describe('GameEngine', () => {
         };
 
         it('accumulates charge for discharge and applies shock tokens', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const discharge = engine.addPlayer('Spark');
             const target = engine.addPlayer('Dummy');
             engine.setPlayerRole(discharge.id, 'discharge');
@@ -367,7 +369,7 @@ describe('GameEngine', () => {
         });
 
         it('executes doctor actions', () => {
-            const engine = new GameEngine(matchId);
+            const engine = new GameEngine(matchId, [], { catalog });
             const doctor = engine.addPlayer('Doctor');
             const patient = engine.addPlayer('Patient');
             engine.setPlayerRole(doctor.id, 'doctor');

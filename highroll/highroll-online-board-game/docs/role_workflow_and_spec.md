@@ -21,6 +21,10 @@
 - `data/roles_compiled.json`: エンジンが解釈する挙動定義 (abilities / roleActions / condition)。コメント付き JSON を許容し、`getRolesCatalog` が `roles.json` とマージする。
 - すべてのロールは `id` で一意にし、`src/shared/types/index.ts` の `Role` 型に準拠させる。
 
+### 表示テキストの方針
+- `roles.json` の `text` は**ロール選択などで見せる短文**（1行想定）。
+- 詳細説明は `roles.json` の `detailText` に保存し、バトル中の「ロール詳細」から参照できる。
+
 ---
 
 ## 3. Ability スキーマ概要

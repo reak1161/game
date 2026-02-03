@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setMatchStatus = exports.updatePlayerScore = exports.updatePlayerRuntimeState = exports.setPlayerRuntimeState = exports.consumeBra = exports.setBraTokens = exports.advanceTurnState = exports.setTurnOrder = exports.playCardFromHand = exports.drawFromSharedDeck = exports.setSharedDeck = exports.setPlayerRole = exports.setPlayerReady = exports.addPlayerToState = exports.createPlayer = exports.createInitialGameState = void 0;
+exports.setMatchStatus = exports.updatePlayerScore = exports.updatePlayerRuntimeState = exports.setPlayerRuntimeState = exports.consumeBra = exports.setBraTokens = exports.advanceTurnState = exports.setTurnOrder = exports.playCardFromHand = exports.drawFromSharedDeck = exports.setSharedDeck = exports.setPlayerRole = exports.setPlayerReady = exports.addPlayerToState = exports.createPlayer = exports.setPendingPrompt = exports.createInitialGameState = void 0;
 const createInitialBoardState = () => ({
     playerStates: {},
 });
@@ -29,6 +29,7 @@ const createInitialGameState = (matchId, initialPlayers = []) => ({
     id: matchId,
     players: initialPlayers,
     currentTurn: 0,
+    round: 1,
     status: 'waiting',
     winnerId: undefined,
     board: createInitialBoardState(),
@@ -43,8 +44,19 @@ const createInitialGameState = (matchId, initialPlayers = []) => ({
     logs: [],
     currentPlayerId: undefined,
     turnOrder: [],
+    turnOrderMode: undefined,
+    turnOrderModeUntilRound: undefined,
+    roundTurnsTaken: 0,
+    deferredTurns: [],
+    deferredTurnActive: false,
+    pendingPrompt: undefined,
 });
 exports.createInitialGameState = createInitialGameState;
+const setPendingPrompt = (state, pendingPrompt) => withTimestamp({
+    ...state,
+    pendingPrompt,
+});
+exports.setPendingPrompt = setPendingPrompt;
 const createPlayer = (name, id) => ({
     id: id ?? generateId(),
     name,
@@ -145,11 +157,14 @@ const advanceTurnState = (state) => {
     if (state.turnOrder.length === 0) {
         return state;
     }
+    const currentRound = Number.isFinite(state.round) ? state.round : 1;
     const nextIndex = (state.currentTurn + 1) % state.turnOrder.length;
+    const nextRound = nextIndex === 0 ? currentRound + 1 : currentRound;
     return withTimestamp({
         ...state,
         currentTurn: nextIndex,
         currentPlayerId: state.turnOrder[nextIndex],
+        round: nextRound,
     });
 };
 exports.advanceTurnState = advanceTurnState;

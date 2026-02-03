@@ -1,4 +1,4 @@
-import type { LobbySummary, MatchmakingStatus } from '@shared/types';
+import type { LobbyDetail, LobbySummary, MatchmakingStatus } from '@shared/types';
 import { withApiBase } from '@client/config/api';
 
 export async function fetchLobbies(signal?: AbortSignal): Promise<LobbySummary[]> {
@@ -32,7 +32,22 @@ export async function createLobby(payload: {
     };
 }
 
-export async function joinLobby(lobbyId: string, payload: { name: string; password?: string; roleId?: string }) {
+export async function fetchLobby(lobbyId: string, signal?: AbortSignal): Promise<LobbyDetail | null> {
+    const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}`), { credentials: 'include', signal });
+    if (!res.ok) {
+        if (res.status === 404) {
+            return null;
+        }
+        throw new Error(`Failed to fetch lobby: ${res.status}`);
+    }
+    const data = (await res.json()) as { lobby?: LobbyDetail };
+    return data.lobby ?? null;
+}
+
+export async function joinLobby(
+    lobbyId: string,
+    payload: { name: string; password?: string; roleId?: string; isSpectator?: boolean }
+) {
     const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}/join`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,6 +58,18 @@ export async function joinLobby(lobbyId: string, payload: { name: string; passwo
         throw new Error(`Failed to join lobby: ${res.status}`);
     }
     return res.json();
+}
+
+export async function leaveLobby(lobbyId: string, playerId: string) {
+    const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}/leave`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ playerId }),
+    });
+    if (!res.ok && res.status !== 204) {
+        throw new Error(`Failed to leave lobby: ${res.status}`);
+    }
 }
 
 export async function startLobby(lobbyId: string, playerId: string) {
@@ -69,6 +96,65 @@ export async function setLobbyRole(lobbyId: string, playerId: string, roleId: st
         throw new Error(`Failed to set lobby role: ${res.status}`);
     }
     return res.json();
+}
+
+export async function setLobbyReady(lobbyId: string, playerId: string, isReady: boolean) {
+    const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}/ready`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ playerId, isReady }),
+    });
+    if (!res.ok) {
+        throw new Error(`Failed to set lobby ready: ${res.status}`);
+    }
+    return res.json();
+}
+
+export async function setLobbySpectator(lobbyId: string, playerId: string, isSpectator: boolean) {
+    const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}/spectator`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ playerId, isSpectator }),
+    });
+    if (!res.ok) {
+        throw new Error(`Failed to set lobby spectator: ${res.status}`);
+    }
+    return res.json();
+}
+
+export async function addLobbyCpu(
+    lobbyId: string,
+    playerId: string,
+    cpuCount = 1,
+    cpuLevel: 'easy' | 'normal' | 'hard' = 'normal'
+): Promise<LobbyDetail | null> {
+    const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}/cpu`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ playerId, cpuCount, cpuLevel }),
+    });
+    if (!res.ok) {
+        throw new Error(`Failed to add CPU players: ${res.status}`);
+    }
+    const data = (await res.json()) as { lobby?: LobbyDetail };
+    return data.lobby ?? null;
+}
+
+export async function updateLobbySettings(lobbyId: string, playerId: string, showRoles: boolean) {
+    const res = await fetch(withApiBase(`/api/lobbies/${lobbyId}/settings`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ playerId, showRoles }),
+    });
+    if (!res.ok) {
+        throw new Error(`Failed to update lobby settings: ${res.status}`);
+    }
+    const data = (await res.json()) as { lobby?: LobbyDetail };
+    return data.lobby ?? null;
 }
 
 export async function enqueueMatchmaking(name: string, roleId?: string | null, deckId = 'default_60') {

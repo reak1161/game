@@ -1,14 +1,19 @@
-import { createHash, randomUUID } from 'node:crypto';
+﻿import { createHash, randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import type { CreatePlayerInput } from './matchRoutes';
 import { createMatch } from './matchRoutes';
+import { getRolesCatalog } from '../data/catalog';
 import { emitLobbyEvent } from '../sockets/gatewayContext';
 
 interface LobbyPlayer {
     id: string;
     name: string;
     roleId?: string;
+    isReady?: boolean;
+    isSpectator?: boolean;
+    isCpu?: boolean;
+    cpuLevel?: 'easy' | 'normal' | 'hard';
 }
 
 interface Lobby {
@@ -20,6 +25,7 @@ interface Lobby {
     deckId: string;
     players: LobbyPlayer[];
     createdAt: number;
+    showRoles: boolean;
 }
 
 interface MatchmakingTicket {
@@ -40,10 +46,23 @@ const matchmakingResults = new Map<string, MatchmakingTicket>();
 
 const hashPassword = (pw: string): string => createHash('sha256').update(pw).digest('hex');
 
+const NAME_REGEX = /^[0-9A-Za-z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+$/;
+const NAME_MAX_LENGTH = 8;
+const MAX_PLAYERS = 6;
+
 const sanitizeName = (name?: string): string | undefined => {
     if (!name) return undefined;
     const trimmed = name.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
+    if (trimmed.length === 0) {
+        return undefined;
+    }
+    if ([...trimmed].length > NAME_MAX_LENGTH) {
+        return undefined;
+    }
+    if (!NAME_REGEX.test(trimmed)) {
+        return undefined;
+    }
+    return trimmed;
 };
 
 const findLobby = (id: string, res: Response): Lobby | undefined => {
@@ -67,6 +86,23 @@ router.get('/', (_req: Request, res: Response) => {
     res.json({ lobbies: items });
 });
 
+router.get('/:id', (req: Request, res: Response) => {
+    const lobby = findLobby(req.params.id, res);
+    if (!lobby) return;
+    res.json({
+        lobby: {
+            id: lobby.id,
+            name: lobby.name,
+            ownerId: lobby.ownerId,
+            isPrivate: lobby.isPrivate,
+            deckId: lobby.deckId,
+            players: lobby.players,
+            createdAt: lobby.createdAt,
+            showRoles: lobby.showRoles,
+        },
+    });
+});
+
 router.post('/', (req: Request, res: Response) => {
     const { lobbyName, ownerName, password, deckId = DEFAULT_DECK_ID } = req.body as {
         lobbyName?: string;
@@ -75,6 +111,14 @@ router.post('/', (req: Request, res: Response) => {
         deckId?: string;
     };
 
+    if (lobbyName && !sanitizeName(lobbyName)) {
+        res.status(400).json({ message: 'ロビー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみで入力してください。' });
+        return;
+    }
+    if (ownerName && !sanitizeName(ownerName)) {
+        res.status(400).json({ message: 'プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみで入力してください。' });
+        return;
+    }
     const resolvedName = sanitizeName(lobbyName) ?? 'Lobby';
     const owner = sanitizeName(ownerName) ?? 'Host';
     const lobbyId = randomUUID();
@@ -91,9 +135,12 @@ router.post('/', (req: Request, res: Response) => {
             {
                 id: ownerId,
                 name: owner,
+                isReady: true,
+                isSpectator: false,
             },
         ],
         createdAt: Date.now(),
+        showRoles: true,
     };
 
     lobbies.set(lobbyId, lobby);
@@ -104,15 +151,80 @@ router.post('/', (req: Request, res: Response) => {
     });
 });
 
+router.post('/:id/cpu', (req: Request, res: Response) => {
+    const lobby = findLobby(req.params.id, res);
+    if (!lobby) return;
+
+    const { playerId, cpuCount, cpuLevel } = req.body as {
+        playerId?: string;
+        cpuCount?: number;
+        cpuLevel?: 'easy' | 'normal' | 'hard';
+    };
+
+    if (!playerId) {
+        res.status(400).json({ message: 'playerId is required.' });
+        return;
+    }
+    if (playerId !== lobby.ownerId) {
+        res.status(403).json({ message: 'Only the lobby owner can add CPU players.' });
+        return;
+    }
+
+    const normalizedCpuCount =
+        typeof cpuCount === 'number' && Number.isFinite(cpuCount) ? Math.max(1, Math.floor(cpuCount)) : 1;
+    const normalizedCpuLevel: 'easy' | 'normal' | 'hard' =
+        cpuLevel === 'easy' || cpuLevel === 'hard' ? cpuLevel : 'normal';
+
+    const remaining = Math.max(0, MAX_PLAYERS - lobby.players.length);
+    const toAdd = Math.min(remaining, normalizedCpuCount);
+    if (toAdd <= 0) {
+        res.status(400).json({ message: `ロビーは最大${MAX_PLAYERS}人まで参加できます。` });
+        return;
+    }
+
+    const roleIds = getRolesCatalog().map((role) => role.id);
+    const existingCpuCount = lobby.players.filter((p) => p.isCpu).length;
+
+    for (let i = 0; i < toAdd; i += 1) {
+        const roleId = roleIds.length > 0 ? roleIds[Math.floor(Math.random() * roleIds.length)] : undefined;
+        lobby.players.push({
+            id: randomUUID(),
+            name: `CPU${existingCpuCount + i + 1}`,
+            roleId,
+            isReady: true,
+            isSpectator: false,
+            isCpu: true,
+            cpuLevel: normalizedCpuLevel,
+        });
+    }
+
+    res.status(200).json({
+        lobby: {
+            id: lobby.id,
+            name: lobby.name,
+            ownerId: lobby.ownerId,
+            isPrivate: lobby.isPrivate,
+            deckId: lobby.deckId,
+            players: lobby.players,
+            createdAt: lobby.createdAt,
+            showRoles: lobby.showRoles,
+        },
+    });
+});
+
 router.post('/:id/join', (req: Request, res: Response) => {
     const lobby = findLobby(req.params.id, res);
     if (!lobby) return;
 
-    const { name, password, roleId } = req.body as { name?: string; password?: string; roleId?: string };
+    const { name, password, roleId } = req.body as {
+        name?: string;
+        password?: string;
+        roleId?: string;
+    };
     const resolvedName = sanitizeName(name);
 
     if (!resolvedName) {
-        res.status(400).json({ message: 'name is required.' });
+        res.status(400).json({ message: 'プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみで入力してください。' });
         return;
     }
 
@@ -123,10 +235,52 @@ router.post('/:id/join', (req: Request, res: Response) => {
         }
     }
 
-    const player = { id: randomUUID(), name: resolvedName, roleId } satisfies LobbyPlayer;
+    if (lobby.players.length >= MAX_PLAYERS) {
+        res.status(400).json({ message: `ロビーは最大${MAX_PLAYERS}人まで参加できます。` });
+        return;
+    }
+
+    const player = {
+        id: randomUUID(),
+        name: resolvedName,
+        roleId,
+        isReady: false,
+        isSpectator: false,
+    } satisfies LobbyPlayer;
     lobby.players.push(player);
 
     res.status(200).json({ lobbyId: lobby.id, player });
+});
+
+router.post('/:id/spectator', (req: Request, res: Response) => {
+    const lobby = findLobby(req.params.id, res);
+    if (!lobby) return;
+
+    const { playerId, isSpectator } = req.body as { playerId?: string; isSpectator?: boolean };
+    if (!playerId || typeof isSpectator !== 'boolean') {
+        res.status(400).json({ message: 'playerId and isSpectator are required.' });
+        return;
+    }
+    if (playerId === lobby.ownerId && isSpectator) {
+        res.status(400).json({ message: 'ホストは観戦モードに切り替えできません。' });
+        return;
+    }
+
+    const target = lobby.players.find((player) => player.id === playerId);
+    if (!target) {
+        res.status(404).json({ message: 'Player not found in lobby.' });
+        return;
+    }
+
+    target.isSpectator = isSpectator;
+    if (isSpectator) {
+        target.roleId = undefined;
+        target.isReady = false;
+    } else {
+        target.isReady = false;
+    }
+
+    res.status(200).json({ lobbyId: lobby.id, player: target });
 });
 
 router.post('/:id/leave', (req: Request, res: Response) => {
@@ -158,10 +312,50 @@ router.post('/:id/start', (req: Request, res: Response) => {
         return;
     }
 
-    const players: CreatePlayerInput[] = lobby.players.map((player) => ({
+    const roleIds = getRolesCatalog().map((role) => role.id);
+    const activePlayers = lobby.players.filter((player) => !player.isSpectator);
+    const hasUnready = activePlayers.some((player) => player.id !== lobby.ownerId && !player.isReady);
+    if (hasUnready) {
+        res.status(400).json({ message: '準備OKになっていないプレイヤーがいます。' });
+        return;
+    }
+    const resolveDuplicateRoles = (players: LobbyPlayer[], allRoles: string[]) => {
+        const used = new Set(players.map((player) => player.roleId).filter(Boolean) as string[]);
+        const grouped = new Map<string, LobbyPlayer[]>();
+        players.forEach((player) => {
+            if (!player.roleId) return;
+            const list = grouped.get(player.roleId) ?? [];
+            list.push(player);
+            grouped.set(player.roleId, list);
+        });
+
+        grouped.forEach((group, roleId) => {
+            if (group.length <= 1) return;
+            const keepIndex = Math.floor(Math.random() * group.length);
+            group.forEach((player, index) => {
+                if (index === keepIndex) return;
+                const candidates = allRoles.filter((id) => id !== roleId && !used.has(id));
+                const fallback = allRoles.filter((id) => id !== roleId);
+                const pool = candidates.length > 0 ? candidates : fallback;
+                if (pool.length === 0) {
+                    player.roleId = undefined;
+                    return;
+                }
+                const nextRole = pool[Math.floor(Math.random() * pool.length)];
+                player.roleId = nextRole;
+                used.add(nextRole);
+            });
+        });
+    };
+
+    resolveDuplicateRoles(activePlayers, roleIds);
+
+    const players: CreatePlayerInput[] = activePlayers.map((player) => ({
         name: player.name,
         roleId: player.roleId,
         playerId: player.id,
+        isCpu: Boolean(player.isCpu),
+        cpuLevel: player.cpuLevel,
     }));
     const { matchId, engine } = createMatch(players, { deckId: lobby.deckId });
     try {
@@ -191,9 +385,65 @@ router.post('/:id/role', (req: Request, res: Response) => {
         res.status(404).json({ message: 'Player not found in lobby.' });
         return;
     }
+    if (target.isSpectator) {
+        res.status(400).json({ message: 'Spectator cannot change roles.' });
+        return;
+    }
 
     target.roleId = roleId;
     res.status(200).json({ lobbyId: lobby.id, player: target });
+});
+
+router.post('/:id/ready', (req: Request, res: Response) => {
+    const lobby = findLobby(req.params.id, res);
+    if (!lobby) return;
+
+    const { playerId, isReady } = req.body as { playerId?: string; isReady?: boolean };
+    if (!playerId || typeof isReady !== 'boolean') {
+        res.status(400).json({ message: 'playerId and isReady are required.' });
+        return;
+    }
+    const target = lobby.players.find((player) => player.id === playerId);
+    if (!target) {
+        res.status(404).json({ message: 'Player not found in lobby.' });
+        return;
+    }
+    if (target.isSpectator) {
+        res.status(400).json({ message: 'Spectator cannot set ready.' });
+        return;
+    }
+    target.isReady = isReady;
+    res.status(200).json({ lobbyId: lobby.id, player: target });
+});
+
+router.post('/:id/settings', (req: Request, res: Response) => {
+    const lobby = findLobby(req.params.id, res);
+    if (!lobby) return;
+
+    const { playerId, showRoles } = req.body as { playerId?: string; showRoles?: boolean };
+    if (!playerId || typeof showRoles !== 'boolean') {
+        res.status(400).json({ message: 'playerId and showRoles are required.' });
+        return;
+    }
+    if (playerId !== lobby.ownerId) {
+        res.status(403).json({ message: 'Only the lobby owner can update settings.' });
+        return;
+    }
+
+    lobby.showRoles = showRoles;
+
+    res.status(200).json({
+        lobby: {
+            id: lobby.id,
+            name: lobby.name,
+            ownerId: lobby.ownerId,
+            isPrivate: lobby.isPrivate,
+            deckId: lobby.deckId,
+            players: lobby.players,
+            createdAt: lobby.createdAt,
+            showRoles: lobby.showRoles,
+        },
+    });
 });
 
 const tryMatchmaking = () => {
@@ -217,6 +467,10 @@ const tryMatchmaking = () => {
 
 router.post('/matchmaking/enqueue', (req: Request, res: Response) => {
     const { name, roleId, deckId } = req.body as { name?: string; roleId?: string; deckId?: string };
+    if (name && !sanitizeName(name)) {
+        res.status(400).json({ message: 'プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみで入力してください。' });
+        return;
+    }
     const resolvedName = sanitizeName(name) ?? 'Player';
     const ticket: MatchmakingTicket = {
         id: randomUUID(),
@@ -265,11 +519,3 @@ router.post('/matchmaking/cancel', (req: Request, res: Response) => {
 });
 
 export default router;
-
-
-
-
-
-
-
-

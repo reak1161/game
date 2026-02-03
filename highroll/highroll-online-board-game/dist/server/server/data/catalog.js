@@ -26,7 +26,7 @@ const resolveDataRoot = () => {
 const dataRoot = resolveDataRoot();
 const readJson = (filename) => {
     const file = node_path_1.default.join(dataRoot, filename);
-    const raw = node_fs_1.default.readFileSync(file, 'utf8');
+    const raw = node_fs_1.default.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
     return JSON.parse(stripJsonComments(raw));
 };
 let cachedRoles;
@@ -60,6 +60,8 @@ const getRolesCatalog = () => {
                     ...role,
                     params: role.params ?? existing.params,
                     tags: role.tags ?? existing.tags,
+                    text: existing.text ?? role.text,
+                    detailText: existing.detailText ?? role.detailText,
                 });
             }
             else {

@@ -34,6 +34,7 @@ export const createInitialGameState = (matchId: string, initialPlayers: Player[]
     id: matchId,
     players: initialPlayers,
     currentTurn: 0,
+    round: 1,
     status: 'waiting',
     winnerId: undefined,
     board: createInitialBoardState(),
@@ -48,7 +49,19 @@ export const createInitialGameState = (matchId: string, initialPlayers: Player[]
     logs: [],
     currentPlayerId: undefined,
     turnOrder: [],
+    turnOrderMode: undefined,
+    turnOrderModeUntilRound: undefined,
+    roundTurnsTaken: 0,
+    deferredTurns: [],
+    deferredTurnActive: false,
+    pendingPrompt: undefined,
 });
+
+export const setPendingPrompt = (state: GameState, pendingPrompt?: GameState['pendingPrompt']): GameState =>
+    withTimestamp({
+        ...state,
+        pendingPrompt,
+    });
 
 export const createPlayer = (name: string, id?: string): Player => ({
     id: id ?? generateId(),
@@ -165,11 +178,14 @@ export const advanceTurnState = (state: GameState): GameState => {
     if (state.turnOrder.length === 0) {
         return state;
     }
+    const currentRound = Number.isFinite(state.round) ? state.round : 1;
     const nextIndex = (state.currentTurn + 1) % state.turnOrder.length;
+    const nextRound = nextIndex === 0 ? currentRound + 1 : currentRound;
     return withTimestamp({
         ...state,
         currentTurn: nextIndex,
         currentPlayerId: state.turnOrder[nextIndex],
+        round: nextRound,
     });
 };
 

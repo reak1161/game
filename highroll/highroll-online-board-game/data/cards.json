@@ -6,18 +6,22 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "好きなプレイヤー1人に3ダメージ（Defにより軽減される）。",
+      "text": "誰か１人を選ぶ。そのプレイヤーに接触通常３ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
           "type": "dealDamage",
           "target": "chosen_enemy",
           "value": 3,
+          "contact": true,
           "fixed": false,
           "defApplied": true
         }
       ],
-      "tags": ["attack","simple"]
+      "tags": [
+        "attack",
+        "simple"
+      ]
     },
     {
       "id": "dynamite",
@@ -25,7 +29,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "全員に5の固定ダメージ（Defを無視）。",
+      "text": "全員に固定5ダメージ。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -36,7 +40,10 @@
           "ignoreDef": true
         }
       ],
-      "tags": ["attack","aoe"]
+      "tags": [
+        "attack",
+        "aoe"
+      ]
     },
     {
       "id": "body_press",
@@ -44,20 +51,26 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "自分のDefの半分（切り捨て）のダメージ（Defにより軽減される）。",
+      "text": "自分のDefの半分（切り捨て）を通常ダメージとして与える。",
       "effects": [
         {
           "trigger": "onPlay",
           "type": "dealDamage",
           "target": "chosen_enemy",
-          "formula": { "type": "selfStatHalf", "stat": "def", "round": "floor" },
+          "formula": {
+            "type": "selfStatHalf",
+            "stat": "def",
+            "round": "floor"
+          },
           "fixed": false,
           "defApplied": true
         }
       ],
-      "tags": ["attack","scaling"]
+      "tags": [
+        "attack",
+        "scaling"
+      ]
     },
-
     {
       "id": "fortress",
       "name": "要塞",
@@ -75,7 +88,10 @@
           "sacrificeSelf": false
         }
       ],
-      "tags": ["defense","threshold"]
+      "tags": [
+        "defense",
+        "threshold"
+      ]
     },
     {
       "id": "glass_shield",
@@ -96,7 +112,10 @@
           "optional": true
         }
       ],
-      "tags": ["defense","sacrifice"]
+      "tags": [
+        "defense",
+        "sacrifice"
+      ]
     },
     {
       "id": "rock_barrier",
@@ -117,9 +136,11 @@
           "optional": true
         }
       ],
-      "tags": ["defense","sacrifice"]
+      "tags": [
+        "defense",
+        "sacrifice"
+      ]
     },
-
     {
       "id": "bloodied_sword",
       "name": "血塗れの剣",
@@ -128,13 +149,37 @@
       "subtype": "equip",
       "cost": 1,
       "unique": false,
-      "text": "装備：Atk+3。［殺人］が装備した場合、さらにAtk+2, Spe+2。",
+      "text": "装備: 装備：Atk+3。［殺人］が装備した場合、さらにAtk+2, Spe+2。",
       "effects": [
-        { "trigger": "onEquip", "type": "addStatToken", "stat": "atk", "value": 3 },
-        { "trigger": "onEquip", "type": "addStatToken", "stat": "atk", "value": 2, "condition": { "roleId": "murderer" } },
-        { "trigger": "onEquip", "type": "addStatToken", "stat": "spe", "value": 2, "condition": { "roleId": "murderer" } }
+        {
+          "trigger": "onEquip",
+          "type": "addStatToken",
+          "stat": "atk",
+          "value": 3
+        },
+        {
+          "trigger": "onEquip",
+          "type": "addStatToken",
+          "stat": "atk",
+          "value": 2,
+          "condition": {
+            "roleId": "murderer"
+          }
+        },
+        {
+          "trigger": "onEquip",
+          "type": "addStatToken",
+          "stat": "spe",
+          "value": 2,
+          "condition": {
+            "roleId": "murderer"
+          }
+        }
       ],
-      "tags": ["equip","statbuff"]
+      "tags": [
+        "equip",
+        "statbuff"
+      ]
     },
     {
       "id": "road_breaker",
@@ -144,13 +189,36 @@
       "subtype": "equip",
       "cost": 1,
       "unique": false,
-      "text": "攻撃時：相手の装備を1つ捨てさせる。捨てさせたらこのターンAtk+3を得て、この装備を捨てる。",
+      "text": "装備: 攻撃時：相手の装備を1つ捨てさせる。捨てさせたらこのターンAtk+3を得て、この装備を捨てる。",
       "effects": [
-        { "trigger": "afterRoleAttack", "type": "forceDiscardEquip", "target": "defender", "count": 1 },
-        { "trigger": "afterRoleAttack", "type": "gainAtkBoostTurn", "value": 3, "condition": { "lastEffect": "forceDiscardEquip", "discardedCountAtLeast": 1 } },
-        { "trigger": "afterRoleAttack", "type": "selfDestroy", "condition": { "lastEffect": "forceDiscardEquip", "discardedCountAtLeast": 1 } }
+        {
+          "trigger": "afterRoleAttack",
+          "type": "forceDiscardEquip",
+          "target": "defender",
+          "count": 1
+        },
+        {
+          "trigger": "afterRoleAttack",
+          "type": "gainAtkBoostTurn",
+          "value": 3,
+          "condition": {
+            "lastEffect": "forceDiscardEquip",
+            "discardedCountAtLeast": 1
+          }
+        },
+        {
+          "trigger": "afterRoleAttack",
+          "type": "selfDestroy",
+          "condition": {
+            "lastEffect": "forceDiscardEquip",
+            "discardedCountAtLeast": 1
+          }
+        }
       ],
-      "tags": ["equip","interaction"]
+      "tags": [
+        "equip",
+        "interaction"
+      ]
     },
     {
       "id": "decoy_armor",
@@ -160,19 +228,51 @@
       "subtype": "equip",
       "cost": 1,
       "unique": true,
-      "text": "HPが最大の時に死亡するダメージを受けるなら、代わりにこの装備を捨て、HP1で生き残る。",
+      "text": "装備: HPが最大の時に死亡するダメージを受けるなら、代わりにこの装備を捨て、HP1で生き残る。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "cheatDeathAtFull",
-          "condition": { "hpEqualsMax": true, "fatalIfApplied": true },
+          "condition": {
+            "hpEqualsMax": true,
+            "fatalIfApplied": true
+          },
           "sacrificeSelf": true,
           "setHpTo": 1
         }
       ],
-      "tags": ["equip","survive"]
+      "tags": [
+        "equip",
+        "survive"
+      ]
     },
-
+    {
+      "id": "heart_pendant",
+      "name": "ハートのペンダント",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": false,
+      "text": "装備: 最大HP+5。装備時、HP+5回復。",
+      "effects": [
+        {
+          "trigger": "onEquip",
+          "type": "modifyMaxHpInstall",
+          "value": 5
+        },
+        {
+          "trigger": "onEquip",
+          "type": "heal",
+          "value": 5,
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "equip",
+        "hp"
+      ]
+    },
     {
       "id": "library_down",
       "name": "ライブラリダウン",
@@ -185,10 +285,15 @@
           "trigger": "onPlay",
           "type": "discardAllHand",
           "target": "chosen_player",
-          "condition": { "targetHandCountAtLeast": 5 }
+          "condition": {
+            "targetHandCountAtLeast": 5
+          }
         }
       ],
-      "tags": ["spell","handhate"]
+      "tags": [
+        "spell",
+        "handhate"
+      ]
     },
     {
       "id": "wind_veil",
@@ -202,11 +307,19 @@
           "trigger": "onPlay",
           "type": "addStatToken",
           "stat": "def",
-          "valueFormula": { "type": "perN", "stat": "spe", "n": 3, "round": "floor" },
+          "valueFormula": {
+            "type": "perN",
+            "stat": "spe",
+            "n": 3,
+            "round": "floor"
+          },
           "target": "self"
         }
       ],
-      "tags": ["spell","scaling"]
+      "tags": [
+        "spell",
+        "scaling"
+      ]
     },
     {
       "id": "shady_powder",
@@ -214,14 +327,41 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "Atk/Def/Speトークンを各+3。代わりにBraトークン-1。",
+      "text": "Atk/Def/Speトークンを各+3。代わりにBraトークンを-1獲得（最大Braが減る）。",
       "effects": [
-        { "trigger": "onPlay", "type": "addStatToken", "stat": "atk", "value": 3, "target": "self" },
-        { "trigger": "onPlay", "type": "addStatToken", "stat": "def", "value": 3, "target": "self" },
-        { "trigger": "onPlay", "type": "addStatToken", "stat": "spe", "value": 3, "target": "self" },
-        { "trigger": "onPlay", "type": "addStatToken", "stat": "bra", "value": -1, "target": "self" }
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "atk",
+          "value": 3,
+          "target": "self"
+        },
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "def",
+          "value": 3,
+          "target": "self"
+        },
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "spe",
+          "value": 3,
+          "target": "self"
+        },
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "bra",
+          "value": -1,
+          "target": "self"
+        }
       ],
-      "tags": ["spell","riskreward"]
+      "tags": [
+        "spell",
+        "riskreward"
+      ]
     },
     {
       "id": "twice_boost",
@@ -229,16 +369,28 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "HP以外の基礎ステータス1種を選び、その数値を2倍にする（恒久）。",
+      "text": "HP以外の基礎ステータス1種を選び、その基礎値の分だけ増幅する。増幅した基礎値と同じだけ現在HPを減らす。",
       "effects": [
         {
           "trigger": "onPlay",
           "type": "doubleBaseStat",
-          "playerChoice": { "chooseOneOf": ["atk","def","spe","bra"] },
-        "exclude": ["hp"]
+          "playerChoice": {
+            "chooseOneOf": [
+              "atk",
+              "def",
+              "spe",
+              "bra"
+            ]
+          },
+          "exclude": [
+            "hp"
+          ]
         }
       ],
-      "tags": ["spell","statmodify"]
+      "tags": [
+        "spell",
+        "statmodify"
+      ]
     },
     {
       "id": "tornado",
@@ -248,9 +400,16 @@
       "cost": 1,
       "text": "全員の手札を捨てる。",
       "effects": [
-        { "trigger": "onPlay", "type": "discardAllHand", "target": "all_players" }
+        {
+          "trigger": "onPlay",
+          "type": "discardAllHand",
+          "target": "all_players"
+        }
       ],
-      "tags": ["spell","global"]
+      "tags": [
+        "spell",
+        "global"
+      ]
     },
     {
       "id": "trick_room",
@@ -267,7 +426,944 @@
           "duration": "untilEndOfNextRound"
         }
       ],
-      "tags": ["spell","turnorder"]
+      "tags": [
+        "spell",
+        "turnorder"
+      ]
+    },
+    {
+      "id": "logical_thinking",
+      "name": "論理的思考",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "このターンBra+1。山札から2枚引く。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "adjustBra",
+          "value": 1,
+          "target": "self"
+        },
+        {
+          "trigger": "onPlay",
+          "type": "drawCards",
+          "count": 2,
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "spell",
+        "draw"
+      ]
+    },
+    {
+      "id": "temptation_powder",
+      "name": "誘惑の粉",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "好きなプレイヤー1人は次にダメージを受けるまで追加Atk-3。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "applyStatDebuffUntilDamage",
+          "stat": "atk",
+          "value": -3,
+          "target": "chosen_player"
+        }
+      ],
+      "tags": [
+        "spell",
+        "debuff"
+      ]
+    },
+    {
+      "id": "heart_glass",
+      "name": "ハートのガラス",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "設置中、最大HP+2。設置時にHP+2回復。",
+      "effects": [
+        {
+          "trigger": "onEquip",
+          "type": "modifyMaxHpInstall",
+          "value": 2
+        },
+        {
+          "trigger": "onEquip",
+          "type": "heal",
+          "value": 2,
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "defense",
+        "install",
+        "hp"
+      ]
+    },
+    {
+      "id": "sneak_in",
+      "name": "懐に入る",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "好きなプレイヤー1人は追加Def-2。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "def",
+          "value": -2,
+          "target": "chosen_player"
+        }
+      ],
+      "tags": [
+        "spell",
+        "debuff"
+      ]
+    },
+    {
+      "id": "flame_thrower",
+      "name": "かえんほうしゃ",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "好きなプレイヤー1人は火炎2。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "applyBurn",
+          "value": 2,
+          "target": "chosen_player"
+        }
+      ],
+      "tags": [
+        "spell",
+        "status"
+      ]
+    },
+    {
+      "id": "fire_extinguisher",
+      "name": "消火器",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次のうちどれか選ぶ。誰か1人を選ぶ。そのプレイヤーの火炎3を減らす。/誰か1人を選ぶ。そのプレイヤーに通常5ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "chooseOne",
+          "key": "mode",
+          "options": [
+            {
+              "value": "extinguish",
+              "label": "火炎を3減らす",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "applyBurn",
+                  "value": -3,
+                  "target": "chosen_player"
+                }
+              ]
+            },
+            {
+              "value": "damage",
+              "label": "通常5ダメージを与える",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "dealDamage",
+                  "target": "chosen_player",
+                  "value": 5,
+                  "fixed": false,
+                  "defApplied": true
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tags": [
+        "spell",
+        "choice"
+      ]
+    },
+    {
+      "id": "bursting_flame",
+      "name": "はじけるほのお",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "誰か１人を選ぶ。そのプレイヤーに火炎３を付与する。その後、そのほかのプレイヤーに火炎１を付与する。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "applyBurn",
+          "value": 1,
+          "target": "all_players"
+        },
+        {
+          "trigger": "onPlay",
+          "type": "applyBurn",
+          "value": 2,
+          "target": "chosen_player"
+        }
+      ],
+      "tags": [
+        "spell",
+        "status"
+      ]
+    },
+    {
+      "id": "stun_grenade",
+      "name": "スタングレネード",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "好きなプレイヤー1人は次のラウンド終了までSpeが0になる。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "applyStun",
+          "durationRounds": 1,
+          "target": "chosen_player"
+        }
+      ],
+      "tags": [
+        "spell",
+        "control"
+      ]
+    },
+    {
+      "id": "counter_signal",
+      "name": "反撃の狼煙",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "HPが半分以下の時のみ使用可能。追加Atk+5。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "addStatToken",
+          "stat": "atk",
+          "value": 5,
+          "target": "self",
+          "condition": {
+            "hpAtMostPercent": 0.5
+          }
+        }
+      ],
+      "tags": [
+        "spell",
+        "buff"
+      ]
+    },
+    {
+      "id": "attack_amulet",
+      "name": "攻撃のお守り",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "playable": false,
+      "text": "このカードはプレイできない。手札にある間、追加Atk+1を得る。手札からなくなると効果は消える。",
+      "effects": [
+        {
+          "trigger": "inHand",
+          "type": "handStatModifier",
+          "stat": "atk",
+          "value": 1
+        }
+      ],
+      "tags": [
+        "spell",
+        "hand",
+        "buff"
+      ]
+    },
+    {
+      "id": "frailty_curse",
+      "name": "脆弱の呪い",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "playable": false,
+      "text": "このカードはプレイできない。手札にある間、追加Def-1を得る。手札からなくなると効果は消える。",
+      "effects": [
+        {
+          "trigger": "inHand",
+          "type": "handStatModifier",
+          "stat": "def",
+          "value": -1
+        }
+      ],
+      "tags": [
+        "spell",
+        "hand",
+        "debuff"
+      ]
+    },
+    {
+      "id": "reconstruct",
+      "name": "再構築",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "手札を2枚捨て、捨てた枚数だけ山札から引く。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "discardThenDraw",
+          "discardCount": 2,
+          "target": "self"
+        }
+      ],
+      "tags": [
+        "spell",
+        "discard",
+        "draw"
+      ]
+    },
+    {
+      "id": "arm_shield",
+      "name": "アームシールド",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "自分の前に設置する。次に攻撃を受けたとき、受けるダメージを2減らし、このカードを捨てる。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "reduceDamageOnce",
+          "amount": 2,
+          "sources": [
+            "role",
+            "card"
+          ],
+          "sacrificeSelf": true
+        }
+      ],
+      "tags": [
+        "defense",
+        "install",
+        "damage_reduction"
+      ]
+    },
+    {
+      "id": "brain_injection",
+      "name": "脳注射",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "誰か1人を選ぶ。そのプレイヤーに追加Bra+1を与える。その後50%の確率で、そのプレイヤーは10ダメージを受ける。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "adjustBra",
+          "target": "chosen_player",
+          "value": 1
+        },
+        {
+          "trigger": "onPlay",
+          "type": "coinFlipDealDamage",
+          "target": "chosen_player",
+          "chance": 0.5,
+          "value": 10,
+          "fixed": true,
+          "ignoreDef": true
+        }
+      ],
+      "tags": [
+        "attack",
+        "rng",
+        "bra"
+      ]
+    },
+    {
+      "id": "backshot_roulette",
+      "name": "バックショットルーレット",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "誰か1人を選ぶ。50%の確率で自分が5ダメージを受けるが、残り50%の確率で相手に5ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "coinFlipDealDamageEither",
+          "target": "chosen_enemy",
+          "chanceToHitTarget": 0.5,
+          "targetValue": 5,
+          "selfValue": 5,
+          "fixed": true,
+          "ignoreDef": true
+        }
+      ],
+      "tags": [
+        "attack",
+        "rng"
+      ]
+    },
+    {
+      "id": "hayate_wing",
+      "name": "はやてのつばさ",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次のラウンド中、Speを無視して一番最初に行動する（トリックルーム中は一番最後）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "setNextRoundPriority"
+        }
+      ],
+      "tags": [
+        "spell",
+        "turn_order"
+      ]
+    },
+    {
+      "id": "adrenaline",
+      "name": "アドレナリン",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次の自分のターンの終わりまで追加Spe+6、追加Atk+3を得る。次の自分のターンが終わると、追加Spe-9、追加Atk-4を得る。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "adrenaline",
+          "buff": {
+            "spe": 6,
+            "atk": 3
+          },
+          "rebound": {
+            "spe": -9,
+            "atk": -4
+          }
+        }
+      ],
+      "tags": [
+        "spell",
+        "buff",
+        "debuff"
+      ]
+    },
+    {
+      "id": "flame_armor",
+      "name": "ほのおのよろい",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "text": "装備中、自分に接触攻撃（ロール攻撃）をしてきたプレイヤーに火炎1を付与する。",
+      "effects": [
+        {
+          "trigger": "afterRoleAttack",
+          "type": "contactBurnOnRoleAttack",
+          "value": 1
+        }
+      ],
+      "tags": [
+        "equip",
+        "burn",
+        "counter"
+      ]
+    },
+    {
+      "id": "kono_yubi_tomare",
+      "name": "このゆびとまれ",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次の自分のターンの初めまで、すべての対象を選ぶ効果は強制的に自分が対象になる。次の自分のターンの初めまで追加Def+3を得る。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "tauntUntilNextTurnStart",
+          "defBonus": 3
+        }
+      ],
+      "tags": [
+        "spell",
+        "buff",
+        "taunt"
+      ]
+    },
+    {
+      "id": "noroi_ofuda",
+      "name": "のろいのおふだ",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "自分の手札をすべて封印する。その後、自分以外の全員に固定（封印状態の手札の枚数×1.5）ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "sealHand",
+          "mode": "all",
+          "target": "self"
+        },
+        {
+          "trigger": "onPlay",
+          "type": "dealDamagePerSealedHand",
+          "multiplier": 1.5,
+          "round": "floor",
+          "fixed": true,
+          "ignoreDef": true
+        }
+      ],
+      "tags": [
+        "spell",
+        "seal",
+        "aoe"
+      ]
+    },
+    {
+      "id": "ago_punch",
+      "name": "あごパンチ",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "誰か1人を選ぶ。そのプレイヤーに通常2ダメージを与え、めまい1を与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_player",
+          "value": 2,
+          "fixed": false,
+          "defApplied": true
+        },
+        {
+          "trigger": "onPlay",
+          "type": "applyDizzy",
+          "target": "chosen_player",
+          "value": 1
+        }
+      ],
+      "tags": [
+        "attack",
+        "dizzy"
+      ]
+    },
+    {
+      "id": "fullface_shield",
+      "name": "フルフェイスシールド",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "自分の前に設置する。6以上のダメージを受けたとき、代わりに2ダメージを受け、自身にめまい1を付与する（捨てない）。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "damageIntercept",
+          "min": 6,
+          "replaceWith": 2,
+          "sacrificeSelf": false,
+          "applyDizzyToSelf": 1
+        }
+      ],
+      "tags": [
+        "defense",
+        "intercept",
+        "dizzy"
+      ]
+    },
+    {
+      "id": "just_guard",
+      "name": "ジャストガード",
+      "category": "defense",
+      "kind": "install",
+      "cost": 1,
+      "text": "自分の前に設置する。4〜6ダメージを受けたとき、代わりにこのカードを捨ててもよい。そうしたらダメージを0にする。ただし、受けたダメージが5ダメージだった場合は捨てずに防ぐことができる。",
+      "effects": [
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "damageIntercept",
+          "min": 4,
+          "max": 6,
+          "replaceWith": 0,
+          "sacrificeSelf": true,
+          "freeIfDamageEquals": 5,
+          "playerChoice": true,
+          "optional": true
+        }
+      ],
+      "tags": [
+        "defense",
+        "intercept",
+        "sacrifice"
+      ]
+    },
+    {
+      "id": "howling_megaphone",
+      "name": "ハウリングメガホン",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "text": "装備中、ロールで攻撃時、追加で与えたダメージの1/2の固定ダメージを追加で与え、そのとき自分は1ダメージを受ける。［反響］が装備時は代わりに、連続攻撃の減衰が3/4になる。",
+      "effects": [
+        {
+          "trigger": "afterRoleAttack",
+          "type": "afterRoleAttackDamage",
+          "target": "target",
+          "valueMultiplierOfDealt": 0.5,
+          "fixed": true,
+          "ignoreDef": true,
+          "selfDamage": 1
+        }
+      ],
+      "tags": [
+        "equip",
+        "after_role_attack"
+      ]
+    },
+    {
+      "id": "lightning_rod",
+      "name": "ひらいしん",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "text": "装備中、ターン開始時に感電トークンを1獲得する。ロールで攻撃時、攻撃を受けたプレイヤーに固定1ダメージを与える。［放電］が装備時、全員の感電トークンを自分に集める。自分に付与されている感電トークン5つにつき、追加Atk+1を得る。［放電］は感電トークンによるBra減衰は起こらない。",
+      "effects": [
+        {
+          "trigger": "afterRoleAttack",
+          "type": "afterRoleAttackDamage",
+          "target": "target",
+          "value": 1,
+          "fixed": true,
+          "ignoreDef": true
+        }
+      ],
+      "tags": [
+        "equip",
+        "shock",
+        "after_role_attack"
+      ]
+    },
+    {
+      "id": "twin_impact",
+      "name": "ツインパクト",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "誰か１人を選ぶ。そのプレイヤーに通常３ダメージを与える。その後、そのプレイヤーに固定２ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_enemy",
+          "value": 3,
+          "fixed": false,
+          "defApplied": true
+        },
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_enemy",
+          "value": 2,
+          "fixed": true,
+          "ignoreDef": true
+        }
+      ],
+      "tags": [
+        "attack"
+      ]
+    },
+    {
+      "id": "wise_choice",
+      "name": "賢明な選択",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次のうちどれか選ぶ。誰か１人を選ぶ。そのプレイヤーに通常５ダメージを与える／固定３ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "chooseOne",
+          "key": "wise_choice",
+          "options": [
+            {
+              "value": "normal",
+              "label": "通常５ダメージ",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "dealDamage",
+                  "target": "chosen_enemy",
+                  "value": 5,
+                  "fixed": false,
+                  "defApplied": true
+                }
+              ]
+            },
+            {
+              "value": "fixed",
+              "label": "固定３ダメージ",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "dealDamage",
+                  "target": "chosen_enemy",
+                  "value": 3,
+                  "fixed": true,
+                  "ignoreDef": true
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tags": [
+        "attack",
+        "choose_one"
+      ]
+    },
+    {
+      "id": "offense_defense_stance",
+      "name": "攻守の構え",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次のうちどれか選ぶ。誰か１人を選ぶ。そのプレイヤーに通常４ダメージを与える／自分の前に設置する（３以下のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "chooseOne",
+          "key": "offense_defense_stance",
+          "options": [
+            {
+              "value": "attack",
+              "label": "攻撃（通常４）",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "dealDamage",
+                  "target": "chosen_enemy",
+                  "value": 4,
+                  "fixed": false,
+                  "defApplied": true
+                }
+              ]
+            },
+            {
+              "value": "defense",
+              "label": "防御（設置）",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "selfInstall"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trigger": "beforeDamageTaken",
+          "type": "thresholdPrevent",
+          "operator": "<=",
+          "threshold": 3,
+          "preventAll": true,
+          "sacrificeSelf": true,
+          "playerChoice": true,
+          "optional": true
+        }
+      ],
+      "tags": [
+        "attack",
+        "defense",
+        "choose_one"
+      ]
+    },
+    {
+      "id": "pickup",
+      "name": "ピックアップ",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次のうちどれか選ぶ。山札から１枚引く／HP.３を獲得する／次のロール攻撃時、Atk+３。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "chooseOne",
+          "key": "pickup",
+          "options": [
+            {
+              "value": "draw",
+              "label": "山札から１枚引く",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "drawCards",
+                  "count": 1,
+                  "target": "self"
+                }
+              ]
+            },
+            {
+              "value": "heal",
+              "label": "HP.３を獲得する",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "heal",
+                  "value": 3,
+                  "target": "self"
+                }
+              ]
+            },
+            {
+              "value": "atk",
+              "label": "次のロール攻撃時、Atk+３",
+              "effects": [
+                {
+                  "trigger": "onPlay",
+                  "type": "setNextRoleAttackAtkBonus",
+                  "value": 3
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tags": [
+        "spell",
+        "choose_one"
+      ]
+    },
+    {
+      "id": "broken_window_theory",
+      "name": "割れ窓理論",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "ゲーム参加者全員の（最大HP-現在HP）の合計を生存者数で割り、全員に通常ダメージとして与える（切り捨て）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "brokenWindowTheory"
+        }
+      ],
+      "tags": [
+        "spell",
+        "aoe"
+      ]
+    },
+    {
+      "id": "feint",
+      "name": "フェイント",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "次の自分のロール攻撃で、相手の防御カードを無視して攻撃する。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "feint"
+        }
+      ],
+      "tags": [
+        "spell"
+      ]
+    },
+    {
+      "id": "poltergeist",
+      "name": "ポルターガイスト",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "誰か１人を選ぶ。その後、自分の追加トークンをすべて０にして、通常〈失った追加トークン×1.5〉ダメージを与える（切り捨て）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "poltergeist",
+          "target": "chosen_enemy",
+          "multiplier": 1.5,
+          "round": "floor"
+        }
+      ],
+      "tags": [
+        "spell",
+        "attack"
+      ]
+    },
+    {
+      "id": "library_burst",
+      "name": "ライブラリバースト",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "自分の手札をすべて捨てる。その後、自分以外のプレイヤー全員に通常〈捨てた手札の枚数×1.5〉ダメージを与える（切り捨て）。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "libraryBurst",
+          "multiplier": 1.5,
+          "round": "floor"
+        }
+      ],
+      "tags": [
+        "spell",
+        "aoe"
+      ]
+    },
+    {
+      "id": "blood_sword",
+      "name": "血の剣",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "装備中、自分が攻撃したプレイヤーに出血２を付与する。",
+      "effects": [],
+      "tags": [
+        "equip",
+        "bleed"
+      ]
+    },
+    {
+      "id": "blood_armor",
+      "name": "血の鎧",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "装備中、追加Def.５を獲得する。装備中、ターン開始時に出血１を付与する。",
+      "effects": [
+        {
+          "trigger": "onEquip",
+          "type": "addStatToken",
+          "stat": "def",
+          "value": 5
+        }
+      ],
+      "tags": [
+        "equip",
+        "bleed",
+        "defense"
+      ]
+    },
+    {
+      "id": "mysterious_guard",
+      "name": "ふしぎなまもり",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "装備中、特殊ダメージを受けない。",
+      "effects": [],
+      "tags": [
+        "equip",
+        "special"
+      ]
     }
   ]
 }

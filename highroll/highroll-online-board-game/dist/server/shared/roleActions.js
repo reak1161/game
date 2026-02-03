@@ -7,7 +7,7 @@ exports.ROLE_ACTIONS = {
         {
             id: 'flame_apply_burn',
             label: '炎上付与',
-            description: '対象に炎上1を与える（ターン終了時に炎上ダメージを受けカウント-1）。',
+            description: '対象に炎上を付与する（ターン終了時に炎上ダメージ）。',
             costBra: 1,
             requiresTarget: 'any',
         },
@@ -16,7 +16,7 @@ exports.ROLE_ACTIONS = {
         {
             id: 'discharge_release',
             label: '放電',
-            description: '蓄電トークンを全放出し、自分以外の全員に (蓄電^2) の感電トークンを与える。',
+            description: '蓄電トークンを消費して感電トークンを付与する。',
             costBra: 0,
         },
     ],
@@ -31,21 +31,21 @@ exports.ROLE_ACTIONS = {
         {
             id: 'doctor_anesthesia',
             label: '麻酔',
-            description: '対象の次のターンに利用できるBraを1減らす。',
+            description: '対象は次のターンBra-1。',
             costBra: 1,
             requiresTarget: 'any',
         },
         {
             id: 'doctor_surgery',
             label: '手術',
-            description: '対象の次のターンを強制終了させ、その次のターン開始時にHPを15回復させる。',
+            description: '対象の次ターンを休ませ、その次のターン開始時にHP+15。',
             costBra: 1,
             requiresTarget: 'any',
         },
         {
             id: 'doctor_reshape',
             label: '整形',
-            description: '対象の任意のステータスを1下げ、別のステータスを1上げる。',
+            description: '対象のステータスを1減らし、別のステータスを1増やす。',
             costBra: 1,
             requiresTarget: 'any',
             choices: [
@@ -62,6 +62,84 @@ exports.ROLE_ACTIONS = {
                     options: exports.ROLE_ACTION_BASE_STATS,
                 },
             ],
+        },
+    ],
+    jester: [
+        {
+            id: 'jester_random',
+            label: '道化のランダム効果',
+            description: 'Braを1消費してランダム効果を得る。',
+            costBra: 1,
+        },
+    ],
+    suppress: [
+        {
+            id: 'suppress_lock',
+            label: '抑制',
+            description: '対象は次のラウンド終了まで固有能力を失う。',
+            costBra: 1,
+            requiresTarget: 'any',
+        },
+    ],
+    shed: [
+        {
+            id: 'shed_molt',
+            label: '脱皮',
+            description: 'Defを0にし、失ったDefの半分（切り捨て）をAtk/Speの追加トークンとして得る。',
+            costBra: 1,
+        },
+    ],
+    seal: [
+        {
+            id: 'seal_chain_atk',
+            label: '攻鎖',
+            description: '基礎Atkを2獲得する。',
+            costBra: 1,
+        },
+        {
+            id: 'seal_chain_def',
+            label: '防鎖',
+            description: '基礎Defを1獲得する。',
+            costBra: 1,
+        },
+        {
+            id: 'seal_chain_spe',
+            label: '速鎖',
+            description: '基礎Speを3獲得する。',
+            costBra: 1,
+        },
+        {
+            id: 'seal_lock',
+            label: '封鎖',
+            description: '対象の手札からランダムに1枚を「封印」する（封印された手札は使用できない）。',
+            costBra: 1,
+            requiresTarget: 'any',
+        },
+    ],
+    witch: [
+        {
+            id: 'witch_curse',
+            label: '呪い付与',
+            description: '対象の手札からランダムに1枚に呪いを付与する。',
+            costBra: 1,
+            requiresTarget: 'any',
+        },
+    ],
+    vampire: [
+        {
+            id: 'vampire_blood_pattern',
+            label: '血の紋様',
+            description: 'HPを2消費して、手札1枚に「血の紋様」を付与する（血の紋様1枚につき追加Atk+1）。',
+            costBra: 0,
+        },
+    ],
+    bomb: [
+        {
+            id: 'bomb_timed_bomb',
+            label: '時限爆弾',
+            description: '対象に「時限爆弾」を設置する（カウント3→毎ターン終了で-1、0で固定10ダメージ）。',
+            costBra: 1,
+            requiresTarget: 'others',
         },
     ],
 };

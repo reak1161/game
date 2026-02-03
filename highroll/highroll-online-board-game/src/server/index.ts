@@ -55,9 +55,10 @@ new LobbyGateway(io);
 registerLobbyServer(io);
 
 const PORT = Number(process.env.PORT ?? 4000);
+const HOST = process.env.HOST ?? '0.0.0.0';
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+    console.log(`Server is running on ${HOST}:${PORT}`);
 });
 
 

@@ -3,6 +3,55 @@
   margin: 0 auto;
   padding: clamp(24px, 4vw, 48px) 0 clamp(64px, 6vw, 96px);
   min-height: 100vh;
+  position: relative;
+
+  /* Match だけカードゲーム風にする（ページ内CSS変数） */
+  --hr-bg-0: #07140f;
+  --hr-bg-1: #0b1f17;
+  --hr-ink: #0f172a;
+  --hr-muted: #475569;
+  --hr-line: rgba(15, 23, 42, 0.14);
+  --hr-surface: rgba(255, 255, 255, 0.92);
+  --hr-surface-2: rgba(248, 250, 252, 0.92);
+  --hr-chip: rgba(226, 232, 240, 0.9);
+  --hr-gold: #fbbf24;
+  --hr-primary: #2563eb;
+  --hr-primary-2: #1d4ed8;
+  --hr-danger: #dc2626;
+  --hr-warning: #f97316;
+  --hr-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+  --hr-shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --hr-radius-lg: 18px;
+  --hr-radius-md: 12px;
+  --hr-radius-sm: 10px;
+}
+
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(900px 600px at 15% 10%, rgba(251, 191, 36, 0.10), transparent 60%),
+    radial-gradient(900px 650px at 80% 0%, rgba(37, 99, 235, 0.10), transparent 60%),
+    radial-gradient(800px 800px at 50% 75%, rgba(34, 197, 94, 0.08), transparent 60%),
+    linear-gradient(180deg, var(--hr-bg-0), var(--hr-bg-1));
+}
+
+.page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.22;
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 8px
+    );
 }
 
 .header {
@@ -15,12 +64,14 @@
 .title {
   margin: 0;
   font-size: 26px;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.02em;
 }
 
 .subtitle {
   margin: 6px 0 0;
   font-size: 13px;
-  color: #475569;
+  color: rgba(226, 232, 240, 0.85);
 }
 
 .headerMeta {
@@ -31,8 +82,28 @@
   justify-content: flex-end;
 }
 
+.helpButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.helpButton {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.22);
+}
+
+.helpButton:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 .backLink {
-  color: #1d4ed8;
+  color: #bfdbfe;
   text-decoration: none;
   font-weight: 600;
 }
@@ -44,17 +115,18 @@
 .statusChip {
   padding: 6px 12px;
   border-radius: 999px;
-  border: 2px solid #0f172a;
+  border: 2px solid rgba(255, 255, 255, 0.65);
   font-weight: 700;
-  color: #0f172a;
-  background: #f8fafc;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.10);
 }
 
 .metaBadge {
   padding: 6px 10px;
-  border-radius: 10px;
-  background: #e2e8f0;
-  color: #0f172a;
+  border-radius: var(--hr-radius-sm);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(226, 232, 240, 0.32);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 12px;
 }
 
@@ -65,7 +137,7 @@
 .matchGrid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 340px);
-  gap: 24px;
+  gap: 16px;
   align-items: flex-start;
 }
 
@@ -82,7 +154,7 @@
 .mainColumn {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .sidebar {
@@ -90,15 +162,16 @@
   flex-direction: column;
   gap: 16px;
   position: sticky;
-  top: 24px;
+  top: 16px;
 }
 
 .sectionCard {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  background: var(--hr-surface);
+  border-radius: var(--hr-radius-lg);
+  border: 1px solid var(--hr-line);
   padding: 16px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--hr-shadow);
+  backdrop-filter: blur(6px);
 }
 
 .statusGrid {
@@ -114,9 +187,9 @@
 }
 
 .statusCard {
-  background: #f8fafc;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  background: var(--hr-surface-2);
+  border-radius: var(--hr-radius-lg);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   padding: 16px;
 }
 
@@ -129,7 +202,7 @@
 .statusValue {
   font-size: 22px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--hr-ink);
 }
 
 .controlsRow {
@@ -147,36 +220,41 @@
 .primaryButton {
   padding: 8px 16px;
   border: none;
-  border-radius: 10px;
-  background: #2563eb;
+  border-radius: var(--hr-radius-sm);
+  background: linear-gradient(180deg, var(--hr-primary), var(--hr-primary-2));
   color: #fff;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.26);
 }
 
 .primaryButton:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .dangerButton {
-  background: #f97316;
+  background: linear-gradient(180deg, #fb923c, var(--hr-warning));
+  box-shadow: 0 10px 18px rgba(249, 115, 22, 0.26);
 }
 
 .secondaryButton {
   padding: 8px 16px;
-  border-radius: 10px;
-  border: 1px solid #cbd5f5;
-  background: #fff8e1;
-  color: #713f12;
+  border-radius: var(--hr-radius-sm);
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f172a;
   cursor: pointer;
+  box-shadow: var(--hr-shadow-soft);
 }
 
 .secondaryButton:disabled {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
   color: #94a3b8;
   border-color: #e2e8f0;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .choiceRow {
@@ -209,17 +287,18 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 420px;
+  max-height: 360px;
   overflow-y: auto;
   padding-right: 6px;
 }
 
 .playerCard {
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: var(--hr-radius-lg);
   padding: 16px;
-  background: #fff;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--hr-shadow-soft);
+  position: relative;
 }
 
 .playerHeader {
@@ -242,7 +321,7 @@
 .controlBadge {
   padding: 6px 12px;
   border-radius: 999px;
-  background: #dbeafe;
+  background: rgba(37, 99, 235, 0.12);
   color: #1d4ed8;
   font-size: 12px;
 }
@@ -294,11 +373,16 @@
 }
 
 .playerDetail {
-  margin-top: 12px;
+  position: absolute;
+  inset: 12px;
   padding: 12px;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  color: #e2e8f0;
+  z-index: 5;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+  overflow-y: auto;
 }
 
 .detailGrid {
@@ -309,13 +393,13 @@
 
 .detailLabel {
   font-size: 12px;
-  color: #475569;
+  color: #cbd5f5;
   margin-bottom: 2px;
 }
 
 .detailValue {
   font-size: 12px;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .installList ul {
@@ -329,17 +413,17 @@
 
 .installName {
   font-weight: 700;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .installMeta {
   font-size: 12px;
-  color: #475569;
+  color: #cbd5f5;
 }
 
 .installText {
   font-size: 12px;
-  color: #475569;
+  color: #e2e8f0;
   margin: 2px 0 0;
   line-height: 1.4;
 }
@@ -438,7 +522,7 @@
 }
 
 .handSection {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .customCardRow {
@@ -471,9 +555,9 @@
 
 .turnLogItem {
   padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-radius: var(--hr-radius-sm);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(248, 250, 252, 0.90);
   font-size: 13px;
   color: #475569;
 }
@@ -485,8 +569,15 @@
   font-weight: 600;
 }
 
+.turnLogRound {
+  border-color: #fbbf24;
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 700;
+}
+
 .logPanel {
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 140px);
   overflow: auto;
   padding-right: 6px;
 }
@@ -507,4 +598,320 @@
 .heroLink {
   color: #bfdbfe;
   text-decoration: underline;
+}
+
+.cardTooltipFloating {
+  position: fixed;
+  max-width: 260px;
+  background: #0f172a;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  z-index: 1000;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.cardEffectAdjustments {
+  margin-top: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.cardEffectItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.cardEffectLabel {
+  color: #cbd5f5;
+  font-weight: 600;
+}
+
+.cardEffectBase {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.cardEffectArrow {
+  color: #cbd5f5;
+}
+
+.cardEffectAdjusted {
+  font-weight: 700;
+}
+
+.cardEffectAdjustedIncrease {
+  color: #f87171;
+}
+
+.cardEffectAdjustedDecrease {
+  color: #60a5fa;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.jesterOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.jesterPanel {
+  width: min(420px, 90vw);
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+  padding: 18px;
+  text-align: center;
+  color: #f8fafc;
+}
+
+.jesterTitle {
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #facc15;
+  margin-bottom: 12px;
+}
+
+.jesterSlot {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 20px 16px;
+  font-size: 20px;
+  font-weight: 700;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jesterResult {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #f97316;
+}
+
+.modalPanel {
+  width: min(720px, 90vw);
+  max-height: 85vh;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--hr-radius-lg);
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modalClose {
+  border: 1px solid #cbd5f5;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 16px;
+  overflow: auto;
+}
+
+.cardList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardItem {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: var(--hr-radius-md);
+  padding: 12px;
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.cardNameRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.cardMetaChip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.ruleBlock ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #475569;
+}
+
+.damagePopupProgressTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.damagePopupProgressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #a855f7);
+  transform-origin: left center;
+  animation-name: damagePopupCountdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes damagePopupCountdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.sealedHandCard {
+  position: relative;
+}
+
+.sealedHandCard button {
+  filter: grayscale(0.35) saturate(0.7);
+}
+
+.sealedHandOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      45deg,
+      transparent 0%,
+      transparent 46%,
+      rgba(168, 85, 247, 0.65) 46%,
+      rgba(168, 85, 247, 0.65) 54%,
+      transparent 54%,
+      transparent 100%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 0%,
+      transparent 46%,
+      rgba(168, 85, 247, 0.65) 46%,
+      rgba(168, 85, 247, 0.65) 54%,
+      transparent 54%,
+      transparent 100%
+    ),
+    rgba(15, 23, 42, 0.06);
+  opacity: 0.9;
+}
+
+.cursedHandCard {
+  position: relative;
+}
+
+.cursedHandOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  background:
+    radial-gradient(240px 160px at 20% 10%, rgba(220, 38, 38, 0.18), transparent 60%),
+    radial-gradient(240px 180px at 80% 90%, rgba(168, 85, 247, 0.18), transparent 60%),
+    rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 0 0 2px rgba(220, 38, 38, 0.30);
+}
+
+.cursedHandOverlay::after {
+  content: '🪄';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(220, 38, 38, 0.85);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
+}
+
+.bloodPatternHandCard {
+  position: relative;
+}
+
+.bloodPatternOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  background:
+    radial-gradient(220px 160px at 20% 15%, rgba(239, 68, 68, 0.18), transparent 60%),
+    radial-gradient(240px 180px at 80% 90%, rgba(244, 63, 94, 0.16), transparent 60%),
+    rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.28);
+}
+
+.bloodPatternOverlay::after {
+  content: '🩸';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(239, 68, 68, 0.85);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
 }

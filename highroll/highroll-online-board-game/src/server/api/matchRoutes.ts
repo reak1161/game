@@ -1,14 +1,18 @@
-import { randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import GameEngine, { PlayCardOptions } from '../game/engine';
-import { buildDeckCards } from '../data/catalog';
+import { buildDeckCards, getCardsCatalog, getRolesCatalog } from '../data/catalog';
 
 const router = Router();
 
 export const matches = new Map<string, GameEngine>();
 
 const DEFAULT_DECK_ID = 'default_60';
+const NAME_REGEX = /^[0-9A-Za-z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+$/;
+const NAME_MAX_LENGTH = 8;
+
+const isValidName = (name: string): boolean =>
+    name.length > 0 && [...name].length <= NAME_MAX_LENGTH && NAME_REGEX.test(name);
 
 const getEngineOr404 = (matchId: string, res: Response): GameEngine | undefined => {
     const engine = matches.get(matchId);
@@ -26,20 +30,28 @@ router.get('/', (_req: Request, res: Response) => {
     res.json({ matches: summaries });
 });
 
-export type CreatePlayerInput = string | { name: string; roleId?: string; playerId?: string };
+export type CpuLevel = 'easy' | 'normal' | 'hard';
+export type CreatePlayerInputNormalized = {
+    name: string;
+    roleId?: string;
+    playerId?: string;
+    isCpu?: boolean;
+    cpuLevel?: CpuLevel;
+};
+export type CreatePlayerInput = string | CreatePlayerInputNormalized;
 
 export interface CreateMatchOptions {
     deckId?: string;
 }
 
 export const createMatch = (players: CreatePlayerInput[] = [], options: CreateMatchOptions = {}) => {
-    const matchId = randomUUID();
-    const engine = new GameEngine(matchId);
+    const matchId = globalThis.crypto?.randomUUID?.() ?? `match-${Math.random().toString(36).slice(2, 11)}`;
+    const engine = new GameEngine(matchId, [], { catalog: { roles: getRolesCatalog(), cards: getCardsCatalog() } });
     const deckId = options.deckId ?? DEFAULT_DECK_ID;
     engine.assignSharedDeck(deckId, buildDeckCards(deckId));
 
     players.forEach((p) => {
-        const normalized = typeof p === 'string' ? { name: p } : p;
+        const normalized: CreatePlayerInputNormalized = typeof p === 'string' ? { name: p } : (p as CreatePlayerInputNormalized);
         const name = normalized?.name?.trim();
         if (!name) {
             return;
@@ -53,6 +65,10 @@ export const createMatch = (players: CreatePlayerInput[] = [], options: CreateMa
 
         // Lobby フロー経由では Ready ボタンがまだないため自動的に準備完了扱いにする
         engine.markPlayerReady(player.id, true);
+
+        if (normalized.isCpu) {
+            engine.registerCpuPlayer(player.id, normalized.cpuLevel ?? 'normal');
+        }
     });
 
     matches.set(matchId, engine);
@@ -62,8 +78,51 @@ export const createMatch = (players: CreatePlayerInput[] = [], options: CreateMa
 
 router.post('/', (req: Request, res: Response) => {
     const { players = [], deckId } = req.body as { players?: CreatePlayerInput[]; deckId?: string };
+    for (const p of players) {
+        const normalized = typeof p === 'string' ? { name: p } : p;
+        const name = normalized?.name?.trim() ?? '';
+        if (name && !isValidName(name)) {
+            res.status(400).json({ message: '名前は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。' });
+            return;
+        }
+    }
     const { matchId, engine } = createMatch(players, { deckId });
     res.status(201).json({ matchId, state: engine.getState() });
+});
+
+router.post('/solo', (req: Request, res: Response) => {
+    const { name, roleId, deckId } = req.body as { name?: string; roleId?: string; deckId?: string };
+
+    const resolvedName = (name ?? '').trim();
+    if (resolvedName && !isValidName(resolvedName)) {
+        res.status(400).json({ message: '名前は8文字以内で、英数字/ひらがな/カタカナ/漢字のみ使用できます。' });
+        return;
+    }
+    if (!roleId) {
+        res.status(400).json({ message: 'roleId is required.' });
+        return;
+    }
+
+    const roles = getRolesCatalog();
+    const cpuRoleId = roles.length > 0 ? roles[Math.floor(Math.random() * roles.length)]?.id : undefined;
+
+    const { matchId, engine } = createMatch(
+        [
+            { name: resolvedName || 'Player', roleId } satisfies CreatePlayerInputNormalized,
+            { name: 'CPU', roleId: cpuRoleId, isCpu: true, cpuLevel: 'normal' } satisfies CreatePlayerInputNormalized,
+        ],
+        { deckId }
+    );
+
+    try {
+        engine.start();
+    } catch (error) {
+        res.status(400).json({ message: (error as Error).message });
+        return;
+    }
+
+    const human = engine.getState().players[0];
+    res.status(201).json({ matchId, playerId: human?.id, state: engine.getState() });
 });
 
 router.get('/:id', (req: Request, res: Response) => {
@@ -85,8 +144,8 @@ router.post('/:id/join', (req: Request, res: Response) => {
 
     const { name, roleId } = req.body as { name?: string; roleId?: string };
 
-    if (!name || name.trim().length === 0) {
-        res.status(400).json({ message: 'Player name is required.' });
+    if (!name || !isValidName(name.trim())) {
+        res.status(400).json({ message: '名前は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。' });
         return;
     }
 
@@ -195,11 +254,12 @@ router.post('/:id/play', (req: Request, res: Response) => {
     const engine = getEngineOr404(req.params.id, res);
     if (!engine) return;
 
-    const { playerId, cardId, targets, choices } = req.body as {
+    const { playerId, cardId, targets, choices, handIndex } = req.body as {
         playerId?: string;
         cardId?: string;
         targets?: string[];
         choices?: PlayCardOptions['choices'];
+        handIndex?: number;
     };
     if (!playerId || !cardId) {
         res.status(400).json({ message: 'playerId and cardId are required.' });
@@ -207,7 +267,7 @@ router.post('/:id/play', (req: Request, res: Response) => {
     }
 
     try {
-        engine.playCard(playerId, cardId, { targets, choices });
+        engine.playCard(playerId, cardId, { targets, choices, handIndex });
         res.status(200).json({ state: engine.getState() });
     } catch (error) {
         res.status(400).json({ message: (error as Error).message });
@@ -267,6 +327,42 @@ router.post('/:id/roleAction', (req: Request, res: Response) => {
 
     try {
         engine.roleAction(playerId, actionId, { targetId, choices });
+        res.status(200).json({ state: engine.getState() });
+    } catch (error) {
+        res.status(400).json({ message: (error as Error).message });
+    }
+});
+
+router.post('/:id/rescueBra', (req: Request, res: Response) => {
+    const engine = getEngineOr404(req.params.id, res);
+    if (!engine) return;
+
+    const { playerId } = req.body as { playerId?: string };
+    if (!playerId) {
+        res.status(400).json({ message: 'playerId is required.' });
+        return;
+    }
+
+    try {
+        engine.rescueBra(playerId);
+        res.status(200).json({ state: engine.getState() });
+    } catch (error) {
+        res.status(400).json({ message: (error as Error).message });
+    }
+});
+
+router.post('/:id/resolvePrompt', (req: Request, res: Response) => {
+    const engine = getEngineOr404(req.params.id, res);
+    if (!engine) return;
+
+    const { playerId, accepted } = req.body as { playerId?: string; accepted?: boolean };
+    if (!playerId) {
+        res.status(400).json({ message: 'playerId is required.' });
+        return;
+    }
+
+    try {
+        engine.resolvePendingPrompt(playerId, Boolean(accepted));
         res.status(200).json({ state: engine.getState() });
     } catch (error) {
         res.status(400).json({ message: (error as Error).message });

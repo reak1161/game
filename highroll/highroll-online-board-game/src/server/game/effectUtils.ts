@@ -4,6 +4,7 @@ import type {
     PlayerRuntimeState,
     Role,
     RoleParams,
+    RoleRuntimeState,
     StatKey,
     ValueFormula,
 } from '../../shared/types';
@@ -23,18 +24,24 @@ const emptyModifiers = () => ({
     bra: 0,
 });
 
-export const createRuntimeStateFromRole = (playerId: string, role: Role): PlayerRuntimeState => ({
-    playerId,
-    roleId: role.id,
-    hp: role.params.hp,
-    maxHp: role.params.hp,
-    tempHp: 0,
-    baseStats: cloneRoleParams(role.params),
-    statTokens: emptyModifiers(),
-    turnBoosts: emptyModifiers(),
-    installs: [],
-    roleState: {},
-});
+export const createRuntimeStateFromRole = (playerId: string, role: Role): PlayerRuntimeState => {
+    const roleState: RoleRuntimeState = {};
+    if (role.id === 'efficiency') {
+        roleState.cardEffectMultiplier = 2;
+    }
+    return {
+        playerId,
+        roleId: role.id,
+        hp: role.params.hp,
+        maxHp: role.params.hp,
+        tempHp: 0,
+        baseStats: cloneRoleParams(role.params),
+        statTokens: emptyModifiers(),
+        turnBoosts: emptyModifiers(),
+        installs: [],
+        roleState,
+    };
+};
 
 export const getEffectiveStatValue = (
     runtime: PlayerRuntimeState | undefined,
@@ -45,11 +52,16 @@ export const getEffectiveStatValue = (
     }
 
     const key = stat as keyof RoleParams;
-    return (
+    const raw =
         (runtime.baseStats[key] ?? 0) +
         (runtime.statTokens[stat] ?? 0) +
-        (runtime.turnBoosts[stat] ?? 0)
-    );
+        (runtime.turnBoosts[stat] ?? 0);
+
+    if (runtime.roleId === 'giant' && (stat === 'def' || stat === 'spe')) {
+        return Math.min(raw, 0);
+    }
+
+    return raw;
 };
 
 const applyRounding = (value: number, mode: DamageFormula['round'] | ValueFormula['round']): number => {

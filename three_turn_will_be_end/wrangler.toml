@@ -1,0 +1,13 @@
+name = "three-turn-will-be-end"
+main = "src/worker.js"
+compatibility_date = "2024-10-01"
+workers_dev = true
+
+[durable_objects]
+bindings = [
+  { name = "ROOM_DO", class_name = "RoomDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RoomDO"]

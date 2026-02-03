@@ -28,7 +28,7 @@ const dataRoot = resolveDataRoot();
 
 const readJson = <T>(filename: string): T => {
     const file = path.join(dataRoot, filename);
-    const raw = fs.readFileSync(file, 'utf8');
+    const raw = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
     return JSON.parse(stripJsonComments(raw)) as T;
 };
 
@@ -68,6 +68,8 @@ export const getRolesCatalog = (): Role[] => {
                     ...role,
                     params: role.params ?? existing.params,
                     tags: role.tags ?? existing.tags,
+                    text: existing.text ?? role.text,
+                    detailText: (existing as any).detailText ?? (role as any).detailText,
                 });
             } else {
                 merged.set(role.id, role);
