@@ -7,5 +7,5 @@ pages_build_output_dir = "."
 [[d1_databases]]
 binding = "DB"
 database_name = "mahjong-score-practice"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "5aaa70fa-0f95-4cf7-8f36-d5f82c702ed1"
 
