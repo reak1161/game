@@ -187,15 +187,13 @@ const els = {
   streakChip: document.getElementById("streakChip"),
   handText: document.getElementById("handText"),
   handTiles: document.getElementById("handTiles"),
-  winTileTile: document.getElementById("winTileTile"),
   winTileText: document.getElementById("winTileText"),
   handStateText: document.getElementById("handStateText"),
   winTypeText: document.getElementById("winTypeText"),
   seatText: document.getElementById("seatText"),
   riichiText: document.getElementById("riichiText"),
-  doraIndicatorText: document.getElementById("doraIndicatorText"),
-  doraCountText: document.getElementById("doraCountText"),
-  memoText: document.getElementById("memoText"),
+  doraIndicatorTile: document.getElementById("doraIndicatorTile"),
+  uraDoraIndicatorTile: document.getElementById("uraDoraIndicatorTile"),
   answerForm: document.getElementById("answerForm"),
   answerInputs: document.getElementById("answerInputs"),
   resultPanel: document.getElementById("resultPanel"),
@@ -370,6 +368,10 @@ function parseHandTextToGroups(handText) {
   return String(handText || "").trim().split(/\s+/).filter(Boolean).map(parseCompactTiles);
 }
 
+function parseHandTextToTiles(handText) {
+  return parseHandTextToGroups(handText).flat();
+}
+
 function parseWinTileLabel(winTileLabel) {
   const raw = String(winTileLabel || "").replace(/^和了牌:\s*/, "").trim();
   return parseCompactTiles(raw)[0] || raw;
@@ -405,6 +407,34 @@ function renderTileLine(container, tileGroups, options = {}) {
   });
 }
 
+function renderHandWithWinningTile(container, handText, winTileLabel) {
+  container.innerHTML = "";
+  const handTiles = parseHandTextToTiles(handText);
+  const winTile = parseWinTileLabel(winTileLabel);
+
+  handTiles.forEach((tileCode) => container.appendChild(createTileImg(tileCode)));
+  const winImg = createTileImg(winTile);
+  winImg.classList.add("tile-image-win");
+  container.appendChild(winImg);
+}
+
+function renderIndicatorTile(container, indicatorTile, actualDoraTile, emptyText = "なし") {
+  container.innerHTML = "";
+  if (!indicatorTile) {
+    const span = document.createElement("span");
+    span.className = "subtle-inline";
+    span.textContent = emptyText;
+    container.appendChild(span);
+    return;
+  }
+
+  container.appendChild(createTileImg(indicatorTile));
+  const text = document.createElement("span");
+  text.className = "subtle-inline";
+  text.textContent = `→ ${actualDoraTile}`;
+  container.appendChild(text);
+}
+
 function nextDora(tile) {
   const suitMap = {
     m: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"],
@@ -426,18 +456,27 @@ function nextDora(tile) {
   return tile;
 }
 
+function countTiles(tileList, targetTile) {
+  return tileList.reduce((count, tile) => count + (tile === targetTile ? 1 : 0), 0);
+}
+
 function generateQuestion(template) {
   const winType = sample(template.allowedWinTypes);
   const isDealer = Math.random() < 0.35;
   const riichi = template.closed ? (Math.random() < 0.55) : false;
   const doraIndicator = sample(TILE_LABELS);
   const doraTile = nextDora(doraIndicator);
-  const doraCount = randomInt(0, 3);
+  const uraDoraIndicator = riichi ? sample(TILE_LABELS) : null;
+  const uraDoraTile = uraDoraIndicator ? nextDora(uraDoraIndicator) : null;
+  const shownTiles = [...parseHandTextToTiles(template.hand), parseWinTileLabel(template.winTile)];
+  const doraCount = countTiles(shownTiles, doraTile);
+  const uraDoraCount = uraDoraTile ? countTiles(shownTiles, uraDoraTile) : 0;
 
   const yakuDetails = template.yakuKeys.map((key) => ({ ...YAKU_HAN[key], key }));
   if (riichi) yakuDetails.push({ ...YAKU_HAN.riichi, key: "riichi" });
   if (template.closed && winType === "tsumo") yakuDetails.push({ ...YAKU_HAN.tsumo, key: "tsumo" });
   if (doraCount > 0) yakuDetails.push({ name: "ドラ", han: doraCount, key: "dora" });
+  if (uraDoraCount > 0) yakuDetails.push({ name: "裏ドラ", han: uraDoraCount, key: "ura_dora" });
 
   const fu = template.fu[winType];
   const han = yakuDetails.reduce((sum, item) => sum + item.han, 0);
@@ -455,7 +494,10 @@ function generateQuestion(template) {
     riichi,
     doraIndicator,
     doraTile,
+    uraDoraIndicator,
+    uraDoraTile,
     doraCount,
+    uraDoraCount,
     yakuDetails,
     fu,
     han,
@@ -527,6 +569,30 @@ function setAnswerInputs(question) {
     `);
   }
   els.answerInputs.innerHTML = html.join("");
+
+  if (!question.isDealer && question.winType === "tsumo") {
+    const childInput = els.answerInputs.querySelector('input[name="tsumoChildPay"]');
+    const dealerInput = els.answerInputs.querySelector('input[name="tsumoDealerPay"]');
+    let syncing = false;
+
+    const digits = (value) => String(value ?? "").replace(/[^\d]/g, "");
+
+    childInput?.addEventListener("input", () => {
+      if (syncing) return;
+      syncing = true;
+      const raw = digits(childInput.value);
+      dealerInput.value = raw ? String(Number(raw) * 2) : "";
+      syncing = false;
+    });
+
+    dealerInput?.addEventListener("input", () => {
+      if (syncing) return;
+      syncing = true;
+      const raw = digits(dealerInput.value);
+      childInput.value = raw ? String(Math.floor(Number(raw) / 2)) : "";
+      syncing = false;
+    });
+  }
 }
 
 function renderQuestion() {
@@ -535,17 +601,20 @@ function renderQuestion() {
   state.currentQuestionStartAt = Date.now();
 
   els.progressText.textContent = `${state.index + 1} / ${state.questionCount}`;
-  els.handText.textContent = q.hand;
+  els.handText.textContent = `${q.hand} + ${parseWinTileLabel(q.winTile)}`;
   els.winTileText.textContent = q.winTile;
-  renderTileLine(els.handTiles, parseHandTextToGroups(q.hand));
-  renderTileLine(els.winTileTile, [[parseWinTileLabel(q.winTile)]], { prefixLabel: "和了牌" });
+  renderHandWithWinningTile(els.handTiles, q.hand, q.winTile);
   els.handStateText.textContent = q.closed ? "門前手" : "副露あり";
   els.winTypeText.textContent = q.winType === "ron" ? "ロン" : "ツモ";
   els.seatText.textContent = q.isDealer ? "親" : "子";
   els.riichiText.textContent = q.riichi ? "あり" : "なし";
-  els.doraIndicatorText.textContent = `${q.doraIndicator}（ドラ: ${q.doraTile}）`;
-  els.doraCountText.textContent = `${q.doraCount}枚`;
-  els.memoText.textContent = q.memo;
+  renderIndicatorTile(els.doraIndicatorTile, q.doraIndicator, q.doraTile);
+  renderIndicatorTile(
+    els.uraDoraIndicatorTile,
+    q.uraDoraIndicator,
+    q.uraDoraTile,
+    "リーチなし"
+  );
 
   setAnswerInputs(q);
   els.answerForm.classList.remove("hidden");
