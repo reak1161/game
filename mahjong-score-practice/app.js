@@ -186,6 +186,8 @@ const els = {
   scoreChip: document.getElementById("scoreChip"),
   streakChip: document.getElementById("streakChip"),
   handText: document.getElementById("handText"),
+  handTiles: document.getElementById("handTiles"),
+  winTileTile: document.getElementById("winTileTile"),
   winTileText: document.getElementById("winTileText"),
   handStateText: document.getElementById("handStateText"),
   winTypeText: document.getElementById("winTypeText"),
@@ -212,6 +214,20 @@ const els = {
   rankingList: document.getElementById("rankingList"),
   rankingEmpty: document.getElementById("rankingEmpty"),
   clearRankingBtn: document.getElementById("clearRankingBtn"),
+};
+
+const TILE_IMAGE_MAP = {
+  "1m": "assets/tiles/1m.gif", "2m": "assets/tiles/2m.gif", "3m": "assets/tiles/3m.gif",
+  "4m": "assets/tiles/4m.gif", "5m": "assets/tiles/5m.gif", "6m": "assets/tiles/6m.gif",
+  "7m": "assets/tiles/7m.gif", "8m": "assets/tiles/8m.gif", "9m": "assets/tiles/9m.gif",
+  "1p": "assets/tiles/1p.gif", "2p": "assets/tiles/2p.gif", "3p": "assets/tiles/3p.gif",
+  "4p": "assets/tiles/4p.gif", "5p": "assets/tiles/5p.gif", "6p": "assets/tiles/6p.gif",
+  "7p": "assets/tiles/7p.gif", "8p": "assets/tiles/8p.gif", "9p": "assets/tiles/9p.gif",
+  "1s": "assets/tiles/1s.gif", "2s": "assets/tiles/2s.gif", "3s": "assets/tiles/3s.gif",
+  "4s": "assets/tiles/4s.gif", "5s": "assets/tiles/5s.gif", "6s": "assets/tiles/6s.gif",
+  "7s": "assets/tiles/7s.gif", "8s": "assets/tiles/8s.gif", "9s": "assets/tiles/9s.gif",
+  "東": "assets/tiles/east.gif", "南": "assets/tiles/south.gif", "西": "assets/tiles/west.gif", "北": "assets/tiles/north.gif",
+  "白": "assets/tiles/white.gif", "發": "assets/tiles/green.gif", "中": "assets/tiles/red.gif",
 };
 
 const state = {
@@ -339,6 +355,54 @@ function formatElapsed(ms) {
 
 function sanitizeNumberInput(value) {
   return Number(String(value).replace(/[^\d]/g, ""));
+}
+
+function parseCompactTiles(group) {
+  if (!group) return [];
+  if (/^[1-9]+[mps]$/.test(group)) {
+    const suit = group[group.length - 1];
+    return group.slice(0, -1).split("").map((n) => `${n}${suit}`);
+  }
+  return Array.from(group);
+}
+
+function parseHandTextToGroups(handText) {
+  return String(handText || "").trim().split(/\s+/).filter(Boolean).map(parseCompactTiles);
+}
+
+function parseWinTileLabel(winTileLabel) {
+  const raw = String(winTileLabel || "").replace(/^和了牌:\s*/, "").trim();
+  return parseCompactTiles(raw)[0] || raw;
+}
+
+function createTileImg(tileCode) {
+  const img = document.createElement("img");
+  img.className = "tile-image";
+  img.alt = tileCode;
+  img.loading = "lazy";
+  img.decoding = "async";
+  img.src = TILE_IMAGE_MAP[tileCode] || "";
+  if (!TILE_IMAGE_MAP[tileCode]) img.style.display = "none";
+  return img;
+}
+
+function renderTileLine(container, tileGroups, options = {}) {
+  container.innerHTML = "";
+  if (options.prefixLabel) {
+    const label = document.createElement("span");
+    label.className = "tile-caption";
+    label.textContent = options.prefixLabel;
+    container.appendChild(label);
+  }
+  tileGroups.forEach((group, index) => {
+    group.forEach((tileCode) => container.appendChild(createTileImg(tileCode)));
+    if (index < tileGroups.length - 1) {
+      const gap = document.createElement("span");
+      gap.className = "tile-group-gap";
+      gap.setAttribute("aria-hidden", "true");
+      container.appendChild(gap);
+    }
+  });
 }
 
 function nextDora(tile) {
@@ -473,6 +537,8 @@ function renderQuestion() {
   els.progressText.textContent = `${state.index + 1} / ${state.questionCount}`;
   els.handText.textContent = q.hand;
   els.winTileText.textContent = q.winTile;
+  renderTileLine(els.handTiles, parseHandTextToGroups(q.hand));
+  renderTileLine(els.winTileTile, [[parseWinTileLabel(q.winTile)]], { prefixLabel: "和了牌" });
   els.handStateText.textContent = q.closed ? "門前手" : "副露あり";
   els.winTypeText.textContent = q.winType === "ron" ? "ロン" : "ツモ";
   els.seatText.textContent = q.isDealer ? "親" : "子";

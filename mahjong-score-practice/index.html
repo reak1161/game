@@ -50,7 +50,9 @@
       <div class="question-card">
         <div class="hand-block">
           <h2>問題</h2>
-          <p id="handText" class="hand-text"></p>
+          <div id="handTiles" class="tile-line" aria-label="手牌"></div>
+          <div id="winTileTile" class="tile-line tile-line-win" aria-label="和了牌"></div>
+          <p id="handText" class="hand-text hand-text-fallback"></p>
           <p id="winTileText" class="subtle"></p>
           <p id="handStateText" class="subtle"></p>
         </div>
@@ -101,6 +103,26 @@
       </div>
       <ol id="rankingList" class="ranking-list"></ol>
       <p id="rankingEmpty" class="subtle">まだ記録がありません。</p>
+    </section>
+
+    <section class="panel credits" aria-label="素材提供・出典">
+      <h2>素材提供・出典</h2>
+      <p class="subtle">
+        牌画像素材は <a href="https://mj-king.net/sozai/" target="_blank" rel="noopener noreferrer">麻雀素材[麻雀王国]</a>
+        の提供素材を利用しています。
+      </p>
+      <p class="subtle">
+        提供元サイト:
+        <a href="https://mj-king.net/" target="_blank" rel="noopener noreferrer">麻雀王国</a>
+      </p>
+      <p class="subtle credits-links">
+        使用した牌画ページ:
+        <a href="https://mj-king.net/sozai/download/manzu2.html" target="_blank" rel="noopener noreferrer">萬子2</a>
+        /
+        <a href="https://mj-king.net/sozai/download/pinzu2.html" target="_blank" rel="noopener noreferrer">筒子2</a>
+        /
+        <a href="https://mj-king.net/sozai/download/sozu2.html" target="_blank" rel="noopener noreferrer">索子2</a>
+      </p>
     </section>
   </main>
 
