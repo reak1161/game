@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>麻雀 点数計算トレーニング</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="bg-shape bg-shape-a" aria-hidden="true"></div>
+  <div class="bg-shape bg-shape-b" aria-hidden="true"></div>
+
+  <main class="app">
+    <header class="hero">
+      <p class="eyebrow">Mahjong Score Drill</p>
+      <h1>麻雀 点数計算トレーニング</h1>
+      <p class="lead">
+        手牌・和了条件を見て点数を入力。回答後に役名、飜数、符、最終点数を確認できます。
+      </p>
+    </header>
+
+    <section class="panel controls" aria-label="開始設定">
+      <label class="field">
+        <span>プレイヤー名</span>
+        <input id="playerName" type="text" maxlength="20" placeholder="Guest" />
+      </label>
+      <label class="field">
+        <span>出題数</span>
+        <select id="questionCount">
+          <option value="5">5問</option>
+          <option value="10" selected>10問</option>
+          <option value="15">15問</option>
+        </select>
+      </label>
+      <button id="startBtn" class="btn btn-primary">スタート</button>
+    </section>
+
+    <section id="quizPanel" class="panel quiz hidden" aria-live="polite">
+      <div class="quiz-top">
+        <div>
+          <p id="progressText" class="meta">1 / 10</p>
+          <p id="timerText" class="meta strong">00:00</p>
+        </div>
+        <div class="chip-row">
+          <span id="scoreChip" class="chip">Score: 0</span>
+          <span id="streakChip" class="chip">連続正解: 0</span>
+        </div>
+      </div>
+
+      <div class="question-card">
+        <div class="hand-block">
+          <h2>問題</h2>
+          <p id="handText" class="hand-text"></p>
+          <p id="winTileText" class="subtle"></p>
+          <p id="handStateText" class="subtle"></p>
+        </div>
+
+        <div class="conditions-grid">
+          <div class="cond"><span>和了</span><strong id="winTypeText"></strong></div>
+          <div class="cond"><span>立場</span><strong id="seatText"></strong></div>
+          <div class="cond"><span>リーチ</span><strong id="riichiText"></strong></div>
+          <div class="cond"><span>ドラ表示牌</span><strong id="doraIndicatorText"></strong></div>
+          <div class="cond"><span>ドラ枚数</span><strong id="doraCountText"></strong></div>
+          <div class="cond"><span>備考</span><strong id="memoText"></strong></div>
+        </div>
+      </div>
+
+      <form id="answerForm" class="answer-area">
+        <div id="answerInputs" class="answer-inputs"></div>
+        <button type="submit" class="btn btn-primary">回答する</button>
+      </form>
+
+      <section id="resultPanel" class="result-panel hidden" aria-live="polite">
+        <p id="judgeText" class="judge"></p>
+        <p id="correctPointsText"></p>
+        <p id="breakdownText"></p>
+        <div class="yaku-wrap">
+          <p class="subtle">役一覧</p>
+          <ul id="yakuList" class="yaku-list"></ul>
+        </div>
+        <button id="nextBtn" class="btn btn-secondary">次の問題へ</button>
+      </section>
+    </section>
+
+    <section id="summaryPanel" class="panel hidden" aria-live="polite">
+      <h2>今回の結果</h2>
+      <div class="summary-grid">
+        <div class="summary-item"><span>プレイヤー</span><strong id="summaryName"></strong></div>
+        <div class="summary-item"><span>正解数</span><strong id="summaryCorrect"></strong></div>
+        <div class="summary-item"><span>正答率</span><strong id="summaryRate"></strong></div>
+        <div class="summary-item"><span>経過時間</span><strong id="summaryTime"></strong></div>
+        <div class="summary-item"><span>スコア</span><strong id="summaryScore"></strong></div>
+      </div>
+      <button id="restartBtn" class="btn btn-primary">もう一度遊ぶ</button>
+    </section>
+
+    <section class="panel ranking">
+      <div class="ranking-head">
+        <h2>ランキング（ローカル保存）</h2>
+        <button id="clearRankingBtn" class="btn btn-ghost" type="button">ランキング削除</button>
+      </div>
+      <ol id="rankingList" class="ranking-list"></ol>
+      <p id="rankingEmpty" class="subtle">まだ記録がありません。</p>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,743 @@
+﻿const RANKING_KEY = "mahjong-score-drill-ranking-v1";
+
+const TILE_LABELS = [
+  "1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m",
+  "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p",
+  "1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s",
+  "東", "南", "西", "北", "白", "發", "中",
+];
+
+const YAKU_HAN = {
+  riichi: { name: "立直", han: 1 },
+  tsumo: { name: "門前清自摸和", han: 1 },
+  tanyao: { name: "断么九", han: 1 },
+  pinfu: { name: "平和", han: 1 },
+  iipeiko: { name: "一盃口", han: 1 },
+  yakuhai_haku: { name: "役牌（白）", han: 1 },
+  yakuhai_hatsu: { name: "役牌（發）", han: 1 },
+  yakuhai_chun: { name: "役牌（中）", han: 1 },
+  yakuhai_ton: { name: "役牌（東）", han: 1 },
+  yakuhai_nan: { name: "役牌（南）", han: 1 },
+  toitoi: { name: "対々和", han: 2 },
+  sanankou: { name: "三暗刻", han: 2 },
+  sanshoku: { name: "三色同順", han: 2 },
+  ittsuu: { name: "一気通貫", han: 2 },
+  chiitoi: { name: "七対子", han: 2 },
+  honitsu_closed: { name: "混一色", han: 3 },
+  honitsu_open: { name: "混一色", han: 2 },
+  junchan_closed: { name: "純全帯么九", han: 3 },
+  junchan_open: { name: "純全帯么九", han: 2 },
+  chanta_closed: { name: "混全帯么九", han: 2 },
+  chanta_open: { name: "混全帯么九", han: 1 },
+  chinitsu_closed: { name: "清一色", han: 6 },
+  chinitsu_open: { name: "清一色", han: 5 },
+};
+
+const QUESTION_TEMPLATES = [
+  {
+    id: "pinfu-tanyao-iipeiko",
+    hand: "234m 234m 456p 345s 55p",
+    winTile: "和了牌: 6s",
+    memo: "良形の門前手",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["tanyao", "pinfu", "iipeiko"],
+    fu: { ron: 30, tsumo: 20 },
+  },
+  {
+    id: "pinfu-sanshoku",
+    hand: "123m 123p 123s 345m 77p",
+    winTile: "和了牌: 5m",
+    memo: "三色同順の門前手",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["pinfu", "sanshoku"],
+    fu: { ron: 30, tsumo: 20 },
+  },
+  {
+    id: "tanyao-ittsuu",
+    hand: "123p 456p 789p 345s 22m",
+    winTile: "和了牌: 3s",
+    memo: "一気通貫（門前）",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["ittsuu"],
+    fu: { ron: 30, tsumo: 30 },
+  },
+  {
+    id: "yakuhai-toitoi-open",
+    hand: "白白白 777m 999p 333s 中中",
+    winTile: "和了牌: 中",
+    memo: "副露あり想定",
+    closed: false,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["yakuhai_haku", "toitoi"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "yakuhai-double-toitoi",
+    hand: "白白白 發發發 222m 888s 99p",
+    winTile: "和了牌: 9p",
+    memo: "役牌2種＋対々和",
+    closed: false,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["yakuhai_haku", "yakuhai_hatsu", "toitoi"],
+    fu: { ron: 50, tsumo: 50 },
+  },
+  {
+    id: "chiitoi-tanyao",
+    hand: "22m 33m 44p 55p 66s 77s 88p",
+    winTile: "和了牌: 8p",
+    memo: "七対子",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["chiitoi", "tanyao"],
+    fu: { ron: 25, tsumo: 25 },
+  },
+  {
+    id: "honitsu-yakuhai-open",
+    hand: "111p 234p 678p 999p 白白",
+    winTile: "和了牌: 白",
+    memo: "混一色（副露あり）",
+    closed: false,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["honitsu_open", "yakuhai_haku"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "honitsu-closed",
+    hand: "123s 456s 789s 南南南 22s",
+    winTile: "和了牌: 2s",
+    memo: "混一色（門前）＋役牌",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["honitsu_closed", "yakuhai_nan"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "chinitsu-open",
+    hand: "111m 234m 456m 789m 99m",
+    winTile: "和了牌: 9m",
+    memo: "清一色（副露あり）",
+    closed: false,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["chinitsu_open"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "chanta-yakuhai-open",
+    hand: "123m 789m 白白白 789p 99s",
+    winTile: "和了牌: 9s",
+    memo: "混全帯么九＋役牌",
+    closed: false,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["chanta_open", "yakuhai_haku"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "junchan-closed",
+    hand: "123m 789m 123p 789s 11p",
+    winTile: "和了牌: 1p",
+    memo: "純全帯么九（門前）",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["junchan_closed"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "sanankou-toitoi-closed",
+    hand: "222m 777p 333s 999m 55m",
+    winTile: "和了牌: 5m",
+    memo: "三暗刻＋対々和（想定問題）",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["sanankou", "toitoi"],
+    fu: { ron: 50, tsumo: 50 },
+  },
+  {
+    id: "ittsuu-open",
+    hand: "123s 456s 789s 77m 999p",
+    winTile: "和了牌: 7m",
+    memo: "一気通貫（副露あり）",
+    closed: false,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["ittsuu"],
+    fu: { ron: 40, tsumo: 40 },
+  },
+  {
+    id: "yakuhai-basic",
+    hand: "中中中 456m 678p 789s 22m",
+    winTile: "和了牌: 2m",
+    memo: "基本形の確認用",
+    closed: true,
+    allowedWinTypes: ["ron", "tsumo"],
+    yakuKeys: ["yakuhai_chun"],
+    fu: { ron: 40, tsumo: 30 },
+  },
+];
+
+const els = {
+  playerName: document.getElementById("playerName"),
+  questionCount: document.getElementById("questionCount"),
+  startBtn: document.getElementById("startBtn"),
+  quizPanel: document.getElementById("quizPanel"),
+  progressText: document.getElementById("progressText"),
+  timerText: document.getElementById("timerText"),
+  scoreChip: document.getElementById("scoreChip"),
+  streakChip: document.getElementById("streakChip"),
+  handText: document.getElementById("handText"),
+  winTileText: document.getElementById("winTileText"),
+  handStateText: document.getElementById("handStateText"),
+  winTypeText: document.getElementById("winTypeText"),
+  seatText: document.getElementById("seatText"),
+  riichiText: document.getElementById("riichiText"),
+  doraIndicatorText: document.getElementById("doraIndicatorText"),
+  doraCountText: document.getElementById("doraCountText"),
+  memoText: document.getElementById("memoText"),
+  answerForm: document.getElementById("answerForm"),
+  answerInputs: document.getElementById("answerInputs"),
+  resultPanel: document.getElementById("resultPanel"),
+  judgeText: document.getElementById("judgeText"),
+  correctPointsText: document.getElementById("correctPointsText"),
+  breakdownText: document.getElementById("breakdownText"),
+  yakuList: document.getElementById("yakuList"),
+  nextBtn: document.getElementById("nextBtn"),
+  summaryPanel: document.getElementById("summaryPanel"),
+  summaryName: document.getElementById("summaryName"),
+  summaryCorrect: document.getElementById("summaryCorrect"),
+  summaryRate: document.getElementById("summaryRate"),
+  summaryTime: document.getElementById("summaryTime"),
+  summaryScore: document.getElementById("summaryScore"),
+  restartBtn: document.getElementById("restartBtn"),
+  rankingList: document.getElementById("rankingList"),
+  rankingEmpty: document.getElementById("rankingEmpty"),
+  clearRankingBtn: document.getElementById("clearRankingBtn"),
+};
+
+const state = {
+  playerName: "Guest",
+  questionCount: 10,
+  questions: [],
+  index: 0,
+  answered: false,
+  correctCount: 0,
+  score: 0,
+  streak: 0,
+  startAt: 0,
+  timerId: null,
+  currentQuestionStartAt: 0,
+};
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function sample(arr) {
+  return arr[randomInt(0, arr.length - 1)];
+}
+
+function shuffle(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = randomInt(0, i);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function ceil100(n) {
+  return Math.ceil(n / 100) * 100;
+}
+
+function computeLimitLevel(han, fu) {
+  if (han >= 13) return "yakuman";
+  if (han >= 11) return "sanbaiman";
+  if (han >= 8) return "baiman";
+  if (han >= 6) return "haneman";
+  if (han >= 5) return "mangan";
+  if (han === 4 && fu >= 40) return "mangan";
+  if (han === 3 && fu >= 70) return "mangan";
+  return null;
+}
+
+function calcPoints({ han, fu, isDealer, winType }) {
+  const limit = computeLimitLevel(han, fu);
+  let ron;
+  let tsumoDealerPay;
+  let tsumoChildPay;
+
+  if (limit) {
+    const table = {
+      mangan: { ronChild: 8000, ronDealer: 12000, tsumoChild: [4000, 2000], tsumoDealerAll: 4000 },
+      haneman: { ronChild: 12000, ronDealer: 18000, tsumoChild: [6000, 3000], tsumoDealerAll: 6000 },
+      baiman: { ronChild: 16000, ronDealer: 24000, tsumoChild: [8000, 4000], tsumoDealerAll: 8000 },
+      sanbaiman: { ronChild: 24000, ronDealer: 36000, tsumoChild: [12000, 6000], tsumoDealerAll: 12000 },
+      yakuman: { ronChild: 32000, ronDealer: 48000, tsumoChild: [16000, 8000], tsumoDealerAll: 16000 },
+    }[limit];
+
+    if (winType === "ron") {
+      ron = isDealer ? table.ronDealer : table.ronChild;
+    } else if (isDealer) {
+      tsumoDealerPay = table.tsumoDealerAll;
+    } else {
+      [tsumoDealerPay, tsumoChildPay] = table.tsumoChild;
+    }
+  } else {
+    const base = fu * Math.pow(2, han + 2);
+    if (winType === "ron") {
+      ron = ceil100(base * (isDealer ? 6 : 4));
+    } else if (isDealer) {
+      tsumoDealerPay = ceil100(base * 2);
+    } else {
+      tsumoDealerPay = ceil100(base * 2);
+      tsumoChildPay = ceil100(base);
+    }
+  }
+
+  return { han, fu, limit, isDealer, winType, ron, tsumoDealerPay, tsumoChildPay };
+}
+
+function totalPointsFromBreakdown(result) {
+  if (result.winType === "ron") return result.ron;
+  if (result.isDealer) return result.tsumoDealerPay * 3;
+  return result.tsumoDealerPay + result.tsumoChildPay * 2;
+}
+
+function limitLabel(limit) {
+  return {
+    mangan: "満貫",
+    haneman: "跳満",
+    baiman: "倍満",
+    sanbaiman: "三倍満",
+    yakuman: "役満",
+  }[limit];
+}
+
+function formatPointAnswer(result) {
+  if (result.winType === "ron") {
+    return `${result.ron}点（ロン）`;
+  }
+  if (result.isDealer) {
+    return `${result.tsumoDealerPay}オール（総計 ${totalPointsFromBreakdown(result)}点）`;
+  }
+  return `${result.tsumoChildPay}/${result.tsumoDealerPay}（子/親支払い, 総計 ${totalPointsFromBreakdown(result)}点）`;
+}
+
+function formatBreakdown(result) {
+  const limitText = result.limit ? ` / ${limitLabel(result.limit)}` : "";
+  const pointText = result.winType === "ron"
+    ? `ロン ${result.ron}点`
+    : (result.isDealer ? `ツモ ${result.tsumoDealerPay}オール` : `ツモ 子${result.tsumoChildPay} / 親${result.tsumoDealerPay}`);
+  return `${result.han}飜 ${result.fu}符${limitText} → ${pointText}`;
+}
+
+function formatElapsed(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60).toString().padStart(2, "0");
+  const s = (totalSec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function sanitizeNumberInput(value) {
+  return Number(String(value).replace(/[^\d]/g, ""));
+}
+
+function nextDora(tile) {
+  const suitMap = {
+    m: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"],
+    p: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"],
+    s: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"],
+  };
+
+  if (/^[1-9][mps]$/.test(tile)) {
+    const suit = tile[1];
+    const arr = suitMap[suit];
+    const idx = arr.indexOf(tile);
+    return arr[(idx + 1) % arr.length];
+  }
+
+  const winds = ["東", "南", "西", "北"];
+  const dragons = ["白", "發", "中"];
+  if (winds.includes(tile)) return winds[(winds.indexOf(tile) + 1) % winds.length];
+  if (dragons.includes(tile)) return dragons[(dragons.indexOf(tile) + 1) % dragons.length];
+  return tile;
+}
+
+function generateQuestion(template) {
+  const winType = sample(template.allowedWinTypes);
+  const isDealer = Math.random() < 0.35;
+  const riichi = template.closed ? (Math.random() < 0.55) : false;
+  const doraIndicator = sample(TILE_LABELS);
+  const doraTile = nextDora(doraIndicator);
+  const doraCount = randomInt(0, 3);
+
+  const yakuDetails = template.yakuKeys.map((key) => ({ ...YAKU_HAN[key], key }));
+  if (riichi) yakuDetails.push({ ...YAKU_HAN.riichi, key: "riichi" });
+  if (template.closed && winType === "tsumo") yakuDetails.push({ ...YAKU_HAN.tsumo, key: "tsumo" });
+  if (doraCount > 0) yakuDetails.push({ name: "ドラ", han: doraCount, key: "dora" });
+
+  const fu = template.fu[winType];
+  const han = yakuDetails.reduce((sum, item) => sum + item.han, 0);
+  const pointResult = calcPoints({ han, fu, isDealer, winType });
+
+  return {
+    id: `${template.id}-${Math.random().toString(36).slice(2, 8)}`,
+    templateId: template.id,
+    hand: template.hand,
+    winTile: template.winTile,
+    memo: template.memo,
+    closed: template.closed,
+    winType,
+    isDealer,
+    riichi,
+    doraIndicator,
+    doraTile,
+    doraCount,
+    yakuDetails,
+    fu,
+    han,
+    pointResult,
+  };
+}
+
+function buildQuestions(count) {
+  const templates = shuffle(QUESTION_TEMPLATES);
+  const picked = [];
+  for (let i = 0; i < count; i += 1) {
+    picked.push(generateQuestion(templates[i % templates.length]));
+  }
+  return picked;
+}
+
+function updateTimer() {
+  if (!state.startAt) return;
+  els.timerText.textContent = formatElapsed(Date.now() - state.startAt);
+}
+
+function stopTimer() {
+  if (state.timerId) {
+    clearInterval(state.timerId);
+    state.timerId = null;
+  }
+}
+
+function startTimer() {
+  stopTimer();
+  state.startAt = Date.now();
+  updateTimer();
+  state.timerId = setInterval(updateTimer, 1000);
+}
+
+function updateScoreChips() {
+  els.scoreChip.textContent = `Score: ${state.score}`;
+  els.streakChip.textContent = `連続正解: ${state.streak}`;
+}
+
+function setAnswerInputs(question) {
+  const html = [];
+  if (question.winType === "ron") {
+    html.push(`
+      <label class="field">
+        <span>ロン点数</span>
+        <input type="text" inputmode="numeric" name="ronPoints" placeholder="例: 3900" required />
+      </label>
+    `);
+  } else if (question.isDealer) {
+    html.push(`
+      <label class="field">
+        <span>ツモ（オール）</span>
+        <input type="text" inputmode="numeric" name="tsumoAll" placeholder="例: 2000" required />
+      </label>
+    `);
+  } else {
+    html.push(`
+      <label class="field">
+        <span>子の支払い</span>
+        <input type="text" inputmode="numeric" name="tsumoChildPay" placeholder="例: 1000" required />
+      </label>
+    `);
+    html.push(`
+      <label class="field">
+        <span>親の支払い</span>
+        <input type="text" inputmode="numeric" name="tsumoDealerPay" placeholder="例: 2000" required />
+      </label>
+    `);
+  }
+  els.answerInputs.innerHTML = html.join("");
+}
+
+function renderQuestion() {
+  const q = state.questions[state.index];
+  state.answered = false;
+  state.currentQuestionStartAt = Date.now();
+
+  els.progressText.textContent = `${state.index + 1} / ${state.questionCount}`;
+  els.handText.textContent = q.hand;
+  els.winTileText.textContent = q.winTile;
+  els.handStateText.textContent = q.closed ? "門前手" : "副露あり";
+  els.winTypeText.textContent = q.winType === "ron" ? "ロン" : "ツモ";
+  els.seatText.textContent = q.isDealer ? "親" : "子";
+  els.riichiText.textContent = q.riichi ? "あり" : "なし";
+  els.doraIndicatorText.textContent = `${q.doraIndicator}（ドラ: ${q.doraTile}）`;
+  els.doraCountText.textContent = `${q.doraCount}枚`;
+  els.memoText.textContent = q.memo;
+
+  setAnswerInputs(q);
+  els.answerForm.classList.remove("hidden");
+  els.resultPanel.classList.add("hidden");
+  els.judgeText.className = "judge";
+  els.yakuList.innerHTML = "";
+  const firstInput = els.answerInputs.querySelector("input");
+  if (firstInput) firstInput.focus();
+}
+function collectAnswer(question) {
+  const form = new FormData(els.answerForm);
+  if (question.winType === "ron") {
+    return { ron: sanitizeNumberInput(form.get("ronPoints")) };
+  }
+  if (question.isDealer) {
+    return { tsumoAll: sanitizeNumberInput(form.get("tsumoAll")) };
+  }
+  return {
+    tsumoChildPay: sanitizeNumberInput(form.get("tsumoChildPay")),
+    tsumoDealerPay: sanitizeNumberInput(form.get("tsumoDealerPay")),
+  };
+}
+
+function isCorrectAnswer(question, answer) {
+  const p = question.pointResult;
+  if (question.winType === "ron") {
+    return answer.ron === p.ron;
+  }
+  if (question.isDealer) {
+    return answer.tsumoAll === p.tsumoDealerPay;
+  }
+  return answer.tsumoChildPay === p.tsumoChildPay && answer.tsumoDealerPay === p.tsumoDealerPay;
+}
+
+function renderResult(question, correct) {
+  els.resultPanel.classList.remove("hidden");
+  els.answerForm.classList.add("hidden");
+  els.judgeText.textContent = correct ? "正解" : "不正解";
+  els.judgeText.classList.add(correct ? "ok" : "ng");
+  els.correctPointsText.textContent = `正答: ${formatPointAnswer(question.pointResult)}`;
+  els.breakdownText.textContent = `内訳: ${formatBreakdown(question.pointResult)}`;
+
+  const yakuItems = [...question.yakuDetails].sort((a, b) => b.han - a.han || a.name.localeCompare(b.name, "ja"));
+  els.yakuList.innerHTML = yakuItems.map((y) => `<li>${y.name} ${y.han}飜</li>`).join("");
+  els.nextBtn.textContent = state.index + 1 >= state.questionCount ? "結果を見る" : "次の問題へ";
+}
+
+function onAnswerSubmit(event) {
+  event.preventDefault();
+  if (state.answered) return;
+
+  const q = state.questions[state.index];
+  const answer = collectAnswer(q);
+  const correct = isCorrectAnswer(q, answer);
+  const elapsedSec = Math.max(1, Math.floor((Date.now() - state.currentQuestionStartAt) / 1000));
+
+  state.answered = true;
+  if (correct) {
+    state.correctCount += 1;
+    state.streak += 1;
+    state.score += 1000 + Math.max(0, 200 - elapsedSec * 10) + Math.min(100, state.streak * 10);
+  } else {
+    state.streak = 0;
+    state.score = Math.max(0, state.score - 50);
+  }
+
+  updateScoreChips();
+  renderResult(q, correct);
+}
+
+function nextQuestionOrFinish() {
+  if (!state.answered) return;
+  state.index += 1;
+  if (state.index >= state.questionCount) {
+    void finishQuiz();
+    return;
+  }
+  renderQuestion();
+}
+
+let rankingMode = "unknown";
+
+function getLocalRanking() {
+  try {
+    const raw = localStorage.getItem(RANKING_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function setLocalRanking(rows) {
+  localStorage.setItem(RANKING_KEY, JSON.stringify(rows.slice(0, 20)));
+}
+
+function saveLocalRanking(entry) {
+  const ranking = getLocalRanking();
+  ranking.push(entry);
+  ranking.sort((a, b) => b.score - a.score || a.timeMs - b.timeMs);
+  setLocalRanking(ranking);
+  return ranking.slice(0, 20);
+}
+
+function normalizeRankingRow(row) {
+  return {
+    name: String(row?.name || "Guest"),
+    score: Number(row?.score || 0),
+    correct: Number(row?.correct || 0),
+    total: Number(row?.total || 0),
+    timeMs: Number(row?.timeMs || row?.time_ms || 0),
+    createdAt: row?.createdAt || row?.created_at || new Date().toISOString(),
+  };
+}
+
+async function fetchRankingFromApi() {
+  const res = await fetch("./api/rankings?limit=20", {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new Error(`GET /api/rankings failed: ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data?.ok || !Array.isArray(data.ranking)) {
+    throw new Error("Ranking API response is invalid");
+  }
+  return data.ranking.map(normalizeRankingRow);
+}
+
+async function postRankingToApi(entry) {
+  const res = await fetch("./api/rankings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(entry),
+  });
+  if (!res.ok) {
+    throw new Error(`POST /api/rankings failed: ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data?.ok || !Array.isArray(data.ranking)) {
+    throw new Error("Ranking API response is invalid");
+  }
+  return data.ranking.map(normalizeRankingRow);
+}
+
+function setRankingModeUi(mode) {
+  rankingMode = mode;
+  els.clearRankingBtn.disabled = mode === "remote";
+  els.clearRankingBtn.title = mode === "remote"
+    ? "共有ランキング運用時はブラウザから一括削除できません"
+    : "";
+}
+
+async function getRanking() {
+  try {
+    const remote = await fetchRankingFromApi();
+    setRankingModeUi("remote");
+    return remote;
+  } catch {
+    setRankingModeUi("local");
+    return getLocalRanking();
+  }
+}
+
+async function saveRanking(entry) {
+  try {
+    const remote = await postRankingToApi(entry);
+    setRankingModeUi("remote");
+    return remote;
+  } catch {
+    setRankingModeUi("local");
+    return saveLocalRanking(entry).map(normalizeRankingRow);
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+async function renderRanking(rowsOverride = null) {
+  const ranking = rowsOverride ?? await getRanking();
+  els.rankingList.innerHTML = "";
+  els.rankingEmpty.classList.toggle("hidden", ranking.length > 0);
+
+  ranking.forEach((row) => {
+    const li = document.createElement("li");
+    const date = new Date(row.createdAt);
+    li.innerHTML = `
+      <div class="ranking-main">
+        <strong>${escapeHtml(row.name)}</strong>
+        <span>${row.score} pt</span>
+      </div>
+      <div class="ranking-meta">
+        ${row.correct}/${row.total}問正解 ・ ${formatElapsed(row.timeMs)} ・ ${date.toLocaleString("ja-JP", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+      </div>
+    `;
+    els.rankingList.appendChild(li);
+  });
+}
+
+function startQuiz() {
+  state.playerName = (els.playerName.value || "Guest").trim() || "Guest";
+  state.questionCount = Number(els.questionCount.value) || 10;
+  state.questions = buildQuestions(state.questionCount);
+  state.index = 0;
+  state.correctCount = 0;
+  state.score = 0;
+  state.streak = 0;
+  state.answered = false;
+
+  updateScoreChips();
+  els.quizPanel.classList.remove("hidden");
+  els.summaryPanel.classList.add("hidden");
+  startTimer();
+  renderQuestion();
+}
+
+async function finishQuiz() {
+  stopTimer();
+  const totalTimeMs = Date.now() - state.startAt;
+  const rate = Math.round((state.correctCount / state.questionCount) * 100);
+  const finalScore = Math.max(0, state.score + state.correctCount * 100 - Math.floor(totalTimeMs / 1000));
+  state.score = finalScore;
+  updateScoreChips();
+
+  els.quizPanel.classList.add("hidden");
+  els.summaryPanel.classList.remove("hidden");
+  els.summaryName.textContent = state.playerName;
+  els.summaryCorrect.textContent = `${state.correctCount} / ${state.questionCount}`;
+  els.summaryRate.textContent = `${rate}%`;
+  els.summaryTime.textContent = formatElapsed(totalTimeMs);
+  els.summaryScore.textContent = `${finalScore} pt`;
+
+  const rankingRows = await saveRanking({
+    name: state.playerName,
+    score: finalScore,
+    correct: state.correctCount,
+    total: state.questionCount,
+    timeMs: totalTimeMs,
+    createdAt: new Date().toISOString(),
+  });
+  await renderRanking(rankingRows);
+}
+
+els.startBtn.addEventListener("click", startQuiz);
+els.answerForm.addEventListener("submit", onAnswerSubmit);
+els.nextBtn.addEventListener("click", nextQuestionOrFinish);
+els.restartBtn.addEventListener("click", startQuiz);
+els.clearRankingBtn.addEventListener("click", () => {
+  if (rankingMode === "remote") return;
+  localStorage.removeItem(RANKING_KEY);
+  void renderRanking();
+});
+
+void renderRanking();

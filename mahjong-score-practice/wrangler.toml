@@ -1,0 +1,11 @@
+name = "mahjong-score-practice"
+compatibility_date = "2026-02-23"
+pages_build_output_dir = "."
+
+# Cloudflare Pages Functions + D1 (共有ランキング用)
+# `database_id` は `wrangler d1 create` 実行後の値に置き換えてください。
+[[d1_databases]]
+binding = "DB"
+database_name = "mahjong-score-practice"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
