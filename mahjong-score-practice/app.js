@@ -185,10 +185,7 @@ const els = {
   timerText: document.getElementById("timerText"),
   scoreChip: document.getElementById("scoreChip"),
   streakChip: document.getElementById("streakChip"),
-  handText: document.getElementById("handText"),
   handTiles: document.getElementById("handTiles"),
-  winTileText: document.getElementById("winTileText"),
-  handStateText: document.getElementById("handStateText"),
   winTypeText: document.getElementById("winTypeText"),
   seatText: document.getElementById("seatText"),
   riichiText: document.getElementById("riichiText"),
@@ -200,6 +197,7 @@ const els = {
   judgeText: document.getElementById("judgeText"),
   correctPointsText: document.getElementById("correctPointsText"),
   breakdownText: document.getElementById("breakdownText"),
+  fuDetailList: document.getElementById("fuDetailList"),
   yakuList: document.getElementById("yakuList"),
   nextBtn: document.getElementById("nextBtn"),
   summaryPanel: document.getElementById("summaryPanel"),
@@ -344,6 +342,43 @@ function formatBreakdown(result) {
   return `${result.han}飜 ${result.fu}符${limitText} → ${pointText}`;
 }
 
+function buildFuDetails(question) {
+  const fu = question.fu;
+  const hasYaku = (key) => question.yakuDetails.some((y) => y.key === key);
+
+  if (hasYaku("chiitoi")) {
+    return [
+      { label: "七対子固定", fu: 25 },
+    ];
+  }
+
+  if (question.closed && question.winType === "tsumo" && hasYaku("pinfu") && fu === 20) {
+    return [
+      { label: "平和ツモ（20符固定扱い）", fu: 20 },
+    ];
+  }
+
+  const items = [{ label: "副底", fu: 20 }];
+  let used = 20;
+
+  if (question.closed && question.winType === "ron") {
+    items.push({ label: "門前ロン", fu: 10 });
+    used += 10;
+  }
+
+  if (question.winType === "tsumo" && fu > 20) {
+    items.push({ label: "ツモ", fu: 2 });
+    used += 2;
+  }
+
+  const rest = fu - used;
+  if (rest > 0) {
+    items.push({ label: "刻子・雀頭・待ち・切り上げ等", fu: rest });
+  }
+
+  return items;
+}
+
 function formatElapsed(ms) {
   const totalSec = Math.floor(ms / 1000);
   const m = Math.floor(totalSec / 60).toString().padStart(2, "0");
@@ -370,6 +405,21 @@ function parseHandTextToGroups(handText) {
 
 function parseHandTextToTiles(handText) {
   return parseHandTextToGroups(handText).flat();
+}
+
+function tileSortKey(tile) {
+  const honorOrder = ["東", "南", "西", "北", "白", "發", "中"];
+  if (/^[1-9][mps]$/.test(tile)) {
+    const suitOrder = { m: 0, p: 1, s: 2 };
+    return suitOrder[tile[1]] * 10 + Number(tile[0]);
+  }
+  const honorIndex = honorOrder.indexOf(tile);
+  if (honorIndex >= 0) return 100 + honorIndex;
+  return 999;
+}
+
+function sortTiles(tiles) {
+  return [...tiles].sort((a, b) => tileSortKey(a) - tileSortKey(b));
 }
 
 function parseWinTileLabel(winTileLabel) {
@@ -409,7 +459,7 @@ function renderTileLine(container, tileGroups, options = {}) {
 
 function renderHandWithWinningTile(container, handText, winTileLabel) {
   container.innerHTML = "";
-  const handTiles = parseHandTextToTiles(handText);
+  const handTiles = sortTiles(parseHandTextToTiles(handText));
   const winTile = parseWinTileLabel(winTileLabel);
 
   handTiles.forEach((tileCode) => container.appendChild(createTileImg(tileCode)));
@@ -601,10 +651,7 @@ function renderQuestion() {
   state.currentQuestionStartAt = Date.now();
 
   els.progressText.textContent = `${state.index + 1} / ${state.questionCount}`;
-  els.handText.textContent = `${q.hand} + ${parseWinTileLabel(q.winTile)}`;
-  els.winTileText.textContent = q.winTile;
   renderHandWithWinningTile(els.handTiles, q.hand, q.winTile);
-  els.handStateText.textContent = q.closed ? "門前手" : "副露あり";
   els.winTypeText.textContent = q.winType === "ron" ? "ロン" : "ツモ";
   els.seatText.textContent = q.isDealer ? "親" : "子";
   els.riichiText.textContent = q.riichi ? "あり" : "なし";
@@ -656,6 +703,9 @@ function renderResult(question, correct) {
   els.judgeText.classList.add(correct ? "ok" : "ng");
   els.correctPointsText.textContent = `正答: ${formatPointAnswer(question.pointResult)}`;
   els.breakdownText.textContent = `内訳: ${formatBreakdown(question.pointResult)}`;
+  els.fuDetailList.innerHTML = buildFuDetails(question)
+    .map((item) => `<li>${item.label} ${item.fu}符</li>`)
+    .join("");
 
   const yakuItems = [...question.yakuDetails].sort((a, b) => b.han - a.han || a.name.localeCompare(b.name, "ja"));
   els.yakuList.innerHTML = yakuItems.map((y) => `<li>${y.name} ${y.han}飜</li>`).join("");
