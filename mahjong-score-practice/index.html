@@ -31,6 +31,16 @@
       </label>
       <button id="startBtn" class="btn btn-primary">スタート</button>
     </section>
+    <section class="panel yaku-guide-panel" aria-label="役一覧ガイド">
+      <div class="ranking-head">
+        <h2>役一覧（学習用）</h2>
+        <button id="toggleYakuGuideBtn" class="btn btn-ghost" type="button">役一覧を見る</button>
+      </div>
+      <div id="yakuGuidePanel" class="hidden">
+        <p class="subtle">役名・飜数・形（成立イメージ）を確認できます。門前限定や鳴きで飜数が下がる役も含みます。</p>
+        <div id="yakuGuideList" class="yaku-guide-list"></div>
+      </div>
+    </section>
 
     <section id="quizPanel" class="panel quiz hidden" aria-live="polite">
       <div class="quiz-top">
@@ -69,7 +79,7 @@
         <p id="correctPointsText"></p>
         <p id="breakdownText"></p>
         <div class="yaku-wrap">
-          <p class="subtle">符の詳細（簡略）</p>
+          <p class="subtle">符の詳細</p>
           <ul id="fuDetailList" class="yaku-list"></ul>
         </div>
         <div class="yaku-wrap">

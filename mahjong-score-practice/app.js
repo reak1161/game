@@ -33,6 +33,32 @@ const YAKU_HAN = {
   chinitsu_open: { name: "清一色", han: 5 },
 };
 
+const YAKU_GUIDE = [
+  { key: "riichi", han: "1飜（門前）", shape: "門前で聴牌後にリーチ宣言。", note: "一発・裏ドラのチャンスあり。" },
+  { key: "tsumo", han: "1飜（門前）", shape: "門前のまま自摸和了。", note: "符計算ではツモ符が付く場合あり。" },
+  { key: "tanyao", han: "1飜", shape: "1・9・字牌を使わない手。", note: "例: 234 / 456 / 678 / 345 / 66" },
+  { key: "pinfu", han: "1飜（門前）", shape: "順子4つ＋数牌の雀頭＋両面待ち。", note: "刻子・役牌雀頭・嵌張/辺張/単騎待ちは不可。" },
+  { key: "iipeiko", han: "1飜（門前）", shape: "同一色で同じ順子を2組。", note: "例: 234m + 234m" },
+  { key: "yakuhai_haku", han: "1飜", shape: "白の刻子（または槓子）。", note: "役牌（白）" },
+  { key: "yakuhai_hatsu", han: "1飜", shape: "發の刻子（または槓子）。", note: "役牌（發）" },
+  { key: "yakuhai_chun", han: "1飜", shape: "中の刻子（または槓子）。", note: "役牌（中）" },
+  { key: "yakuhai_ton", han: "1飜", shape: "東の刻子（場風/自風条件）。", note: "ルール・局状況依存" },
+  { key: "yakuhai_nan", han: "1飜", shape: "南の刻子（場風/自風条件）。", note: "ルール・局状況依存" },
+  { key: "toitoi", han: "2飜", shape: "刻子（槓子）4つ＋雀頭。", note: "順子なし" },
+  { key: "sanankou", han: "2飜", shape: "暗刻を3組含む。", note: "ロン時は和了牌の取り方で成立可否に注意" },
+  { key: "sanshoku", han: "2飜（門前）/ 1飜（副露）", shape: "同じ数字並びの順子を萬・筒・索で1組ずつ。", note: "例: 123m/123p/123s" },
+  { key: "ittsuu", han: "2飜（門前）/ 1飜（副露）", shape: "同一色で123・456・789をそろえる。", note: "一気通貫" },
+  { key: "chiitoi", han: "2飜（門前）", shape: "対子7組。", note: "符は25符固定" },
+  { key: "honitsu_closed", han: "3飜（門前）", shape: "一色＋字牌のみ。", note: "混一色（門前）" },
+  { key: "honitsu_open", han: "2飜（副露）", shape: "一色＋字牌のみ。", note: "混一色（鳴き）" },
+  { key: "chanta_open", han: "1飜（副露）", shape: "全ての面子・雀頭に么九牌を含む。", note: "混全帯么九（鳴き）" },
+  { key: "chanta_closed", han: "2飜（門前）", shape: "全ての面子・雀頭に么九牌を含む。", note: "混全帯么九（門前）" },
+  { key: "junchan_open", han: "2飜（副露）", shape: "全ての面子・雀頭に1/9を含み、字牌なし。", note: "純全帯么九（鳴き）" },
+  { key: "junchan_closed", han: "3飜（門前）", shape: "全ての面子・雀頭に1/9を含み、字牌なし。", note: "純全帯么九（門前）" },
+  { key: "chinitsu_open", han: "5飜（副露）", shape: "字牌なしの一色のみ。", note: "清一色（鳴き）" },
+  { key: "chinitsu_closed", han: "6飜（門前）", shape: "字牌なしの一色のみ。", note: "清一色（門前）" },
+];
+
 const QUESTION_TEMPLATES = [
   {
     id: "pinfu-tanyao-iipeiko",
@@ -176,10 +202,212 @@ const QUESTION_TEMPLATES = [
   },
 ];
 
+const TEMPLATE_FU_DETAILS = {
+  "pinfu-tanyao-iipeiko": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+    ],
+    tsumo: [
+      { label: "平和ツモ（20符固定）", fu: 20 },
+    ],
+  },
+  "pinfu-sanshoku": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+    ],
+    tsumo: [
+      { label: "平和ツモ（20符固定）", fu: 20 },
+    ],
+  },
+  "tanyao-ittsuu": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 8 },
+    ],
+  },
+  "yakuhai-toitoi-open": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "中張牌の刻子", fu: 2 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "役牌の刻子（白）", fu: 4 },
+      { label: "単騎待ち", fu: 2 },
+      { label: "切り上げ", fu: 4 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "中張牌の刻子", fu: 2 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "役牌の刻子（白）", fu: 4 },
+      { label: "単騎待ち", fu: 2 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 2 },
+    ],
+  },
+  "yakuhai-double-toitoi": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "役牌の刻子（白）", fu: 4 },
+      { label: "役牌の刻子（發）", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "単騎待ち", fu: 2 },
+      { label: "切り上げ", fu: 12 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "役牌の刻子（白）", fu: 4 },
+      { label: "役牌の刻子（發）", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "単騎待ち", fu: 2 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 10 },
+    ],
+  },
+  "chiitoi-tanyao": {
+    ron: [{ label: "七対子固定", fu: 25 }],
+    tsumo: [{ label: "七対子固定", fu: 25 }],
+  },
+  "honitsu-yakuhai-open": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "役牌雀頭（白）", fu: 2 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "切り上げ", fu: 10 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "役牌雀頭（白）", fu: 2 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 8 },
+    ],
+  },
+  "honitsu-closed": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+      { label: "役牌の刻子（南）", fu: 4 },
+      { label: "切り上げ", fu: 6 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "役牌の刻子（南）", fu: 4 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 14 },
+    ],
+  },
+  "chinitsu-open": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "両面以外の待ち", fu: 2 },
+      { label: "切り上げ", fu: 14 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "両面以外の待ち", fu: 2 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 12 },
+    ],
+  },
+  "chanta-yakuhai-open": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "役牌の刻子（白）", fu: 4 },
+      { label: "么九牌順子構成による待ち符", fu: 2 },
+      { label: "切り上げ", fu: 14 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "役牌の刻子（白）", fu: 4 },
+      { label: "役牌雀頭（白）", fu: 2 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 12 },
+    ],
+  },
+  "junchan-closed": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+      { label: "両面以外の待ち", fu: 2 },
+      { label: "切り上げ", fu: 8 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "両面以外の待ち", fu: 2 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 16 },
+    ],
+  },
+  "sanankou-toitoi-closed": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+      { label: "中張牌の暗刻", fu: 4 },
+      { label: "中張牌の暗刻", fu: 4 },
+      { label: "中張牌の暗刻", fu: 4 },
+      { label: "么九牌の暗刻", fu: 8 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "ツモ", fu: 2 },
+      { label: "中張牌の暗刻", fu: 4 },
+      { label: "中張牌の暗刻", fu: 4 },
+      { label: "中張牌の暗刻", fu: 4 },
+      { label: "么九牌の暗刻", fu: 8 },
+      { label: "切り上げ", fu: 8 },
+    ],
+  },
+  "ittsuu-open": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "切り上げ", fu: 16 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "么九牌の刻子", fu: 4 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 14 },
+    ],
+  },
+  "yakuhai-basic": {
+    ron: [
+      { label: "副底", fu: 20 },
+      { label: "門前ロン", fu: 10 },
+      { label: "役牌の刻子（中）", fu: 4 },
+      { label: "切り上げ", fu: 6 },
+    ],
+    tsumo: [
+      { label: "副底", fu: 20 },
+      { label: "役牌の刻子（中）", fu: 4 },
+      { label: "ツモ", fu: 2 },
+      { label: "切り上げ", fu: 4 },
+    ],
+  },
+};
+
 const els = {
   playerName: document.getElementById("playerName"),
   questionCount: document.getElementById("questionCount"),
   startBtn: document.getElementById("startBtn"),
+  toggleYakuGuideBtn: document.getElementById("toggleYakuGuideBtn"),
+  yakuGuidePanel: document.getElementById("yakuGuidePanel"),
+  yakuGuideList: document.getElementById("yakuGuideList"),
   quizPanel: document.getElementById("quizPanel"),
   progressText: document.getElementById("progressText"),
   timerText: document.getElementById("timerText"),
@@ -342,40 +570,9 @@ function formatBreakdown(result) {
 }
 
 function buildFuDetails(question) {
-  const fu = question.fu;
-  const hasYaku = (key) => question.yakuDetails.some((y) => y.key === key);
-
-  if (hasYaku("chiitoi")) {
-    return [
-      { label: "七対子固定", fu: 25 },
-    ];
-  }
-
-  if (question.closed && question.winType === "tsumo" && hasYaku("pinfu") && fu === 20) {
-    return [
-      { label: "平和ツモ（20符固定扱い）", fu: 20 },
-    ];
-  }
-
-  const items = [{ label: "副底", fu: 20 }];
-  let used = 20;
-
-  if (question.closed && question.winType === "ron") {
-    items.push({ label: "門前ロン", fu: 10 });
-    used += 10;
-  }
-
-  if (question.winType === "tsumo" && fu > 20) {
-    items.push({ label: "ツモ", fu: 2 });
-    used += 2;
-  }
-
-  const rest = fu - used;
-  if (rest > 0) {
-    items.push({ label: "刻子・雀頭・待ち・切り上げ等", fu: rest });
-  }
-
-  return items;
+  return Array.isArray(question.fuBreakdown) && question.fuBreakdown.length
+    ? question.fuBreakdown
+    : [{ label: "符詳細未計算", fu: question.fu }];
 }
 
 function formatElapsed(ms) {
@@ -424,6 +621,181 @@ function sortTiles(tiles) {
 function parseWinTileLabel(winTileLabel) {
   const raw = String(winTileLabel || "").replace(/^和了牌:\s*/, "").trim();
   return parseCompactTiles(raw)[0] || raw;
+}
+
+function isHonorTile(tile) {
+  return ["東", "南", "西", "北", "白", "發", "中"].includes(tile);
+}
+
+function isTerminalTile(tile) {
+  return /^[19][mps]$/.test(tile);
+}
+
+function isYaochuTile(tile) {
+  return isHonorTile(tile) || isTerminalTile(tile);
+}
+
+function sortGroupTiles(group) {
+  return sortTiles(group);
+}
+
+function isTripletGroup(group) {
+  return group.length === 3 && group[0] === group[1] && group[1] === group[2];
+}
+
+function isSequenceGroup(group) {
+  if (group.length !== 3) return false;
+  if (!group.every((t) => /^[1-9][mps]$/.test(t))) return false;
+  const sorted = sortGroupTiles(group);
+  const suit = sorted[0][1];
+  if (!sorted.every((t) => t[1] === suit)) return false;
+  const nums = sorted.map((t) => Number(t[0]));
+  return nums[0] + 1 === nums[1] && nums[1] + 1 === nums[2];
+}
+
+function groupsEqual(groupA, groupB) {
+  if (!groupA || !groupB || groupA.length !== groupB.length) return false;
+  const a = [...groupA].sort();
+  const b = [...groupB].sort();
+  return a.every((v, i) => v === b[i]);
+}
+
+function detectPairFu(group) {
+  if (!group || group.length !== 2) return null;
+  const tile = group[0];
+  if (tile !== group[1]) return null;
+  if (["白", "發", "中"].includes(tile)) {
+    return { label: `役牌雀頭（${tile}）`, fu: 2 };
+  }
+  return null;
+}
+
+function detectWaitFu(candidateGroup, winTile) {
+  if (!candidateGroup || !candidateGroup.includes(winTile)) return null;
+  if (candidateGroup.length === 2 && candidateGroup[0] === candidateGroup[1]) {
+    return { label: "単騎待ち", fu: 2 };
+  }
+  if (isTripletGroup(candidateGroup)) {
+    return null;
+  }
+  if (!isSequenceGroup(candidateGroup)) {
+    return null;
+  }
+  const sorted = sortGroupTiles(candidateGroup);
+  const nums = sorted.map((t) => Number(t[0]));
+  const winNum = Number(winTile[0]);
+  if (winNum === nums[1]) {
+    return { label: "嵌張待ち", fu: 2 };
+  }
+  if ((nums[0] === 1 && winNum === 3) || (nums[0] === 7 && winNum === 7)) {
+    return { label: "辺張待ち", fu: 2 };
+  }
+  return null;
+}
+
+function tripletFuLabelAndValue(group, concealed) {
+  const tile = group[0];
+  const yao = isYaochuTile(tile);
+  if (concealed) {
+    return yao
+      ? { label: "么九牌の暗刻", fu: 8 }
+      : { label: "中張牌の暗刻", fu: 4 };
+  }
+  return yao
+    ? { label: "么九牌の明刻", fu: 4 }
+    : { label: "中張牌の明刻", fu: 2 };
+}
+
+function ceil10(n) {
+  return Math.ceil(n / 10) * 10;
+}
+
+function computeFuBreakdownAuto(spec) {
+  const handGroups = parseHandTextToGroups(spec.hand);
+  const winTile = parseWinTileLabel(spec.winTile);
+  const hasYaku = (key) => (spec.yakuDetails || []).some((y) => y.key === key);
+
+  if (hasYaku("chiitoi")) {
+    return { fu: 25, fuBreakdown: [{ label: "七対子固定", fu: 25 }] };
+  }
+
+  if (spec.closed && spec.winType === "tsumo" && hasYaku("pinfu")) {
+    return { fu: 20, fuBreakdown: [{ label: "平和ツモ（20符固定）", fu: 20 }] };
+  }
+
+  const pairIndex = handGroups.findIndex((g) => g.length === 2);
+  const meldIndices = handGroups.map((g, i) => ({ g, i })).filter((x) => x.g.length === 3).map((x) => x.i);
+  const openMeldIndex = spec.openMeldTiles
+    ? handGroups.findIndex((g, i) => i !== pairIndex && groupsEqual(g, spec.openMeldTiles))
+    : -1;
+
+  const candidates = handGroups
+    .map((g, i) => ({ g, i }))
+    .filter(({ g }) => g.includes(winTile));
+
+  const results = [];
+
+  for (const candidate of candidates) {
+    const items = [{ label: "副底", fu: 20 }];
+    let rawFu = 20;
+
+    if (spec.closed && spec.winType === "ron") {
+      items.push({ label: "門前ロン", fu: 10 });
+      rawFu += 10;
+    }
+
+    const pairFu = detectPairFu(handGroups[pairIndex]);
+    if (pairFu) {
+      items.push(pairFu);
+      rawFu += pairFu.fu;
+    }
+
+    for (const idx of meldIndices) {
+      const group = handGroups[idx];
+      if (!isTripletGroup(group)) continue;
+
+      let concealed = idx !== openMeldIndex;
+      if (spec.winType === "ron" && idx === candidate.i) {
+        concealed = false;
+      }
+
+      const fuItem = tripletFuLabelAndValue(group, concealed);
+      items.push(fuItem);
+      rawFu += fuItem.fu;
+    }
+
+    const waitFu = detectWaitFu(candidate.g, winTile);
+    if (waitFu) {
+      items.push(waitFu);
+      rawFu += waitFu.fu;
+    }
+
+    if (spec.winType === "tsumo") {
+      items.push({ label: "ツモ", fu: 2 });
+      rawFu += 2;
+    }
+
+    const finalFu = ceil10(rawFu);
+    if (finalFu > rawFu) {
+      items.push({ label: "切り上げ", fu: finalFu - rawFu });
+    }
+
+    results.push({
+      candidateIndex: candidate.i,
+      rawFu,
+      fu: finalFu,
+      fuBreakdown: items,
+    });
+  }
+
+  if (!results.length) {
+    const fallbackFu = spec.templateFu ?? 30;
+    return { fu: fallbackFu, fuBreakdown: [{ label: "符自動分解失敗", fu: fallbackFu }] };
+  }
+
+  const matched = results.find((r) => r.fu === spec.templateFu);
+  const picked = matched || results[0];
+  return { fu: picked.fu, fuBreakdown: picked.fuBreakdown };
 }
 
 function validateQuestionTemplates() {
@@ -603,7 +975,16 @@ function generateQuestion(template) {
   if (doraCount > 0) yakuDetails.push({ name: "ドラ", han: doraCount, key: "dora" });
   if (uraDoraCount > 0) yakuDetails.push({ name: "裏ドラ", han: uraDoraCount, key: "ura_dora" });
 
-  const fu = template.fu[winType];
+  const fuCalc = computeFuBreakdownAuto({
+    hand: template.hand,
+    winTile: template.winTile,
+    closed: template.closed,
+    winType,
+    yakuDetails,
+    openMeldTiles,
+    templateFu: template.fu[winType],
+  });
+  const fu = fuCalc.fu;
   const han = yakuDetails.reduce((sum, item) => sum + item.han, 0);
   const pointResult = calcPoints({ han, fu, isDealer, winType });
 
@@ -626,6 +1007,7 @@ function generateQuestion(template) {
     openMeldTiles,
     openMeldRotateIndex,
     yakuDetails,
+    fuBreakdown: fuCalc.fuBreakdown,
     fu,
     han,
     pointResult,
@@ -927,6 +1309,24 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function renderYakuGuide() {
+  if (!els.yakuGuideList) return;
+  const rows = [...YAKU_GUIDE].sort((a, b) => a.han.localeCompare(b.han, "ja") || a.key.localeCompare(b.key, "ja"));
+  els.yakuGuideList.innerHTML = rows.map((row) => {
+    const yakuName = YAKU_HAN[row.key]?.name || row.key;
+    return `
+      <article class="yaku-guide-card">
+        <div class="yaku-guide-top">
+          <strong>${escapeHtml(yakuName)}</strong>
+          <span class="yaku-guide-han">${escapeHtml(row.han)}</span>
+        </div>
+        <div class="yaku-guide-shape">${escapeHtml(row.shape)}</div>
+        <div class="yaku-guide-note">${escapeHtml(row.note)}</div>
+      </article>
+    `;
+  }).join("");
+}
+
 async function renderRanking(rowsOverride = null) {
   const ranking = rowsOverride ?? await getRanking();
   els.rankingList.innerHTML = "";
@@ -1001,6 +1401,12 @@ els.clearRankingBtn.addEventListener("click", () => {
   localStorage.removeItem(RANKING_KEY);
   void renderRanking();
 });
+els.toggleYakuGuideBtn?.addEventListener("click", () => {
+  const willOpen = els.yakuGuidePanel.classList.contains("hidden");
+  els.yakuGuidePanel.classList.toggle("hidden", !willOpen);
+  els.toggleYakuGuideBtn.textContent = willOpen ? "役一覧を閉じる" : "役一覧を見る";
+});
 
 validateQuestionTemplates();
+renderYakuGuide();
 void renderRanking();

@@ -90,6 +90,14 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid rgba(122, 2
 .ranking-list li { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.55rem 0.65rem; }
 .ranking-main { display: flex; justify-content: space-between; gap: 0.6rem; }
 .ranking-meta { margin-top: 0.2rem; color: var(--muted); font-size: 0.82rem; }
+.yaku-guide-panel { padding: 1rem; }
+.yaku-guide-list { margin-top: 0.7rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.yaku-guide-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #f8fafc; padding: 0.7rem; }
+.yaku-guide-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.yaku-guide-top strong { font-size: 0.95rem; }
+.yaku-guide-han { color: #0f766e; font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+.yaku-guide-shape { margin-top: 0.35rem; color: var(--text); font-size: 0.86rem; line-height: 1.45; }
+.yaku-guide-note { margin-top: 0.25rem; color: var(--muted); font-size: 0.8rem; }
 .credits { padding: 1rem; }
 .credits h2 { margin: 0 0 0.45rem; font-size: 1rem; }
 .credits a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 2px; }
@@ -102,6 +110,7 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid rgba(122, 2
   .conditions-grid { grid-template-columns: 1fr 1fr; }
   .answer-inputs { grid-template-columns: 1fr; }
   .summary-grid { grid-template-columns: 1fr 1fr; }
+  .yaku-guide-list { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
