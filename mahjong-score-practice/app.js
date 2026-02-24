@@ -212,19 +212,18 @@ const els = {
   clearRankingBtn: document.getElementById("clearRankingBtn"),
 };
 
-const TILE_IMAGE_MAP = {
-  "1m": "assets/tiles/1m.gif", "2m": "assets/tiles/2m.gif", "3m": "assets/tiles/3m.gif",
-  "4m": "assets/tiles/4m.gif", "5m": "assets/tiles/5m.gif", "6m": "assets/tiles/6m.gif",
-  "7m": "assets/tiles/7m.gif", "8m": "assets/tiles/8m.gif", "9m": "assets/tiles/9m.gif",
-  "1p": "assets/tiles/1p.gif", "2p": "assets/tiles/2p.gif", "3p": "assets/tiles/3p.gif",
-  "4p": "assets/tiles/4p.gif", "5p": "assets/tiles/5p.gif", "6p": "assets/tiles/6p.gif",
-  "7p": "assets/tiles/7p.gif", "8p": "assets/tiles/8p.gif", "9p": "assets/tiles/9p.gif",
-  "1s": "assets/tiles/1s.gif", "2s": "assets/tiles/2s.gif", "3s": "assets/tiles/3s.gif",
-  "4s": "assets/tiles/4s.gif", "5s": "assets/tiles/5s.gif", "6s": "assets/tiles/6s.gif",
-  "7s": "assets/tiles/7s.gif", "8s": "assets/tiles/8s.gif", "9s": "assets/tiles/9s.gif",
-  "東": "assets/tiles/east.gif", "南": "assets/tiles/south.gif", "西": "assets/tiles/west.gif", "北": "assets/tiles/north.gif",
-  "白": "assets/tiles/white.gif", "發": "assets/tiles/green.gif", "中": "assets/tiles/red.gif",
+const TILE_FILE_MAP = {
+  "1m": "1m.gif", "2m": "2m.gif", "3m": "3m.gif", "4m": "4m.gif", "5m": "5m.gif", "6m": "6m.gif", "7m": "7m.gif", "8m": "8m.gif", "9m": "9m.gif",
+  "1p": "1p.gif", "2p": "2p.gif", "3p": "3p.gif", "4p": "4p.gif", "5p": "5p.gif", "6p": "6p.gif", "7p": "7p.gif", "8p": "8p.gif", "9p": "9p.gif",
+  "1s": "1s.gif", "2s": "2s.gif", "3s": "3s.gif", "4s": "4s.gif", "5s": "5s.gif", "6s": "6s.gif", "7s": "7s.gif", "8s": "8s.gif", "9s": "9s.gif",
+  "東": "east.gif", "南": "south.gif", "西": "west.gif", "北": "north.gif",
+  "白": "white.gif", "發": "green.gif", "中": "red.gif",
 };
+
+function tileAssetPath(tileCode, orientation = "stand") {
+  const file = TILE_FILE_MAP[tileCode];
+  return file ? `assets/tiles/${orientation}/${file}` : "";
+}
 
 const state = {
   playerName: "Guest",
@@ -427,14 +426,39 @@ function parseWinTileLabel(winTileLabel) {
   return parseCompactTiles(raw)[0] || raw;
 }
 
-function createTileImg(tileCode) {
+function validateQuestionTemplates() {
+  const yakuhaiMap = {
+    yakuhai_haku: "白",
+    yakuhai_hatsu: "發",
+    yakuhai_chun: "中",
+    yakuhai_ton: "東",
+    yakuhai_nan: "南",
+  };
+
+  QUESTION_TEMPLATES.forEach((tpl) => {
+    const tiles = parseHandTextToTiles(tpl.hand);
+    tpl.yakuKeys
+      .filter((key) => yakuhaiMap[key])
+      .forEach((key) => {
+        const expected = yakuhaiMap[key];
+        const count = countTiles(tiles, expected);
+        if (count < 3) {
+          console.warn(`[template mismatch] ${tpl.id}: ${key} requires ${expected}x3, but hand has ${count}`);
+        }
+      });
+  });
+}
+
+function createTileImg(tileCode, options = {}) {
+  const orientation = options.orientation || "stand";
   const img = document.createElement("img");
   img.className = "tile-image";
+  if (orientation === "side") img.classList.add("tile-image-side");
   img.alt = tileCode;
   img.loading = "lazy";
   img.decoding = "async";
-  img.src = TILE_IMAGE_MAP[tileCode] || "";
-  if (!TILE_IMAGE_MAP[tileCode]) img.style.display = "none";
+  img.src = tileAssetPath(tileCode, orientation);
+  if (!tileAssetPath(tileCode, orientation)) img.style.display = "none";
   return img;
 }
 
@@ -457,12 +481,47 @@ function renderTileLine(container, tileGroups, options = {}) {
   });
 }
 
-function renderHandWithWinningTile(container, handText, winTileLabel) {
-  container.innerHTML = "";
-  const handTiles = sortTiles(parseHandTextToTiles(handText));
-  const winTile = parseWinTileLabel(winTileLabel);
+function renderOpenMeld(container, meldTiles, rotateIndex) {
+  const wrap = document.createElement("div");
+  wrap.className = "open-meld";
+  meldTiles.forEach((tileCode, i) => {
+    wrap.appendChild(createTileImg(tileCode, { orientation: i === rotateIndex ? "side" : "stand" }));
+  });
+  container.appendChild(wrap);
+}
 
-  handTiles.forEach((tileCode) => container.appendChild(createTileImg(tileCode)));
+function consumeTiles(sourceTiles, tilesToRemove) {
+  const remaining = [...sourceTiles];
+  for (const tile of tilesToRemove) {
+    const idx = remaining.indexOf(tile);
+    if (idx >= 0) remaining.splice(idx, 1);
+  }
+  return remaining;
+}
+
+function renderHandWithWinningTile(container, question) {
+  container.innerHTML = "";
+  const handTiles = parseHandTextToTiles(question.hand);
+  const winTile = parseWinTileLabel(question.winTile);
+  const hand13 = sortTiles([...handTiles]);
+  const winIndexInHand = hand13.indexOf(winTile);
+  if (winIndexInHand >= 0) {
+    hand13.splice(winIndexInHand, 1);
+  }
+
+  let concealedTiles = [...hand13];
+  if (question.openMeldTiles?.length) {
+    concealedTiles = sortTiles(consumeTiles(hand13, question.openMeldTiles));
+  }
+
+  concealedTiles.forEach((tileCode) => container.appendChild(createTileImg(tileCode)));
+  if (question.openMeldTiles?.length) {
+    const furoGap = document.createElement("span");
+    furoGap.className = "tile-block-gap";
+    furoGap.setAttribute("aria-hidden", "true");
+    container.appendChild(furoGap);
+    renderOpenMeld(container, question.openMeldTiles, question.openMeldRotateIndex ?? 1);
+  }
   const winImg = createTileImg(winTile);
   winImg.classList.add("tile-image-win");
   container.appendChild(winImg);
@@ -479,10 +538,6 @@ function renderIndicatorTile(container, indicatorTile, actualDoraTile, emptyText
   }
 
   container.appendChild(createTileImg(indicatorTile));
-  const text = document.createElement("span");
-  text.className = "subtle-inline";
-  text.textContent = `→ ${actualDoraTile}`;
-  container.appendChild(text);
 }
 
 function nextDora(tile) {
@@ -510,6 +565,25 @@ function countTiles(tileList, targetTile) {
   return tileList.reduce((count, tile) => count + (tile === targetTile ? 1 : 0), 0);
 }
 
+function pickOpenMeldFromTemplate(template) {
+  if (template.closed) return { openMeldTiles: null, openMeldRotateIndex: null };
+
+  const winTile = parseWinTileLabel(template.winTile);
+  const groups = String(template.hand).trim().split(/\s+/).filter(Boolean).map(parseCompactTiles);
+  const meldCandidates = groups.filter((g) => g.length === 3);
+  if (!meldCandidates.length) return { openMeldTiles: null, openMeldRotateIndex: null };
+
+  const preferred = meldCandidates.filter((g) => !g.includes(winTile));
+  if (!preferred.length) {
+    return { openMeldTiles: null, openMeldRotateIndex: null };
+  }
+  const chosen = sample(preferred);
+  return {
+    openMeldTiles: [...chosen],
+    openMeldRotateIndex: randomInt(0, Math.max(0, chosen.length - 1)),
+  };
+}
+
 function generateQuestion(template) {
   const winType = sample(template.allowedWinTypes);
   const isDealer = Math.random() < 0.35;
@@ -521,6 +595,7 @@ function generateQuestion(template) {
   const shownTiles = [...parseHandTextToTiles(template.hand), parseWinTileLabel(template.winTile)];
   const doraCount = countTiles(shownTiles, doraTile);
   const uraDoraCount = uraDoraTile ? countTiles(shownTiles, uraDoraTile) : 0;
+  const { openMeldTiles, openMeldRotateIndex } = pickOpenMeldFromTemplate(template);
 
   const yakuDetails = template.yakuKeys.map((key) => ({ ...YAKU_HAN[key], key }));
   if (riichi) yakuDetails.push({ ...YAKU_HAN.riichi, key: "riichi" });
@@ -548,6 +623,8 @@ function generateQuestion(template) {
     uraDoraTile,
     doraCount,
     uraDoraCount,
+    openMeldTiles,
+    openMeldRotateIndex,
     yakuDetails,
     fu,
     han,
@@ -651,7 +728,7 @@ function renderQuestion() {
   state.currentQuestionStartAt = Date.now();
 
   els.progressText.textContent = `${state.index + 1} / ${state.questionCount}`;
-  renderHandWithWinningTile(els.handTiles, q.hand, q.winTile);
+  renderHandWithWinningTile(els.handTiles, q);
   els.winTypeText.textContent = q.winType === "ron" ? "ロン" : "ツモ";
   els.seatText.textContent = q.isDealer ? "親" : "子";
   els.riichiText.textContent = q.riichi ? "あり" : "なし";
@@ -925,4 +1002,5 @@ els.clearRankingBtn.addEventListener("click", () => {
   void renderRanking();
 });
 
+validateQuestionTemplates();
 void renderRanking();
