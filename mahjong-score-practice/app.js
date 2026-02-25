@@ -411,6 +411,8 @@ const els = {
   quizPanel: document.getElementById("quizPanel"),
   progressText: document.getElementById("progressText"),
   timerText: document.getElementById("timerText"),
+  roundText: document.getElementById("roundText"),
+  seatWindText: document.getElementById("seatWindText"),
   scoreChip: document.getElementById("scoreChip"),
   streakChip: document.getElementById("streakChip"),
   handTiles: document.getElementById("handTiles"),
@@ -660,12 +662,19 @@ function groupsEqual(groupA, groupB) {
   return a.every((v, i) => v === b[i]);
 }
 
-function detectPairFu(group) {
+function detectPairFu(group, spec) {
   if (!group || group.length !== 2) return null;
   const tile = group[0];
   if (tile !== group[1]) return null;
   if (["白", "發", "中"].includes(tile)) {
     return { label: `役牌雀頭（${tile}）`, fu: 2 };
+  }
+  if (["東", "南", "西", "北"].includes(tile)) {
+    const isRound = tile === spec.roundWind;
+    const isSeat = tile === spec.seatWind;
+    if (isRound && isSeat) return { label: `連風牌雀頭（${tile}）`, fu: 4 };
+    if (isRound) return { label: `場風雀頭（${tile}）`, fu: 2 };
+    if (isSeat) return { label: `自風雀頭（${tile}）`, fu: 2 };
   }
   return null;
 }
@@ -744,7 +753,7 @@ function computeFuBreakdownAuto(spec) {
       rawFu += 10;
     }
 
-    const pairFu = detectPairFu(handGroups[pairIndex]);
+    const pairFu = detectPairFu(handGroups[pairIndex], spec);
     if (pairFu) {
       items.push(pairFu);
       rawFu += pairFu.fu;
@@ -960,6 +969,9 @@ function generateQuestion(template) {
   const winType = sample(template.allowedWinTypes);
   const isDealer = Math.random() < 0.35;
   const riichi = template.closed ? (Math.random() < 0.55) : false;
+  const roundWind = sample(["東", "南"]);
+  const roundNumber = randomInt(1, 4);
+  const seatWind = isDealer ? "東" : sample(["南", "西", "北"]);
   const doraIndicator = sample(TILE_LABELS);
   const doraTile = nextDora(doraIndicator);
   const uraDoraIndicator = riichi ? sample(TILE_LABELS) : null;
@@ -983,6 +995,8 @@ function generateQuestion(template) {
     yakuDetails,
     openMeldTiles,
     templateFu: template.fu[winType],
+    roundWind,
+    seatWind,
   });
   const fu = fuCalc.fu;
   const han = yakuDetails.reduce((sum, item) => sum + item.han, 0);
@@ -997,6 +1011,9 @@ function generateQuestion(template) {
     closed: template.closed,
     winType,
     isDealer,
+    roundWind,
+    roundNumber,
+    seatWind,
     riichi,
     doraIndicator,
     doraTile,
@@ -1111,6 +1128,8 @@ function renderQuestion() {
 
   els.progressText.textContent = `${state.index + 1} / ${state.questionCount}`;
   renderHandWithWinningTile(els.handTiles, q);
+  els.roundText.textContent = `${q.roundWind}${q.roundNumber}局`;
+  els.seatWindText.textContent = `${q.seatWind}家`;
   els.winTypeText.textContent = q.winType === "ron" ? "ロン" : "ツモ";
   els.seatText.textContent = q.isDealer ? "親" : "子";
   els.riichiText.textContent = q.riichi ? "あり" : "なし";
