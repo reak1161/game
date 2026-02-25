@@ -34,25 +34,25 @@ const YAKU_HAN = {
 };
 
 const YAKU_GUIDE = [
-  { name: "立直", hanClosed: 1, hanOpen: null, examples: ["123m 123p 123s 456m 77p"] },
-  { name: "門前清自摸和", hanClosed: 1, hanOpen: null, examples: ["234m 345m 456p 234s 55p"] },
-  { name: "断么九", hanClosed: 1, hanOpen: 1, examples: ["234m 456m 678p 345s 66s"] },
-  { name: "平和", hanClosed: 1, hanOpen: null, examples: ["123m 456m 234p 345s 66p"] },
-  { name: "一盃口", hanClosed: 1, hanOpen: null, examples: ["234m 234m 456p 345s 66p"] },
-  { name: "役牌（白）", hanClosed: 1, hanOpen: 1, examples: ["白白白 234m 456p 789s 22m"] },
-  { name: "役牌（發）", hanClosed: 1, hanOpen: 1, examples: ["發發發 234m 456p 789s 22m"] },
-  { name: "役牌（中）", hanClosed: 1, hanOpen: 1, examples: ["中中中 234m 456p 789s 22m"] },
-  { name: "役牌（東）", hanClosed: 1, hanOpen: 1, examples: ["東東東 234m 456p 789s 22m"] },
-  { name: "役牌（南）", hanClosed: 1, hanOpen: 1, examples: ["南南南 234m 456p 789s 22m"] },
-  { name: "対々和", hanClosed: 2, hanOpen: 2, examples: ["222m 777p 白白白 999s 55m"] },
-  { name: "三暗刻", hanClosed: 2, hanOpen: 2, examples: ["222m 777p 333s 456m 55p"] },
-  { name: "三色同順", hanClosed: 2, hanOpen: 1, examples: ["123m 123p 123s 456m 77p"] },
-  { name: "一気通貫", hanClosed: 2, hanOpen: 1, examples: ["123m 456m 789m 345p 77s"] },
-  { name: "七対子", hanClosed: 2, hanOpen: null, examples: ["11m 22m 33p 44p 55s 東東 白白"] },
-  { name: "混一色", hanClosed: 3, hanOpen: 2, examples: ["123s 456s 789s 南南南 22s"] },
-  { name: "混全帯么九", hanClosed: 2, hanOpen: 1, examples: ["123m 789m 白白白 789p 99s"] },
-  { name: "純全帯么九", hanClosed: 3, hanOpen: 2, examples: ["123m 789m 123p 789s 11p"] },
-  { name: "清一色", hanClosed: 6, hanOpen: 5, examples: ["111m 234m 456m 789m 99m"] },
+  { name: "立直", hanClosed: 1, hanOpen: null, desc: "門前で聴牌後にリーチ宣言して和了。", examples: ["123m 123p 123s 456m 77p"] },
+  { name: "門前清自摸和", hanClosed: 1, hanOpen: null, desc: "門前のままツモ和了。", examples: ["234m 345m 456p 234s 55p"] },
+  { name: "断么九", hanClosed: 1, hanOpen: 1, desc: "1・9・字牌を使わない手。", examples: ["234m 456m 678p 345s 66s"] },
+  { name: "平和", hanClosed: 1, hanOpen: null, desc: "順子4つ・数牌の雀頭・両面待ちの門前手。", examples: ["123m 456m 234p 345s 66p"] },
+  { name: "一盃口", hanClosed: 1, hanOpen: null, desc: "同一色で同じ順子を2組そろえる（門前）。", examples: ["234m 234m 456p 345s 66p"] },
+  { name: "役牌（白）", hanClosed: 1, hanOpen: 1, desc: "白の刻子（または槓子）。", examples: ["白白白 234m 456p 789s 22m"] },
+  { name: "役牌（發）", hanClosed: 1, hanOpen: 1, desc: "發の刻子（または槓子）。", examples: ["發發發 234m 456p 789s 22m"] },
+  { name: "役牌（中）", hanClosed: 1, hanOpen: 1, desc: "中の刻子（または槓子）。", examples: ["中中中 234m 456p 789s 22m"] },
+  { name: "役牌（東）", hanClosed: 1, hanOpen: 1, desc: "東の刻子（場風または自風のとき）。", examples: ["東東東 234m 456p 789s 22m"] },
+  { name: "役牌（南）", hanClosed: 1, hanOpen: 1, desc: "南の刻子（場風または自風のとき）。", examples: ["南南南 234m 456p 789s 22m"] },
+  { name: "対々和", hanClosed: 2, hanOpen: 2, desc: "4面子すべてが刻子（槓子）で、順子なし。", examples: ["222m 777p 白白白 999s 55m"] },
+  { name: "三暗刻", hanClosed: 2, hanOpen: 2, desc: "暗刻を3組含む。ロン時は和了牌で完成した刻子の扱いに注意。", examples: ["222m 777p 333s 456m 55p"] },
+  { name: "三色同順", hanClosed: 2, hanOpen: 1, desc: "同じ数字並びの順子を萬・筒・索で1組ずつ。", examples: ["123m 123p 123s 456m 77p"] },
+  { name: "一気通貫", hanClosed: 2, hanOpen: 1, desc: "同一色で123・456・789をそろえる。", examples: ["123m 456m 789m 345p 77s"] },
+  { name: "七対子", hanClosed: 2, hanOpen: null, desc: "対子7組で成立（門前のみ）。", examples: ["11m 22m 33p 44p 55s 東東 白白"] },
+  { name: "混一色", hanClosed: 3, hanOpen: 2, desc: "一色の数牌＋字牌のみで構成。", examples: ["123s 456s 789s 南南南 22s"] },
+  { name: "混全帯么九", hanClosed: 2, hanOpen: 1, desc: "全ての面子・雀頭に么九牌（1,9,字牌）を含む。", examples: ["123m 789m 白白白 789p 99s"] },
+  { name: "純全帯么九", hanClosed: 3, hanOpen: 2, desc: "全ての面子・雀頭に1または9を含み、字牌なし。", examples: ["123m 789m 123p 789s 11p"] },
+  { name: "清一色", hanClosed: 6, hanOpen: 5, desc: "字牌を使わず、1種類の数牌だけで構成。", examples: ["111m 234m 456m 789m 99m"] },
 ];
 
 const QUESTION_TEMPLATES = [
@@ -721,11 +721,11 @@ function computeFuBreakdownAuto(spec) {
   const hasYaku = (key) => (spec.yakuDetails || []).some((y) => y.key === key);
 
   if (hasYaku("chiitoi")) {
-    return { fu: 25, fuBreakdown: [{ label: "七対子固定", fu: 25 }] };
+    return { fu: 25, fuBreakdown: [{ label: "七対子固定", fu: 25 }], selectedCandidateIndex: null };
   }
 
   if (spec.closed && spec.winType === "tsumo" && hasYaku("pinfu")) {
-    return { fu: 20, fuBreakdown: [{ label: "平和ツモ（20符固定）", fu: 20 }] };
+    return { fu: 20, fuBreakdown: [{ label: "平和ツモ（20符固定）", fu: 20 }], selectedCandidateIndex: null };
   }
 
   const pairIndex = handGroups.findIndex((g) => g.length === 2);
@@ -795,12 +795,49 @@ function computeFuBreakdownAuto(spec) {
 
   if (!results.length) {
     const fallbackFu = spec.templateFu ?? 30;
-    return { fu: fallbackFu, fuBreakdown: [{ label: "符自動分解失敗", fu: fallbackFu }] };
+    return { fu: fallbackFu, fuBreakdown: [{ label: "符自動分解失敗", fu: fallbackFu }], selectedCandidateIndex: null };
   }
 
   const matched = results.find((r) => r.fu === spec.templateFu);
   const picked = matched || results[0];
-  return { fu: picked.fu, fuBreakdown: picked.fuBreakdown };
+  return { fu: picked.fu, fuBreakdown: picked.fuBreakdown, selectedCandidateIndex: picked.candidateIndex };
+}
+
+function deriveCorrectedYakuKeys(template, ctx) {
+  const groups = parseHandTextToGroups(template.hand);
+  const pairIndex = groups.findIndex((g) => g.length === 2);
+  const meldIndices = groups.map((g, i) => ({ g, i })).filter((x) => x.g.length === 3).map((x) => x.i);
+  const openMeldIndex = ctx.openMeldTiles
+    ? groups.findIndex((g, i) => i !== pairIndex && groupsEqual(g, ctx.openMeldTiles))
+    : -1;
+  const candidateIndex = ctx.selectedCandidateIndex;
+
+  const base = new Set(
+    template.yakuKeys.filter((k) => !k.startsWith("yakuhai_") && k !== "sanankou" && k !== "toitoi")
+  );
+
+  let tripletCount = 0;
+  let concealedTripletCount = 0;
+  for (const idx of meldIndices) {
+    const g = groups[idx];
+    if (!isTripletGroup(g)) continue;
+    tripletCount += 1;
+    let concealed = idx !== openMeldIndex;
+    if (ctx.winType === "ron" && candidateIndex != null && idx === candidateIndex) concealed = false;
+    if (concealed) concealedTripletCount += 1;
+
+    const tile = g[0];
+    if (tile === "白") base.add("yakuhai_haku");
+    if (tile === "發") base.add("yakuhai_hatsu");
+    if (tile === "中") base.add("yakuhai_chun");
+    if (tile === "東" && (ctx.roundWind === "東" || ctx.seatWind === "東")) base.add("yakuhai_ton");
+    if (tile === "南" && (ctx.roundWind === "南" || ctx.seatWind === "南")) base.add("yakuhai_nan");
+  }
+
+  if (tripletCount === 4) base.add("toitoi");
+  if (concealedTripletCount >= 3) base.add("sanankou");
+
+  return [...base];
 }
 
 function validateQuestionTemplates() {
@@ -977,23 +1014,35 @@ function generateQuestion(template) {
   const uraDoraCount = uraDoraTile ? countTiles(shownTiles, uraDoraTile) : 0;
   const { openMeldTiles, openMeldRotateIndex } = pickOpenMeldFromTemplate(template);
 
-  const yakuDetails = template.yakuKeys.map((key) => ({ ...YAKU_HAN[key], key }));
-  if (riichi) yakuDetails.push({ ...YAKU_HAN.riichi, key: "riichi" });
-  if (template.closed && winType === "tsumo") yakuDetails.push({ ...YAKU_HAN.tsumo, key: "tsumo" });
-  if (doraCount > 0) yakuDetails.push({ name: "ドラ", han: doraCount, key: "dora" });
-  if (uraDoraCount > 0) yakuDetails.push({ name: "裏ドラ", han: uraDoraCount, key: "ura_dora" });
+  const provisionalYakuDetails = template.yakuKeys.map((key) => ({ ...YAKU_HAN[key], key }));
+  if (riichi) provisionalYakuDetails.push({ ...YAKU_HAN.riichi, key: "riichi" });
+  if (template.closed && winType === "tsumo") provisionalYakuDetails.push({ ...YAKU_HAN.tsumo, key: "tsumo" });
+  if (doraCount > 0) provisionalYakuDetails.push({ name: "ドラ", han: doraCount, key: "dora" });
+  if (uraDoraCount > 0) provisionalYakuDetails.push({ name: "裏ドラ", han: uraDoraCount, key: "ura_dora" });
 
   const fuCalc = computeFuBreakdownAuto({
     hand: template.hand,
     winTile: template.winTile,
     closed: template.closed,
     winType,
-    yakuDetails,
+    yakuDetails: provisionalYakuDetails,
     openMeldTiles,
     templateFu: template.fu[winType],
     roundWind,
     seatWind,
   });
+  const correctedYakuKeys = deriveCorrectedYakuKeys(template, {
+    openMeldTiles,
+    selectedCandidateIndex: fuCalc.selectedCandidateIndex,
+    winType,
+    roundWind,
+    seatWind,
+  });
+  const yakuDetails = correctedYakuKeys.map((key) => ({ ...YAKU_HAN[key], key }));
+  if (riichi) yakuDetails.push({ ...YAKU_HAN.riichi, key: "riichi" });
+  if (template.closed && winType === "tsumo") yakuDetails.push({ ...YAKU_HAN.tsumo, key: "tsumo" });
+  if (doraCount > 0) yakuDetails.push({ name: "ドラ", han: doraCount, key: "dora" });
+  if (uraDoraCount > 0) yakuDetails.push({ name: "裏ドラ", han: uraDoraCount, key: "ura_dora" });
   const fu = fuCalc.fu;
   const han = yakuDetails.reduce((sum, item) => sum + item.han, 0);
   const pointResult = calcPoints({ han, fu, isDealer, winType });
@@ -1383,6 +1432,7 @@ function renderYakuGuide() {
             <strong>${escapeHtml(row.name)}</strong>
             <span class="yaku-guide-han">${escapeHtml(hanText)}</span>
           </div>
+          <div class="yaku-guide-desc">${escapeHtml(row.desc || "")}</div>
           <div class="yaku-guide-examples">${examplesHtml}</div>
         </article>
       `;
