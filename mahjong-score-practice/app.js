@@ -34,29 +34,25 @@ const YAKU_HAN = {
 };
 
 const YAKU_GUIDE = [
-  { key: "riichi", han: "1飜（門前）", shape: "門前で聴牌後にリーチ宣言。", note: "一発・裏ドラのチャンスあり。" },
-  { key: "tsumo", han: "1飜（門前）", shape: "門前のまま自摸和了。", note: "符計算ではツモ符が付く場合あり。" },
-  { key: "tanyao", han: "1飜", shape: "1・9・字牌を使わない手。", note: "例: 234 / 456 / 678 / 345 / 66" },
-  { key: "pinfu", han: "1飜（門前）", shape: "順子4つ＋数牌の雀頭＋両面待ち。", note: "刻子・役牌雀頭・嵌張/辺張/単騎待ちは不可。" },
-  { key: "iipeiko", han: "1飜（門前）", shape: "同一色で同じ順子を2組。", note: "例: 234m + 234m" },
-  { key: "yakuhai_haku", han: "1飜", shape: "白の刻子（または槓子）。", note: "役牌（白）" },
-  { key: "yakuhai_hatsu", han: "1飜", shape: "發の刻子（または槓子）。", note: "役牌（發）" },
-  { key: "yakuhai_chun", han: "1飜", shape: "中の刻子（または槓子）。", note: "役牌（中）" },
-  { key: "yakuhai_ton", han: "1飜", shape: "東の刻子（場風/自風条件）。", note: "ルール・局状況依存" },
-  { key: "yakuhai_nan", han: "1飜", shape: "南の刻子（場風/自風条件）。", note: "ルール・局状況依存" },
-  { key: "toitoi", han: "2飜", shape: "刻子（槓子）4つ＋雀頭。", note: "順子なし" },
-  { key: "sanankou", han: "2飜", shape: "暗刻を3組含む。", note: "ロン時は和了牌の取り方で成立可否に注意" },
-  { key: "sanshoku", han: "2飜（門前）/ 1飜（副露）", shape: "同じ数字並びの順子を萬・筒・索で1組ずつ。", note: "例: 123m/123p/123s" },
-  { key: "ittsuu", han: "2飜（門前）/ 1飜（副露）", shape: "同一色で123・456・789をそろえる。", note: "一気通貫" },
-  { key: "chiitoi", han: "2飜（門前）", shape: "対子7組。", note: "符は25符固定" },
-  { key: "honitsu_closed", han: "3飜（門前）", shape: "一色＋字牌のみ。", note: "混一色（門前）" },
-  { key: "honitsu_open", han: "2飜（副露）", shape: "一色＋字牌のみ。", note: "混一色（鳴き）" },
-  { key: "chanta_open", han: "1飜（副露）", shape: "全ての面子・雀頭に么九牌を含む。", note: "混全帯么九（鳴き）" },
-  { key: "chanta_closed", han: "2飜（門前）", shape: "全ての面子・雀頭に么九牌を含む。", note: "混全帯么九（門前）" },
-  { key: "junchan_open", han: "2飜（副露）", shape: "全ての面子・雀頭に1/9を含み、字牌なし。", note: "純全帯么九（鳴き）" },
-  { key: "junchan_closed", han: "3飜（門前）", shape: "全ての面子・雀頭に1/9を含み、字牌なし。", note: "純全帯么九（門前）" },
-  { key: "chinitsu_open", han: "5飜（副露）", shape: "字牌なしの一色のみ。", note: "清一色（鳴き）" },
-  { key: "chinitsu_closed", han: "6飜（門前）", shape: "字牌なしの一色のみ。", note: "清一色（門前）" },
+  { name: "立直", hanClosed: 1, hanOpen: null, examples: ["123m 123p 123s 456m 77p"] },
+  { name: "門前清自摸和", hanClosed: 1, hanOpen: null, examples: ["234m 345m 456p 234s 55p"] },
+  { name: "断么九", hanClosed: 1, hanOpen: 1, examples: ["234m 456m 678p 345s 66s"] },
+  { name: "平和", hanClosed: 1, hanOpen: null, examples: ["123m 456m 234p 345s 66p"] },
+  { name: "一盃口", hanClosed: 1, hanOpen: null, examples: ["234m 234m 456p 345s 66p"] },
+  { name: "役牌（白）", hanClosed: 1, hanOpen: 1, examples: ["白白白 234m 456p 789s 22m"] },
+  { name: "役牌（發）", hanClosed: 1, hanOpen: 1, examples: ["發發發 234m 456p 789s 22m"] },
+  { name: "役牌（中）", hanClosed: 1, hanOpen: 1, examples: ["中中中 234m 456p 789s 22m"] },
+  { name: "役牌（東）", hanClosed: 1, hanOpen: 1, examples: ["東東東 234m 456p 789s 22m"] },
+  { name: "役牌（南）", hanClosed: 1, hanOpen: 1, examples: ["南南南 234m 456p 789s 22m"] },
+  { name: "対々和", hanClosed: 2, hanOpen: 2, examples: ["222m 777p 白白白 999s 55m"] },
+  { name: "三暗刻", hanClosed: 2, hanOpen: 2, examples: ["222m 777p 333s 456m 55p"] },
+  { name: "三色同順", hanClosed: 2, hanOpen: 1, examples: ["123m 123p 123s 456m 77p"] },
+  { name: "一気通貫", hanClosed: 2, hanOpen: 1, examples: ["123m 456m 789m 345p 77s"] },
+  { name: "七対子", hanClosed: 2, hanOpen: null, examples: ["11m 22m 33p 44p 55s 東東 白白"] },
+  { name: "混一色", hanClosed: 3, hanOpen: 2, examples: ["123s 456s 789s 南南南 22s"] },
+  { name: "混全帯么九", hanClosed: 2, hanOpen: 1, examples: ["123m 789m 白白白 789p 99s"] },
+  { name: "純全帯么九", hanClosed: 3, hanOpen: 2, examples: ["123m 789m 123p 789s 11p"] },
+  { name: "清一色", hanClosed: 6, hanOpen: 5, examples: ["111m 234m 456m 789m 99m"] },
 ];
 
 const QUESTION_TEMPLATES = [
@@ -1186,7 +1182,7 @@ function renderResult(question, correct) {
     .join("");
 
   const yakuItems = [...question.yakuDetails].sort((a, b) => b.han - a.han || a.name.localeCompare(b.name, "ja"));
-  els.yakuList.innerHTML = yakuItems.map((y) => `<li>${y.name} ${y.han}飜</li>`).join("");
+  els.yakuList.innerHTML = yakuItems.map((y) => `<li>${formatYakuNameForResult(y)} ${y.han}飜</li>`).join("");
   els.nextBtn.textContent = state.index + 1 >= state.questionCount ? "結果を見る" : "次の問題へ";
 }
 
@@ -1328,20 +1324,74 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function formatYakuNameForResult(yaku) {
+  if (!yaku?.key) return yaku?.name || "";
+  if (yaku.key.endsWith("_closed")) return `${yaku.name}（門前）`;
+  if (yaku.key.endsWith("_open")) return `${yaku.name}（副露）`;
+  return yaku.name;
+}
+
+function renderGuideExampleRowHtml(handText) {
+  const groups = parseHandTextToGroups(handText);
+  const parts = [];
+  groups.forEach((group, groupIndex) => {
+    group.forEach((tileCode) => {
+      const src = tileAssetPath(tileCode, "stand");
+      if (!src) return;
+      parts.push(`<img class="guide-tile-image" src="${escapeHtml(src)}" alt="${escapeHtml(tileCode)}" loading="lazy" decoding="async">`);
+    });
+    if (groupIndex < groups.length - 1) {
+      parts.push('<span class="guide-tile-gap" aria-hidden="true"></span>');
+    }
+  });
+  return `<div class="yaku-guide-example-row">${parts.join("")}</div>`;
+}
+
 function renderYakuGuide() {
   if (!els.yakuGuideList) return;
-  const rows = [...YAKU_GUIDE].sort((a, b) => a.han.localeCompare(b.han, "ja") || a.key.localeCompare(b.key, "ja"));
-  els.yakuGuideList.innerHTML = rows.map((row) => {
-    const yakuName = YAKU_HAN[row.key]?.name || row.key;
+  const groups = [
+    { title: "1飜", items: [] },
+    { title: "2飜", items: [] },
+    { title: "3飜以上", items: [] },
+  ];
+
+  const sorted = [...YAKU_GUIDE].sort((a, b) => {
+    const ah = a.hanClosed ?? a.hanOpen ?? 0;
+    const bh = b.hanClosed ?? b.hanOpen ?? 0;
+    return ah - bh || a.name.localeCompare(b.name, "ja");
+  });
+
+  sorted.forEach((row) => {
+    const maxHan = Math.max(row.hanClosed ?? 0, row.hanOpen ?? 0);
+    if (maxHan <= 1) groups[0].items.push(row);
+    else if (maxHan === 2) groups[1].items.push(row);
+    else groups[2].items.push(row);
+  });
+
+  els.yakuGuideList.innerHTML = groups.map((section) => {
+    if (!section.items.length) return "";
+    const cards = section.items.map((row) => {
+      const hanText = row.hanOpen == null
+        ? `門前 ${row.hanClosed}飜`
+        : (row.hanOpen === row.hanClosed
+          ? `門前/副露 ${row.hanClosed}飜`
+          : `門前 ${row.hanClosed}飜 / 副露 ${row.hanOpen}飜`);
+      const examplesHtml = (row.examples || []).map(renderGuideExampleRowHtml).join("");
+      return `
+        <article class="yaku-guide-card">
+          <div class="yaku-guide-top">
+            <strong>${escapeHtml(row.name)}</strong>
+            <span class="yaku-guide-han">${escapeHtml(hanText)}</span>
+          </div>
+          <div class="yaku-guide-examples">${examplesHtml}</div>
+        </article>
+      `;
+    }).join("");
     return `
-      <article class="yaku-guide-card">
-        <div class="yaku-guide-top">
-          <strong>${escapeHtml(yakuName)}</strong>
-          <span class="yaku-guide-han">${escapeHtml(row.han)}</span>
-        </div>
-        <div class="yaku-guide-shape">${escapeHtml(row.shape)}</div>
-        <div class="yaku-guide-note">${escapeHtml(row.note)}</div>
-      </article>
+      <section class="yaku-guide-section">
+        <h3 class="yaku-guide-section-title">${escapeHtml(section.title)}</h3>
+        <div class="yaku-guide-grid">${cards}</div>
+      </section>
     `;
   }).join("");
 }
