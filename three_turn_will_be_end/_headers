@@ -1,0 +1,5 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://three-turn.reak1161.com wss://three-turn.reak1161.com http://localhost:8787 ws://localhost:8787; base-uri 'none'; frame-ancestors 'none'; form-action 'self'

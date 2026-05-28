@@ -1,8 +1,12 @@
-const DEFAULT_CONFIG = {
+﻿const DEFAULT_CONFIG = {
   targetScore: 5,
-  maxRounds: null, // null -> プレイヤー数ラウンド
+  maxRounds: null, // null -> プレイヤー人数ラウンド
   enableAdvancedCards: false,
 };
+
+const PRODUCTION_ORIGINS = new Set(["https://three-turn.reak1161.com"]);
+const MAX_WS_MESSAGE_BYTES = 8192;
+const MAX_WS_MESSAGES_PER_10S = 80;
 
 const CARD_DEFS = [
   {
@@ -10,49 +14,49 @@ const CARD_DEFS = [
     name: "さつじんはん",
     kind: "role",
     needsPrompt: false,
-    description: "3サイクル目に出すとラウンド終了。公開で役職確定。",
+    description: "3サイクル目に公開される役職カード。ラウンド終了時の得点計算に使う。",
   },
   {
     defId: "kill",
     name: "ころす",
     kind: "attack",
     needsPrompt: true,
-    description: "左右どちらかの隣を指定。対象のターン終了時にまけ。",
+    description: "左右どちらかの隣に置く。対象のターン終了時に脱落させる。",
   },
   {
     defId: "whim",
     name: "きまぐれ",
     kind: "attack",
     needsPrompt: true,
-    description: "対象を指定。対象の手札が0になった瞬間にまけ。",
+    description: "対象に置く。対象の手札が0枚になった瞬間に脱落する。",
   },
   {
     defId: "exchange",
     name: "こうかん",
     kind: "move",
     needsPrompt: true,
-    description: "対象と1枚交換（相手のカードはランダム）。自分が1枚だけなら無効。",
+    description: "対象と1枚交換。交換するカードはお互いに手札から1枚ずつ選ぶ。自分が1枚だけなら無効。",
   },
   {
     defId: "everyone",
     name: "みんな いっしょ",
     kind: "event",
     needsPrompt: true,
-    description: "左右どちらかを選び、その方向へ生存プレイヤーが1枚ずつ裏で渡す。",
+    description: "左右どちらかへ回す。全員が手札から1枚選んで同時に渡す。",
   },
   {
     defId: "handoff",
     name: "せきにんてんか",
     kind: "move",
     needsPrompt: false,
-    description: "自分に刺さっているころす/きまぐれを次の人へ移す。",
+    description: "自分に向けられている『ころす』『きまぐれ』を次の人へ移す。",
   },
   {
     defId: "deny",
     name: "やだ",
     kind: "deny",
     needsPrompt: false,
-    description: "前にある攻撃カードを1枚選んで無効化し捨て札へ。",
+    description: "自分にある攻撃カードを1枚選んで打ち消す。",
   },
 ];
 
@@ -101,8 +105,77 @@ function seatOrderFrom(players, startId) {
 function makeRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
-  for (let i = 0; i < 4; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
+}
+
+function normalizePlayerName(value) {
+  const name = String(value || "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim()
+    .slice(0, 24);
+  return name || "Player";
+}
+
+function normalizePlayerId(value) {
+  const id = String(value || "");
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+    ? id
+    : "";
+}
+
+function normalizeToken(value) {
+  return normalizePlayerId(value);
+}
+
+function isLocalHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function isAllowedOrigin(request) {
+  const origin = request.headers.get("Origin");
+  if (!origin) return true;
+
+  const requestUrl = new URL(request.url);
+  if (PRODUCTION_ORIGINS.has(origin)) return true;
+  if (origin === "null" && isLocalHost(requestUrl.hostname)) return true;
+
+  try {
+    const originUrl = new URL(origin);
+    return isLocalHost(originUrl.hostname) && isLocalHost(requestUrl.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function securityHeaders() {
+  return {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+  };
+}
+
+function corsHeaders(request) {
+  const headers = {
+    ...securityHeaders(),
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+  const origin = request.headers.get("Origin");
+  if (origin && isAllowedOrigin(request)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+}
+
+function jsonResponse(request, body, init = {}) {
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...corsHeaders(request),
+      ...(init.headers || {}),
+    },
+  });
 }
 
 class RoomGame {
@@ -134,18 +207,23 @@ class RoomGame {
     this.state.logs.push(entry);
   }
 
-  join(name, playerId) {
-    const id = playerId || crypto.randomUUID();
+  join(name, playerId, playerToken) {
+    const safeName = normalizePlayerName(name);
+    const candidateId = normalizePlayerId(playerId);
+    const token = normalizeToken(playerToken) || crypto.randomUUID();
+    const id = candidateId || crypto.randomUUID();
     const existing = this.state.players.get(id);
     if (existing) {
-      existing.name = name || existing.name;
+      if (!existing.token || existing.token !== token) throw new Error("プレイヤー認証に失敗しました");
+      existing.name = safeName || existing.name;
       existing.status = existing.status || "active";
       existing.lastSeen = Date.now();
-      return existing.id;
+      return { playerId: existing.id, playerToken: existing.token };
     }
     const player = {
       id,
-      name: name || "Player",
+      token,
+      name: safeName,
       isHost: this.state.players.size === 0,
       score: 0,
       hand: [],
@@ -156,7 +234,7 @@ class RoomGame {
     this.state.players.set(id, player);
     if (player.isHost) this.state.hostId = id;
     this.log(`プレイヤー ${player.name} が参加しました`);
-    return id;
+    return { playerId: id, playerToken: token };
   }
 
   leave(playerId) {
@@ -164,15 +242,15 @@ class RoomGame {
     if (!player) return;
     player.lastSeen = Date.now();
     player.socket = null;
-    this.log(`プレイヤー ${player.name} が離脱しました（再接続可）`);
+    this.log(`プレイヤー ${player.name} が切断しました（再接続待ち）`);
   }
 
   start(playerId) {
-    if (this.state.stage !== "lobby") throw new Error("既に開始済みです");
+    if (this.state.stage !== "lobby") throw new Error("すでに開始済みです");
     if (playerId !== this.state.hostId) throw new Error("ホストのみ開始できます");
     const pc = this.state.players.size;
     if (pc < 2) throw new Error("2人以上で開始してください");
-    if (pc > 4) throw new Error("最大4人までを想定しています");
+    if (pc > 4) throw new Error("最大4人までです");
 
     const deck = buildBaseDeck(pc);
     const order = seatOrderFrom(this.state.players, this.state.hostId);
@@ -202,7 +280,7 @@ class RoomGame {
         if (card.defId === "assassin") this.state.assassinHolderId = id;
       }
     }
-    this.log(`ゲーム開始。ラウンド1、サイクル1、手番は ${this.activePlayer().name}`);
+    this.log(`ゲーム開始。ラウンド1、サイクル1。手番は ${this.activePlayer().name}`);
   }
 
   activePlayerId() {
@@ -217,15 +295,15 @@ class RoomGame {
   ensureActive(playerId) {
     if (playerId !== this.activePlayerId()) throw new Error("現在の手番ではありません");
     const player = this.state.players.get(playerId);
-    if (!player || player.status !== "active") throw new Error("無効なプレイヤーです");
-    if (this.state.stage !== "in_round") throw new Error("現在はラウンド中ではありません");
+    if (!player || player.status !== "active") throw new Error("有効なプレイヤーではありません");
+    if (this.state.stage !== "in_round") throw new Error("現在はラウンド進行中ではありません");
   }
 
   declare(playerId, count) {
     this.ensureActive(playerId);
     if (![1, 2, 3].includes(count)) throw new Error("宣言は1/2/3のみです");
     const player = this.state.players.get(playerId);
-    if (player.declared.has(count)) throw new Error("同じ枚数は宣言できません");
+    if (player.declared.has(count)) throw new Error("その枚数はすでに宣言済みです");
     this.state.pendingDeclaration = { playerId, count };
     player.declared.add(count);
     this.log(`${player.name} が ${count} 枚を宣言しました`);
@@ -269,10 +347,14 @@ class RoomGame {
     while (pending.remaining.length > 0) {
       const card = pending.remaining[0];
       const choice = pending.providedChoices[card.id];
-      const promptOrResult = this.resolveCard(pending.playerId, card, choice);
-      if (promptOrResult && promptOrResult.type === "prompt") {
-        pending.awaiting = { card, prompt: promptOrResult.prompt, resume: promptOrResult.resume };
-        return { prompt: promptOrResult.prompt };
+      const outcome = this.resolveCard(pending.playerId, card, choice);
+      if (outcome && outcome.type === "prompt") {
+        pending.awaiting = { kind: "single", card, prompt: outcome.prompt, resume: outcome.resume };
+        return { prompt: outcome.prompt };
+      }
+      if (outcome && outcome.type === "awaiting") {
+        pending.awaiting = outcome.awaiting;
+        return { prompt: this.promptForAwaitingPlayer(pending.awaiting, pending.playerId) };
       }
       this.state.discard.push(card);
       pending.remaining.shift();
@@ -287,11 +369,21 @@ class RoomGame {
 
   handleChoose(playerId, requestId, payload) {
     const pending = this.state.pendingAction;
-    if (!pending || !pending.awaiting) throw new Error("処理待ちの操作はありません");
-    if (pending.playerId !== playerId) throw new Error("あなたの操作ではありません");
+    if (!pending || !pending.awaiting) throw new Error("選択待ちがありません");
+    if (pending.awaiting.kind === "everyone_select") {
+      return this.handleEveryoneChoose(playerId, requestId, payload);
+    }
+    if (pending.awaiting.kind === "exchange_select") {
+      return this.handleExchangeChoose(playerId, requestId, payload);
+    }
+    if (pending.playerId !== playerId) throw new Error("あなたの選択ではありません");
     const { prompt, resume, card } = pending.awaiting;
     if (prompt.requestId !== requestId) throw new Error("無効なリクエストIDです");
     const result = resume(payload);
+    if (result && result.type === "awaiting") {
+      pending.awaiting = result.awaiting;
+      return { prompt: this.promptForAwaitingPlayer(pending.awaiting, playerId) };
+    }
     if (result !== true) throw new Error(result || "選択が無効です");
     this.state.discard.push(card);
     pending.remaining.shift();
@@ -303,7 +395,7 @@ class RoomGame {
   resolveCard(playerId, card, choice) {
     const def = CARD_DEFS.find((d) => d.defId === card.defId);
     const player = this.state.players.get(playerId);
-    if (!def) throw new Error("未知のカードです");
+    if (!def) throw new Error("未定義のカードです");
 
     switch (card.defId) {
       case "assassin": {
@@ -322,7 +414,7 @@ class RoomGame {
               requestId,
               promptType: "selectTarget",
               options,
-              message: "左右どちらかを選んでください",
+              message: "左右どちらかの隣を選んでください",
             },
             resume: (payload) => {
               if (!payload || !options.includes(payload.targetId)) return "無効な対象です";
@@ -345,7 +437,7 @@ class RoomGame {
               requestId,
               promptType: "selectTarget",
               options,
-              message: "対象プレイヤーを選択してください",
+              message: "対象プレイヤーを選んでください",
             },
             resume: (payload) => {
               if (!payload || !options.includes(payload.targetId)) return "無効な対象です";
@@ -366,19 +458,16 @@ class RoomGame {
             type: "prompt",
             prompt: {
               requestId,
-              promptType: "exchange",
+              promptType: "exchangeTarget",
               options: {
                 targets,
-                ownHand: this.state.players.get(playerId).hand.map((c) => c.id),
               },
-              message: "交換する相手と自分のカードを選んでください（相手はランダム）",
+              message: "交換相手を選んでください（カードはお互いに後で選びます）",
             },
-            resume: (payload) => this.applyExchange(playerId, payload),
+            resume: (payload) => this.startExchangeSelection(playerId, card, payload),
           };
         }
-        const ok = this.applyExchange(playerId, choice);
-        if (ok !== true) throw new Error(ok || "交換に失敗しました");
-        return;
+        return this.startExchangeSelection(playerId, card, choice);
       }
       case "everyone": {
         const dirs = ["left", "right"];
@@ -390,18 +479,16 @@ class RoomGame {
               requestId,
               promptType: "direction",
               options: dirs,
-              message: "左回り or 右回りを選択してください",
+              message: "左右どちらへ回すか選んでください",
             },
             resume: (payload) => {
               if (!payload || !dirs.includes(payload.direction)) return "無効な方向です";
-              this.applyEveryone(playerId, payload.direction);
-              return true;
+              return this.startEveryoneSelection(playerId, payload.direction, card);
             },
           };
         }
         if (!dirs.includes(choice.direction)) throw new Error("無効な方向です");
-        this.applyEveryone(playerId, choice.direction);
-        return;
+        return this.startEveryoneSelection(playerId, choice.direction, card);
       }
       case "handoff": {
         this.applyHandoff(playerId);
@@ -410,7 +497,7 @@ class RoomGame {
       case "deny": {
         const attacks = this.state.attackBoard.filter((e) => e.targetId === playerId && (e.type === "kill" || e.type === "whim"));
         if (attacks.length === 0) {
-          this.log(`${player.name} の「やだ」は無効でした（攻撃なし）`);
+          this.log(`${player.name} の「やだ」は不発でした（対象の攻撃なし）`);
           return;
         }
         if (!choice) {
@@ -425,10 +512,10 @@ class RoomGame {
                 ownerId: a.ownerId,
                 type: a.type,
               })),
-              message: "無効化する攻撃カードを1つ選んでください",
+              message: "打ち消す攻撃カードを1枚選んでください",
             },
             resume: (payload) => {
-              if (!payload || !payload.attackId) return "攻撃を1つ選択してください";
+              if (!payload || !payload.attackId) return "攻撃カードを1枚選んでください";
               return this.applyYadaChoice(playerId, payload.attackId);
             },
           };
@@ -464,45 +551,176 @@ class RoomGame {
     this.log(`${this.state.players.get(playerId).name} が ${this.state.players.get(targetId).name} に「きまぐれ」を置きました`);
   }
 
-  applyExchange(playerId, payload) {
-    if (!payload || !payload.targetId || !payload.ownCardId) return "必要な情報が足りません";
+  startExchangeSelection(playerId, sourceCard, payload) {
+    if (!payload || !payload.targetId) return "交換相手を選んでください";
     const self = this.state.players.get(playerId);
     const target = this.state.players.get(payload.targetId);
     if (!target || target.status !== "active") return "対象が無効です";
-    if (self.hand.length <= 1) return "手札1枚のため交換は無効です";
+    if (self.hand.length <= 1) return "手札1枚では交換できません";
     if (target.hand.length === 0) return "対象の手札がありません";
-    const ownIdx = self.hand.findIndex((c) => c.id === payload.ownCardId);
-    if (ownIdx === -1) return "選択したカードが見つかりません";
-
-    const ownCard = self.hand.splice(ownIdx, 1)[0];
-    const targetIdx = Math.floor(Math.random() * target.hand.length);
-    const targetCard = target.hand.splice(targetIdx, 1)[0];
-    self.hand.push(targetCard);
-    target.hand.push(ownCard);
-
-    if (ownCard.defId === "assassin") this.state.assassinHolderId = target.id;
-    if (targetCard.defId === "assassin") this.state.assassinHolderId = self.id;
-
-    this.log(`${self.name} と ${target.name} がカードを1枚交換しました`);
-    return true;
+    return {
+      type: "awaiting",
+      awaiting: {
+        kind: "exchange_select",
+        card: sourceCard,
+        requestId: crypto.randomUUID(),
+        ownerId: playerId,
+        targetId: target.id,
+        selectedByPlayer: {},
+      },
+    };
   }
 
-  applyEveryone(playerId, direction) {
+  promptForAwaitingPlayer(awaiting, playerId) {
+    if (!awaiting) return null;
+    if (awaiting.kind === "exchange_select") {
+      if (![awaiting.ownerId, awaiting.targetId].includes(playerId)) return null;
+      const selected = Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, playerId);
+      const partnerId = playerId === awaiting.ownerId ? awaiting.targetId : awaiting.ownerId;
+      return {
+        requestId: awaiting.requestId,
+        promptType: "exchangeSelect",
+        selected,
+        partnerId,
+        ownerId: awaiting.ownerId,
+        targetId: awaiting.targetId,
+        message:
+          playerId === awaiting.ownerId
+            ? `こうかん: ${this.state.players.get(awaiting.targetId)?.name || "対象"} と交換するカードを選んでください`
+            : `こうかん: ${this.state.players.get(awaiting.ownerId)?.name || "相手"} と交換するカードを選んでください`,
+      };
+    }
+    if (awaiting.kind !== "everyone_select") return awaiting.prompt || null;
+    if (!awaiting.participantIds.includes(playerId)) return null;
+    const selected = Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, playerId);
+    const waitingCount = awaiting.participantIds.filter(
+      (id) => !Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, id),
+    ).length;
+    return {
+      requestId: awaiting.requestId,
+      promptType: "everyoneSelect",
+      canSkip: !!awaiting.canSkipByPlayer[playerId],
+      selected,
+      direction: awaiting.direction,
+      waitingCount,
+      message: `みんな いっしょ（${awaiting.direction === "left" ? "左回り" : "右回り"}）で渡すカードを選んでください`,
+    };
+  }
+
+  startEveryoneSelection(playerId, direction, sourceCard) {
+    const aliveOrder = this.state.turnOrder.filter((id) => this.state.players.get(id).status === "active");
+    if (aliveOrder.length < 2) return true;
+    const awaiting = {
+      kind: "everyone_select",
+      card: sourceCard,
+      requestId: crypto.randomUUID(),
+      initiatorId: playerId,
+      direction,
+      participantIds: aliveOrder,
+      canSkipByPlayer: {},
+      selectedByPlayer: {},
+    };
+    for (const id of aliveOrder) {
+      const p = this.state.players.get(id);
+      awaiting.canSkipByPlayer[id] = !p || p.hand.length === 0;
+    }
+    return { type: "awaiting", awaiting };
+  }
+
+  handleEveryoneChoose(playerId, requestId, payload) {
+    const pending = this.state.pendingAction;
+    const awaiting = pending?.awaiting;
+    if (!awaiting || awaiting.kind !== "everyone_select") throw new Error("選択待ちがありません");
+    if (awaiting.requestId !== requestId) throw new Error("無効なリクエストIDです");
+    if (!awaiting.participantIds.includes(playerId)) throw new Error("この選択には参加できません");
+    if (Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, playerId)) {
+      throw new Error("すでに選択済みです");
+    }
+
+    const canSkip = !!awaiting.canSkipByPlayer[playerId];
+    const player = this.state.players.get(playerId);
+    if (payload?.skip) {
+      if (!canSkip) throw new Error("このプレイヤーはカードを選んで渡してください");
+      awaiting.selectedByPlayer[playerId] = null;
+    } else {
+      const cardId = payload?.cardId;
+      if (!cardId) throw new Error("渡すカードを1枚選んでください");
+      if (!player || !player.hand.some((c) => c.id === cardId)) {
+        throw new Error("選択したカードが手札にありません");
+      }
+      awaiting.selectedByPlayer[playerId] = cardId;
+    }
+
+    const done = awaiting.participantIds.every((id) => Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, id));
+    if (!done) return { waiting: true };
+
+    this.applyEveryoneSelections(awaiting.initiatorId, awaiting.direction, awaiting.selectedByPlayer);
+    this.state.discard.push(awaiting.card);
+    pending.remaining.shift();
+    pending.awaiting = null;
+    this.checkWhimsyTriggers();
+    return this.processPendingAction() || { done: true };
+  }
+
+  handleExchangeChoose(playerId, requestId, payload) {
+    const pending = this.state.pendingAction;
+    const awaiting = pending?.awaiting;
+    if (!awaiting || awaiting.kind !== "exchange_select") throw new Error("選択待ちがありません");
+    if (awaiting.requestId !== requestId) throw new Error("無効なリクエストIDです");
+    if (![awaiting.ownerId, awaiting.targetId].includes(playerId)) throw new Error("この選択には参加できません");
+    if (Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, playerId)) throw new Error("すでに選択済みです");
+
+    const cardId = payload?.cardId;
+    if (!cardId) throw new Error("交換するカードを1枚選んでください");
+    const player = this.state.players.get(playerId);
+    if (!player || !player.hand.some((c) => c.id === cardId)) throw new Error("選択したカードが手札にありません");
+    awaiting.selectedByPlayer[playerId] = cardId;
+
+    const done =
+      Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, awaiting.ownerId) &&
+      Object.prototype.hasOwnProperty.call(awaiting.selectedByPlayer, awaiting.targetId);
+    if (!done) return { waiting: true };
+
+    const owner = this.state.players.get(awaiting.ownerId);
+    const target = this.state.players.get(awaiting.targetId);
+    const ownerIdx = owner.hand.findIndex((c) => c.id === awaiting.selectedByPlayer[awaiting.ownerId]);
+    const targetIdx = target.hand.findIndex((c) => c.id === awaiting.selectedByPlayer[awaiting.targetId]);
+    if (ownerIdx === -1 || targetIdx === -1) throw new Error("交換カードが見つかりません");
+    const ownerCard = owner.hand.splice(ownerIdx, 1)[0];
+    const targetCard = target.hand.splice(targetIdx, 1)[0];
+    owner.hand.push(targetCard);
+    target.hand.push(ownerCard);
+    if (ownerCard.defId === "assassin") this.state.assassinHolderId = target.id;
+    if (targetCard.defId === "assassin") this.state.assassinHolderId = owner.id;
+
+    this.log(`${owner.name} と ${target.name} が互いに選んだカードを交換しました`);
+    this.state.discard.push(awaiting.card);
+    pending.remaining.shift();
+    pending.awaiting = null;
+    this.checkWhimsyTriggers();
+    return this.processPendingAction() || { done: true };
+  }
+
+  applyEveryoneSelections(playerId, direction, selectedByPlayer) {
     const order = this.state.turnOrder;
     const aliveOrder = order.filter((id) => this.state.players.get(id).status === "active");
     if (aliveOrder.length < 2) return;
     const dir = direction === "left" ? 1 : -1;
     const transfers = [];
+
     for (let i = 0; i < aliveOrder.length; i++) {
       const fromId = aliveOrder[i];
       const toId = aliveOrder[(i + dir + aliveOrder.length) % aliveOrder.length];
       const fromPlayer = this.state.players.get(fromId);
-      if (fromPlayer.hand.length === 0) continue;
-      if (fromId === playerId && fromPlayer.hand.length === 1) continue;
-      const card = fromPlayer.hand.shift();
-      transfers.push({ card, toId, fromId });
+      const chosenCardId = selectedByPlayer[fromId];
+      if (chosenCardId == null) continue;
+      const cardIdx = fromPlayer.hand.findIndex((c) => c.id === chosenCardId);
+      if (cardIdx === -1) throw new Error("みんな いっしょの選択カードが不正です");
+      const card = fromPlayer.hand.splice(cardIdx, 1)[0];
+      transfers.push({ card, toId });
       if (card.defId === "assassin") this.state.assassinHolderId = null;
     }
+
     transfers.forEach(({ card, toId }) => {
       const p = this.state.players.get(toId);
       p.hand.push(card);
@@ -523,9 +741,9 @@ class RoomGame {
       }
     }
     if (moved.length > 0) {
-      this.log(`${this.state.players.get(playerId).name} が攻撃を ${this.state.players.get(nextId).name} に押し付けました`);
+      this.log(`${this.state.players.get(playerId).name} が攻撃を ${this.state.players.get(nextId).name} に移しました`);
     } else {
-      this.log(`${this.state.players.get(playerId).name} の「せきにんてんか」は移すものがありませんでした`);
+      this.log(`${this.state.players.get(playerId).name} の「せきにんてんか」は移す攻撃がありませんでした`);
     }
   }
 
@@ -540,12 +758,12 @@ class RoomGame {
     });
     if (!removed) return "選択した攻撃が見つかりません";
     this.state.discard.push(removed.card);
-    this.log(`${this.state.players.get(playerId).name} が「やだ」で攻撃を無効化しました（1枚）`);
+    this.log(`${this.state.players.get(playerId).name} が「やだ」で攻撃を1枚打ち消しました`);
     return true;
   }
 
   applyEndOfTurnEffects(playerId) {
-    // kill 解決（ターゲットのターン終了時）
+    // kill 解決（対象プレイヤーのターン終了時）
     const toRemove = [];
     for (const entry of this.state.attackBoard) {
       if (entry.type !== "kill") continue;
@@ -553,7 +771,7 @@ class RoomGame {
       const target = this.state.players.get(entry.targetId);
       if (target && target.status === "active") {
         target.status = "out";
-        this.log(`${target.name} が「ころす」でまけになりました`);
+        this.log(`${target.name} は「ころす」で脱落しました`);
         if (entry.card.defId === "assassin") this.state.assassinHolderId = null;
         if (this.state.assassinHolderId === target.id) {
           this.state.assassinHolderId = null;
@@ -576,7 +794,7 @@ class RoomGame {
         const target = this.state.players.get(entry.targetId);
         if (target && target.status === "active" && target.hand.length === 0) {
           target.status = "out";
-          this.log(`${target.name} は「きまぐれ」でまけになりました`);
+          this.log(`${target.name} は「きまぐれ」で脱落しました`);
           removed.push(entry);
         }
       }
@@ -650,20 +868,20 @@ class RoomGame {
     }
     const assassinPlayer = assassinId ? this.state.players.get(assassinId) : null;
     if (assassinPlayer) this.log(`さつじんはんは ${assassinPlayer.name} でした`);
-    else this.log("さつじんはん不在のままラウンド終了");
+    else this.log("さつじんはんの所在を特定できませんでした");
 
     const results = this.computeScores(assassinId);
     for (const { playerId, delta, reason: r } of results) {
       const p = this.state.players.get(playerId);
       p.score += delta;
-      this.log(`${p.name}: ${delta >= 0 ? "+" : ""}${delta} (${r}) → 合計 ${p.score}`);
+      this.log(`${p.name}: ${delta >= 0 ? "+" : ""}${delta} (${r}) 竊・蜷郁ｨ・${p.score}`);
     }
 
     const maxRounds = this.state.config.maxRounds || this.state.players.size;
     const someoneWon = Array.from(this.state.players.values()).some((p) => p.score >= this.state.config.targetScore);
     if (this.state.round >= maxRounds || someoneWon) {
       this.state.stage = "game_over";
-      this.log("ゲーム終了条件を満たしました");
+      this.log("ゲーム終了。最終結果を計算しました");
       return;
     }
 
@@ -704,7 +922,7 @@ class RoomGame {
 
     for (const p of this.state.players.values()) {
       if (p.id === assassinId) {
-        if (p.status === "out") outputs.push({ playerId: p.id, delta: -1, reason: "さつじんはんでまけ" });
+        if (p.status === "out") outputs.push({ playerId: p.id, delta: -1, reason: "さつじんはんで負け" });
         else outputs.push({ playerId: p.id, delta: 0, reason: "さつじんはん生存" });
       } else {
         if (p.status === "out") outputs.push({ playerId: p.id, delta: allOthersOut ? -1 : 1, reason: "まけ" });
@@ -757,10 +975,11 @@ class RoomGame {
   buildPrivateState(playerId) {
     const player = this.state.players.get(playerId);
     if (!player) return null;
-    const prompt = this.state.pendingAction?.awaiting?.prompt || null;
+    const prompt = this.promptForAwaitingPlayer(this.state.pendingAction?.awaiting || null, playerId);
     const isActive = this.activePlayerId() === playerId && player.status === "active";
     return {
       playerId,
+      playerToken: player.token,
       hand: player.hand,
       pendingDeclaration: this.state.pendingDeclaration?.playerId === playerId ? this.state.pendingDeclaration : null,
       prompt,
@@ -780,6 +999,7 @@ export class RoomDO {
   }
 
   async fetch(request) {
+    if (!isAllowedOrigin(request)) return new Response("Forbidden", { status: 403, headers: securityHeaders() });
     const upgrade = request.headers.get("Upgrade");
     if (upgrade !== "websocket") return new Response("Not a websocket", { status: 400 });
     const pair = new WebSocketPair();
@@ -792,6 +1012,21 @@ export class RoomDO {
     ws.accept();
     ws.addEventListener("message", (event) => {
       try {
+        const size = typeof event.data === "string" ? event.data.length : event.data?.byteLength || 0;
+        if (size > MAX_WS_MESSAGE_BYTES) {
+          this.safeSend(ws, { type: "error", payload: { code: "too_large", message: "メッセージが大きすぎます" } });
+          return;
+        }
+
+        const now = Date.now();
+        if (!ws._rate || now - ws._rate.start > 10000) ws._rate = { start: now, count: 0 };
+        ws._rate.count += 1;
+        if (ws._rate.count > MAX_WS_MESSAGES_PER_10S) {
+          this.safeSend(ws, { type: "error", payload: { code: "rate_limited", message: "送信回数が多すぎます" } });
+          ws.close(1008, "rate limit");
+          return;
+        }
+
         const msg = JSON.parse(event.data);
         this.routeMessage(ws, msg);
       } catch (err) {
@@ -806,9 +1041,10 @@ export class RoomDO {
   routeMessage(ws, msg) {
     const type = msg?.type;
     try {
+      if (!msg || typeof msg !== "object" || typeof type !== "string") throw new Error("メッセージ形式が不正です");
       switch (type) {
         case "join": {
-          const playerId = this.game.join(msg.name, msg.playerId);
+          const { playerId } = this.game.join(msg.name, msg.playerId, msg.playerToken);
           ws._playerId = playerId;
           this.sockets.set(playerId, ws);
           this.broadcastRoomState();
@@ -816,7 +1052,7 @@ export class RoomDO {
           break;
         }
         case "leave": {
-          if (!ws._playerId) throw new Error("未接続です");
+          if (!ws._playerId) throw new Error("未参加です");
           this.game.leave(ws._playerId);
           this.sockets.delete(ws._playerId);
           this.broadcastRoomState();
@@ -853,7 +1089,7 @@ export class RoomDO {
           break;
         }
         default:
-          throw new Error("未知のメッセージです");
+          throw new Error("未対応のメッセージです");
       }
     } catch (err) {
       this.safeSend(ws, { type: "error", payload: { code: "bad_request", message: err.message } });
@@ -894,26 +1130,20 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      });
+      return new Response(null, { status: isAllowedOrigin(request) ? 204 : 403, headers: corsHeaders(request) });
     }
+    if (!isAllowedOrigin(request)) return new Response("Forbidden", { status: 403, headers: securityHeaders() });
+
     if (url.pathname === "/api/room/create" && request.method === "POST") {
       const roomCode = makeRoomCode();
       const id = env.ROOM_DO.idFromName(roomCode);
       env.ROOM_DO.get(id);
       const playerId = crypto.randomUUID();
-      return new Response(JSON.stringify({ roomCode, playerId }), {
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
+      const playerToken = crypto.randomUUID();
+      return jsonResponse(request, { roomCode, playerId, playerToken });
     }
 
-    const match = url.pathname.match(/^\/api\/room\/([A-Z0-9]+)\/ws$/);
+    const match = url.pathname.match(/^\/api\/room\/([A-Z0-9]{4,12})\/ws$/);
     if (match && request.headers.get("Upgrade") === "websocket") {
       const roomCode = match[1];
       const id = env.ROOM_DO.idFromName(roomCode);
@@ -921,6 +1151,7 @@ export default {
       return stub.fetch(request);
     }
 
-    return new Response("Not found", { status: 404, headers: { "Access-Control-Allow-Origin": "*" } });
+    return new Response("Not found", { status: 404, headers: corsHeaders(request) });
   },
 };
+
