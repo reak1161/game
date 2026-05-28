@@ -43,6 +43,7 @@ Cloudflare Pages の設定例:
 
 ## 注意
 
-- 現在のAPIは最小構成です（認証、レート制限、不正送信対策なし）
-- 公開運用する場合は Cloudflare Turnstile / レート制限 / サーバー側検証を追加してください
-
+- `_headers` でCSPなどの基本セキュリティヘッダーを設定しています
+- ランキングAPIは同一オリジン確認、JSON/サイズ制限、簡易レート制限、スコア上限検証を行います
+- `db/schema.sql` 更新後は `wrangler d1 execute mahjong-score-practice --file=./db/schema.sql --remote` を再実行してください
+- 公開運用を強める場合は Cloudflare Turnstile や WAF の追加も検討してください
