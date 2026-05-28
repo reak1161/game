@@ -1,0 +1,63 @@
+{
+  "id": "wind_kamaitachi",
+  "name": "かまいたち",
+  "type": "attack",
+  "attribute": "wind",
+  "timings": [
+    "activate",
+    "placed"
+  ],
+  "text": "発動: 基礎攻撃{{+10}}、その後ダメージを与える\n設置: ラウンドの終わりにこのカードの数値を{{+30}}する",
+  "effects": [
+    {
+      "id": "wind_kamaitachi_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 10
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    },
+    {
+      "id": "wind_kamaitachi_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_self_numeric_counter",
+          "counter": "power",
+          "value": 30
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_kamaitachi_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "wind_kamaitachi_placed",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "growth"
+  ]
+}

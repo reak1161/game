@@ -1,0 +1,42 @@
+{
+  "id": "none_super_chain",
+  "name": "超連鎖",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 同じ属性のカードが3回以上連続で発動するたび、基礎ステータス{{+20}}",
+  "effects": [
+    {
+      "id": "none_super_chain_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "same_attribute_chain_at_least",
+        "value": 3
+      },
+      "operations": [
+        {
+          "kind": "add_base_both",
+          "value": 20
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "none_super_chain_placed",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "none",
+    "chain"
+  ]
+}

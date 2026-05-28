@@ -1,0 +1,37 @@
+{
+  "id": "water_taki_shugyo",
+  "name": "滝修行",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: 自分の場のカード1枚につき、基礎攻撃{{+30}}",
+  "effects": [
+    {
+      "id": "water_taki_shugyo_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack_per_ally_field_card_count",
+          "value": 30
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_taki_shugyo_consume",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "field-count"
+  ]
+}

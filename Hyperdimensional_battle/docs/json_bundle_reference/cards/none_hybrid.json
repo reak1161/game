@@ -1,0 +1,28 @@
+{
+  "id": "none_hybrid",
+  "name": "ハイブリッド",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎攻撃と基礎魔法をそれぞれ+15",
+  "effects": [
+    {
+      "id": "none_hybrid_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_both",
+          "value": 15
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "starter",
+    "none"
+  ]
+}

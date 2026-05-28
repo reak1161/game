@@ -1,0 +1,8 @@
+{
+  "id": "role_balance",
+  "name": "バランス",
+  "description": "攻撃カードと魔法カードを使用できない。最終攻撃時は平均化した値を掛け合わせる。",
+  "initialBaseAttack": 70,
+  "initialBaseMagic": 70,
+  "passiveEffects": []
+}

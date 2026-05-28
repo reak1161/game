@@ -1,0 +1,33 @@
+{
+  "id": "ice_blizzard",
+  "name": "ブリザード",
+  "type": "spell",
+  "attribute": "ice",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードにエンチャント『凍てつく冷気』を付与し、ダメージを与える",
+  "effects": [
+    {
+      "id": "ice_blizzard_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant",
+          "target": "self",
+          "enchantDefinitionId": "enchant_frozen_air"
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "ice",
+    "spell",
+    "enchant"
+  ]
+}

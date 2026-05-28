@@ -1,0 +1,39 @@
+{
+  "id": "none_ikkitsukan",
+  "name": "一気通貫",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: この後に同じ属性が連続するたび、一時ステータス{{×2}}",
+  "effects": [
+    {
+      "id": "none_ikkitsukan_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "register_future_same_attribute_chain_multiplier",
+          "value": 2,
+          "scope": "after_this_card"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "none_ikkitsukan_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "none",
+    "chain",
+    "future"
+  ]
+}

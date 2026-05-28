@@ -1,0 +1,35 @@
+{
+  "id": "thunder_speed_of_light",
+  "name": "電光石火",
+  "type": "attack",
+  "attribute": "thunder",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 1/5の一時攻撃でダメージを5回与える",
+  "effects": [
+    {
+      "id": "thunder_speed_of_light_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "repeat_embedded_operation",
+          "count": 5,
+          "operations": [
+            {
+              "kind": "deal_damage_from_temp_attack_fraction",
+              "value": 0.2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "attack",
+    "multi-hit"
+  ]
+}

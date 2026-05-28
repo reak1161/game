@@ -1,0 +1,40 @@
+{
+  "id": "water_bubble",
+  "name": "バブル",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎ステータス{{+15}}、その後破壊する",
+  "effects": [
+    {
+      "id": "water_bubble_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_both",
+          "value": 15
+        },
+        {
+          "kind": "destroy_self"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_bubble_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "token"
+  ]
+}

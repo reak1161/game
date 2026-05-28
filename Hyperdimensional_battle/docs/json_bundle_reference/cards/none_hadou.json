@@ -1,0 +1,31 @@
+{
+  "id": "none_hadou",
+  "name": "はどうだん",
+  "type": "spell",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の一時魔法×2、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "none_hadou_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 2
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "starter",
+    "none"
+  ]
+}

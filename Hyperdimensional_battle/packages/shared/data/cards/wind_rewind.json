@@ -1,0 +1,27 @@
+{
+  "id": "wind_rewind",
+  "name": "リワインド",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 前のラウンドで最後に発動したカードの効果をこのカードの効果として扱う",
+  "effects": [
+    {
+      "id": "wind_rewind_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "repeat_previous_round_last_effect_as_self"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "wind",
+    "utility"
+  ]
+}

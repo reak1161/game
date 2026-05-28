@@ -1,0 +1,35 @@
+{
+  "id": "fire_burnout",
+  "name": "バーンアウト",
+  "type": "spell",
+  "attribute": "fire",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカード以外のすべてのカードを破壊する。破壊したカード1枚につき火力を増幅し、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "fire_burnout_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "destroy_all_other_cards_on_own_field"
+        },
+        {
+          "kind": "multiply_temp_magic_per_last_destroy_count",
+          "value": 3
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "fire",
+    "destroy",
+    "spell"
+  ]
+}

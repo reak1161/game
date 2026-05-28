@@ -1,0 +1,43 @@
+{
+  "id": "enchant_toushou",
+  "name": "凍傷",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "発動: 一時ステータス{{×3}}\nその後、このエンチャントが付与されているカードの数値を2/3にする",
+  "effects": [
+    {
+      "id": "enchant_toushou_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_both",
+          "value": 3
+        },
+        {
+          "kind": "scale_self_numeric_value",
+          "value": 0.6666666667
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_toushou_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "ice",
+    "enchant"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "ice_meltdown",
+  "name": "メルトダウン",
+  "type": "spell",
+  "attribute": "ice",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードに付与されているエンチャントをすべて破壊する。破壊したエンチャント1つにつき基礎魔法{{+50}}、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "ice_meltdown_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "destroy_all_self_enchantments"
+        },
+        {
+          "kind": "add_base_magic_per_last_removed_enchant_count",
+          "value": 50
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "ice_meltdown_activate",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "ice",
+    "spell",
+    "enchant"
+  ]
+}

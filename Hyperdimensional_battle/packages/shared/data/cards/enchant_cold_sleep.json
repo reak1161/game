@@ -1,0 +1,43 @@
+{
+  "id": "enchant_cold_sleep",
+  "name": "コールドスリープ",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置: 次のラウンド開始時に基礎ステータス{{×2}}、その後このエンチャントを消失",
+  "effects": [
+    {
+      "id": "enchant_cold_sleep_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "at_next_round_start"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_base_both",
+          "value": 2
+        },
+        {
+          "kind": "remove_self_enchant"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_cold_sleep_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "enchant",
+    "ice",
+    "delayed"
+  ]
+}

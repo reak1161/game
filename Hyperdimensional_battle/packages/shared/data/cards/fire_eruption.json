@@ -1,0 +1,40 @@
+{
+  "id": "fire_eruption",
+  "name": "イラプション",
+  "type": "spell",
+  "attribute": "fire",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の一時魔法{{×3}}。その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "fire_eruption_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 3
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_eruption_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "fire",
+    "spell"
+  ]
+}

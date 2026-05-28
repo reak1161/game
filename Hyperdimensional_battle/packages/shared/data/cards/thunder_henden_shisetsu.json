@@ -1,0 +1,31 @@
+{
+  "id": "thunder_henden_shisetsu",
+  "name": "変電施設",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の場の雷属性以外のカードをすべて雷属性にする\n無属性だったカードは数値×0.8\nその他属性だったカードは数値×0.5",
+  "effects": [
+    {
+      "id": "thunder_henden_shisetsu_placed",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "transform_all_non_attribute_allies_to_attribute",
+          "excludedAttribute": "thunder",
+          "targetAttribute": "thunder",
+          "noneMultiplier": 0.8,
+          "otherMultiplier": 0.5
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "transform"
+  ]
+}

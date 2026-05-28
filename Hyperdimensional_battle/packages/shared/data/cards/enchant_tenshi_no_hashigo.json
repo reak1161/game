@@ -1,0 +1,40 @@
+{
+  "id": "enchant_tenshi_no_hashigo",
+  "name": "天使の梯子",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置: 毎ラウンドの終わりにこのカードのステータス数値{{×1.3}}",
+  "effects": [
+    {
+      "id": "enchant_tenshi_no_hashigo_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "scale_self_numeric_value",
+          "value": 1.3
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_tenshi_no_hashigo_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "enchant",
+    "wind"
+  ],
+  "deckEligible": false
+}

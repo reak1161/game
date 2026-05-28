@@ -1,0 +1,37 @@
+{
+  "id": "water_aqua",
+  "name": "アクア",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎ステータス{{+10}}",
+  "effects": [
+    {
+      "id": "water_aqua_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_both",
+          "value": 10
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_aqua_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "token"
+  ]
+}

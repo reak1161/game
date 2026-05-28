@@ -1,0 +1,27 @@
+{
+  "id": "role_finale",
+  "name": "フィナーレ",
+  "description": "最後のラウンドでカードが発動するたび一時ステータス×2",
+  "initialBaseAttack": 50,
+  "initialBaseMagic": 50,
+  "passiveEffects": [
+    {
+      "id": "role_finale_passive",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "current_round_is",
+        "value": 5
+      },
+      "operations": [
+        {
+          "kind": "multiply_temp_both",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "restrictions": {}
+}

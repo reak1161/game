@@ -1,0 +1,40 @@
+{
+  "id": "fire_bending",
+  "name": "ベンディング",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: この後に炎属性が連続するたび、一時ステータス{{×3}}",
+  "effects": [
+    {
+      "id": "fire_bending_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "register_future_specific_attribute_chain_multiplier",
+          "attribute": "fire",
+          "value": 3,
+          "scope": "after_this_card"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_bending_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "fire",
+    "chain",
+    "future"
+  ]
+}

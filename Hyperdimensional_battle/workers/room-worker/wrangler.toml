@@ -1,0 +1,15 @@
+name = "hyperdimensional-battle-room-worker"
+main = "src/index.ts"
+compatibility_date = "2026-04-21"
+
+# 例:
+# [vars]
+# ALLOWED_ORIGINS = "https://your-pages-domain.pages.dev,https://your-custom-domain.example"
+
+[[durable_objects.bindings]]
+name = "ROOM_DO"
+class_name = "RoomDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomDurableObject"]

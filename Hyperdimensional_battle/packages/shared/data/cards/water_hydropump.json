@@ -1,0 +1,42 @@
+{
+  "id": "water_hydropump",
+  "name": "ハイドロポンプ",
+  "type": "spell",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードに連結する水属性のカード1枚につき一時魔法{{×1.5}}。その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "water_hydropump_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic_per_connected_attribute_count",
+          "attribute": "water",
+          "value": 1.5
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_hydropump_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "spell",
+    "linked"
+  ]
+}

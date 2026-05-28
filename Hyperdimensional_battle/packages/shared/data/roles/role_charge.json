@@ -1,0 +1,39 @@
+{
+  "id": "role_charge",
+  "name": "チャージ",
+  "description": "毎ラウンド開始時に雷属性の出現度が上がる。自分の場のカードが発動するたび基礎ステータスを1.1倍にする。",
+  "initialBaseAttack": 30,
+  "initialBaseMagic": 30,
+  "passiveEffects": [
+    {
+      "id": "role_charge_round_start",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_next_round_start"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_draw_attribute_weight",
+          "attribute": "thunder",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "role_charge_on_activate",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_base_both",
+          "value": 1.1
+        }
+      ]
+    }
+  ],
+  "restrictions": {}
+}

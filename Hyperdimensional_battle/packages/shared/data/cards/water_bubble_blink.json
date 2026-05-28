@@ -1,0 +1,30 @@
+{
+  "id": "water_bubble_blink",
+  "name": "バブルブリンク",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: 自分の場の好きな場所に『バブル』を2つ作成する",
+  "effects": [
+    {
+      "id": "water_bubble_blink_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "create_token",
+          "tokenDefinitionId": "water_bubble",
+          "position": "chosen_positions",
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "water",
+    "token"
+  ]
+}

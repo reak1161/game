@@ -1,0 +1,51 @@
+{
+  "id": "wind_tsumujikaze",
+  "name": "つむじ風",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎ステータス{{+10}}、発動後、このカードに連結しているカード1枚につきこのカードの数値を{{+20}}する",
+  "effects": [
+    {
+      "id": "wind_tsumujikaze_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_both",
+          "value": 10
+        },
+        {
+          "kind": "add_self_numeric_counter_per_connected_attribute_count",
+          "counter": "power",
+          "attribute": "wind",
+          "value": 20
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_tsumujikaze_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "wind_tsumujikaze_activate",
+      "operationIndex": 1,
+      "occurrence": 2,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "linked",
+    "growth"
+  ]
+}

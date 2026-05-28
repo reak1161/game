@@ -1,0 +1,29 @@
+{
+  "id": "fire_phoenix_like",
+  "name": "不死鳥の如く",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: 自分の場のカード1枚にエンチャント『フェニックス』を付与する",
+  "effects": [
+    {
+      "id": "fire_phoenix_like_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant",
+          "target": "one_ally_field_card",
+          "enchantDefinitionId": "enchant_phoenix"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "fire",
+    "enchant"
+  ]
+}

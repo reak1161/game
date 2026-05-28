@@ -1,0 +1,33 @@
+{
+  "id": "none_colorful_palette",
+  "name": "カラフルパレット",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 無属性のカードが発動するとき、そのカードは直前の属性と同じ属性になる",
+  "effects": [
+    {
+      "id": "none_colorful_palette_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "before_card_activates",
+        "target": "ally_none_attribute_card"
+      },
+      "condition": {
+        "kind": "previous_attribute_exists"
+      },
+      "operations": [
+        {
+          "kind": "set_activating_card_attribute_to_previous_attribute"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "none",
+    "attribute",
+    "combo"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "none_takumi",
+  "name": "たくらみ",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: 自分の場のカード1つにエンチャント『魔法強化10』を付与する",
+  "effects": [
+    {
+      "id": "none_takumi_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant",
+          "target": "one_ally_field_card",
+          "enchantDefinitionId": "enchant_magic_plus_10"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "none",
+    "enchant"
+  ]
+}

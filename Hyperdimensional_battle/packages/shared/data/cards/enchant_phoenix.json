@@ -1,0 +1,31 @@
+{
+  "id": "enchant_phoenix",
+  "name": "フェニックス",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置: このカードが破壊されたとき、このラウンドの終わりに同じ場所に復活する",
+  "effects": [
+    {
+      "id": "enchant_phoenix_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_destroyed"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "schedule_host_revive_at_round_end",
+          "position": "same_slot"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "fire",
+    "enchant",
+    "revive"
+  ]
+}

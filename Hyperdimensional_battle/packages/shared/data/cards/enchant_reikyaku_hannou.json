@@ -1,0 +1,33 @@
+{
+  "id": "enchant_reikyaku_hannou",
+  "name": "冷却反応",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置: 次の自分のラウンドの開始時に基礎ステータス×0.9。\n減少した基礎ステータスの値を、このエンチャントが付与されているカードの数値に加算する",
+  "effects": [
+    {
+      "id": "enchant_reikyaku_hannou_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "at_next_round_start"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_base_both_and_add_reduction_to_self_numeric",
+          "value": 0.9
+        },
+        {
+          "kind": "remove_self_enchant"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "ice",
+    "enchant"
+  ]
+}

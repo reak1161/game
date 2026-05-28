@@ -1,0 +1,49 @@
+{
+  "id": "wind_charge",
+  "name": "ウィンドチャージ",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎魔法{{+10}}、発動後、このカードの数値を{{+20}}する",
+  "effects": [
+    {
+      "id": "wind_charge_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 10
+        },
+        {
+          "kind": "add_self_numeric_counter",
+          "counter": "power",
+          "value": 20
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_charge_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "wind_charge_activate",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "growth"
+  ]
+}

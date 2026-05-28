@@ -1,0 +1,16 @@
+{
+  "id": "enchant_kirameku_yukigeshiki",
+  "name": "きらめく雪景色",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置: このカードの数値{{×2}}",
+  "effects": [],
+  "tags": [
+    "enchant",
+    "ice"
+  ],
+  "deckEligible": false
+}

@@ -1,0 +1,29 @@
+{
+  "id": "none_hyakka_ryoran",
+  "name": "百花繚乱",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の場からこのカードを除くランダムに5枚が追加発動する",
+  "effects": [
+    {
+      "id": "none_hyakka_ryoran_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "queue_random_additional_activations_excluding_self",
+          "count": 5
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "none",
+    "ability",
+    "additional"
+  ]
+}

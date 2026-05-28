@@ -1,0 +1,44 @@
+{
+  "id": "fire_kagerou",
+  "name": "かげろう",
+  "type": "attack",
+  "attribute": "fire",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードの右側全部のカードを無効にする。無効にしたカード1枚につき一時攻撃{{×2}}。その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "fire_kagerou_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "invalidate_all_right_cards"
+        },
+        {
+          "kind": "multiply_temp_attack_per_last_invalidated_count",
+          "value": 2
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_kagerou_activate",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "fire",
+    "attack",
+    "invalidate"
+  ]
+}

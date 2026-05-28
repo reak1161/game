@@ -1,0 +1,25 @@
+{
+  "id": "role_dolphin",
+  "name": "ドルフィン",
+  "description": "水属性の出現度が上がる。最終攻撃の代わりに場のカードを複製して好きな位置へ置く。場の水カード3枚ごとに、ラウンド開始時の一時ステータスを2倍にする。",
+  "initialBaseAttack": 30,
+  "initialBaseMagic": 70,
+  "passiveEffects": [
+    {
+      "id": "role_dolphin_round_start_weight",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_next_round_start"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_draw_attribute_weight",
+          "attribute": "water",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "restrictions": {}
+}

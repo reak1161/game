@@ -1,0 +1,41 @@
+{
+  "id": "ice_snowstorm",
+  "name": "スノーストーム",
+  "type": "spell",
+  "attribute": "ice",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードに付与されているエンチャント1つにつき一時魔法{{×2}}。その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "ice_snowstorm_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic_per_self_enchant_count",
+          "value": 2
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "ice_snowstorm_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "ice",
+    "spell",
+    "enchant"
+  ]
+}

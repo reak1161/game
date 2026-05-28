@@ -1,0 +1,32 @@
+{
+  "id": "wind_sukimakaze",
+  "name": "隙間風",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: このカードより右側のカードを無効にし、そのカードのラウンド終了時効果を発動させる",
+  "effects": [
+    {
+      "id": "wind_sukimakaze_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "invalidate_all_right_cards"
+        },
+        {
+          "kind": "trigger_round_end_effects_of_last_invalidated_cards"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "wind",
+    "consume",
+    "invalidate"
+  ],
+  "consumeBehavior": "discard"
+}

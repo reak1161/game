@@ -1,0 +1,30 @@
+{
+  "id": "none_punch",
+  "name": "パンチ",
+  "type": "attack",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の一時攻撃×2、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "none_punch_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_attack",
+          "value": 2
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "starter"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "fire_hellflame",
+  "name": "ヘルフレイム",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードの1個右側のカードを破壊する。破壊したなら基礎ステータス{{×3}}",
+  "effects": [
+    {
+      "id": "fire_hellflame_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "destroy_relative_card",
+          "relativePosition": "right_1"
+        },
+        {
+          "kind": "multiply_base_both_if_last_destroy_succeeded",
+          "value": 3
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_hellflame_activate",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "fire",
+    "destroy"
+  ]
+}

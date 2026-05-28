@@ -1,0 +1,30 @@
+{
+  "id": "ice_field",
+  "name": "アイスフィールド",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の場のカードすべてにエンチャント『魔法強化5』を付与する",
+  "effects": [
+    {
+      "id": "ice_field_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "on_enter_field"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant_to_all_ally_field_cards",
+          "enchantDefinitionId": "enchant_magic_plus_5"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "ice",
+    "enchant"
+  ]
+}

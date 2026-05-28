@@ -1,0 +1,31 @@
+{
+  "id": "fire_fellow_fire",
+  "name": "フェローファイア",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の場のカードが破壊されるたび、次のラウンドに引く手札の枚数が1枚増える",
+  "effects": [
+    {
+      "id": "fire_fellow_fire_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "when_ally_field_card_destroyed"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_next_round_draw_bonus",
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "fire",
+    "destroy",
+    "draw"
+  ]
+}

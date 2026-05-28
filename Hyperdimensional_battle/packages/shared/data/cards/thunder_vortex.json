@@ -1,0 +1,32 @@
+{
+  "id": "thunder_vortex",
+  "name": "ボルテックス",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の場の一番左にあるカードが追加で発動する",
+  "effects": [
+    {
+      "id": "thunder_vortex_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host"
+      },
+      "roundTriggerLimit": 1,
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_leftmost_ally_field_card"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "repeat"
+  ]
+}

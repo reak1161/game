@@ -1,0 +1,34 @@
+{
+  "id": "fire_karyoku_hatsuden",
+  "name": "火力発電",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "placed"
+  ],
+  "text": "封印: 炎属性のカードが10回発動\n設置: 自分の場の全てのカードが追加発動する",
+  "seal": {
+    "kind": "ally_attribute_activation_total_at_least",
+    "attribute": "fire",
+    "value": 10
+  },
+  "effects": [
+    {
+      "id": "fire_karyoku_hatsuden_placed",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_all_ally_field_cards"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "fire",
+    "ability",
+    "seal",
+    "additional"
+  ]
+}

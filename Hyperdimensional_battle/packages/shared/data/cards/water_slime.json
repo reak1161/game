@@ -1,0 +1,56 @@
+{
+  "id": "water_slime",
+  "name": "スライム",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置: 隣接する「スライム」と融合する。融合した場合、互いのカード数値を掛けた値を新たなカード数値とする\n発動: 基礎攻撃{{+20}}",
+  "effects": [
+    {
+      "id": "water_slime_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "on_field_state_check"
+      },
+      "condition": {
+        "kind": "adjacent_same_definition_exists",
+        "definitionId": "water_slime"
+      },
+      "operations": [
+        {
+          "kind": "merge_adjacent_same_definition_cards",
+          "definitionId": "water_slime",
+          "mergeRule": "multiply_numeric_counters"
+        }
+      ]
+    },
+    {
+      "id": "water_slime_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 20
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_slime_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "merge"
+  ]
+}

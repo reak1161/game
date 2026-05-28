@@ -1,0 +1,63 @@
+{
+  "id": "wind_air_slash",
+  "name": "エアスラッシュ",
+  "type": "spell",
+  "attribute": "wind",
+  "timings": [
+    "activate",
+    "placed"
+  ],
+  "text": "発動: 基礎魔法{{+20}}、その後ダメージを与える\n設置: ラウンドの終わりにこのカードの数値を{{+20}}する",
+  "effects": [
+    {
+      "id": "wind_air_slash_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 20
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    },
+    {
+      "id": "wind_air_slash_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_self_numeric_counter",
+          "counter": "power",
+          "value": 20
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_air_slash_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "wind_air_slash_placed",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "growth"
+  ]
+}

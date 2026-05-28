@@ -1,0 +1,45 @@
+{
+  "id": "ice_absolute_zero",
+  "name": "絶対零度",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分が与えるダメージは0になり、自分の場のカードすべてにエンチャント『コールドスリープ』を付与する",
+  "effects": [
+    {
+      "id": "ice_absolute_zero_placed_damage_zero",
+      "timing": "placed",
+      "trigger": {
+        "kind": "before_damage_dealt"
+      },
+      "condition": {
+        "kind": "source_owner_is_self"
+      },
+      "operations": [
+        {
+          "kind": "set_pending_damage_to_zero"
+        }
+      ]
+    },
+    {
+      "id": "ice_absolute_zero_placed_apply_sleep",
+      "timing": "placed",
+      "trigger": {
+        "kind": "on_enter_field"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant_to_all_ally_field_cards",
+          "enchantDefinitionId": "enchant_cold_sleep"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "ice",
+    "delayed"
+  ]
+}

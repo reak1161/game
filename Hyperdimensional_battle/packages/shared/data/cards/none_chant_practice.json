@@ -1,0 +1,37 @@
+{
+  "id": "none_chant_practice",
+  "name": "詠唱練習",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎魔法{{+30}}",
+  "effects": [
+    {
+      "id": "none_chant_practice_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 30
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "none_chant_practice_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "starter",
+    "none"
+  ]
+}

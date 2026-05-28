@@ -1,0 +1,25 @@
+{
+  "id": "role_blaze",
+  "name": "ブレイズ",
+  "description": "炎属性の出現度が上がる。最終攻撃時、そのラウンド中に破壊されたカード1枚につき基礎ステータス5倍ぶんの補正を乗せて攻撃する。",
+  "initialBaseAttack": 80,
+  "initialBaseMagic": 40,
+  "passiveEffects": [
+    {
+      "id": "role_blaze_round_start_weight",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_next_round_start"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_draw_attribute_weight",
+          "attribute": "fire",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "restrictions": {}
+}

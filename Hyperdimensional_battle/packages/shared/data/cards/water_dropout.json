@@ -1,0 +1,30 @@
+{
+  "id": "water_dropout",
+  "name": "ドロップアウト",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードの1個右側に『アクア』を作成する",
+  "effects": [
+    {
+      "id": "water_dropout_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "create_token",
+          "tokenDefinitionId": "water_aqua",
+          "position": "right_of_self",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "water",
+    "token"
+  ]
+}

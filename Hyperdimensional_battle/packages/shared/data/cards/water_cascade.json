@@ -1,0 +1,43 @@
+{
+  "id": "water_cascade",
+  "name": "カスケード",
+  "type": "spell",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 両隣が水属性なら、一時魔法{{×3}}。その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "water_cascade_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": {
+        "kind": "both_adjacent_attribute_is",
+        "attribute": "water"
+      },
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 3
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_cascade_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "spell"
+  ]
+}

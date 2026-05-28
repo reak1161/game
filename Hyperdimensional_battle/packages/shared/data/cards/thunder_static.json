@@ -1,0 +1,58 @@
+{
+  "id": "thunder_static",
+  "name": "静電気",
+  "type": "spell",
+  "attribute": "thunder",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置: 自分の場の『能力』カードが発動したら、その後このカードが誘発する。\n発動: 通常魔法{{+10}}、その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "thunder_static_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates",
+        "cardType": "ability"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host"
+      },
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_self"
+        }
+      ]
+    },
+    {
+      "id": "thunder_static_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 10
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "thunder_static_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "thunder",
+    "spell",
+    "repeat"
+  ]
+}

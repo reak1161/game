@@ -1,0 +1,20 @@
+{
+  "id": "role_simple",
+  "name": "シンプル",
+  "description": "毎ラウンド7枚まで配置できるようになる",
+  "initialBaseAttack": 50,
+  "initialBaseMagic": 50,
+  "passiveEffects": [
+    {
+      "id": "role_simple_passive",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        { "kind": "set_round_placement_limit", "value": 7 }
+      ]
+    }
+  ],
+  "restrictions": {}
+}
+

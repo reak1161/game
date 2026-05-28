@@ -1,0 +1,40 @@
+{
+  "id": "water_diving",
+  "name": "ダイビング",
+  "type": "attack",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の場のカード1枚につき基礎攻撃{{+20}}、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "water_diving_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack_per_ally_field_card_count",
+          "value": 20
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_diving_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "attack"
+  ]
+}

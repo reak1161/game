@@ -1,0 +1,49 @@
+{
+  "id": "thunder_overcharge",
+  "name": "オーバーチャージ",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の与えるダメージが1/2になる。自分の場の雷属性のカード全てが追加で発動する",
+  "effects": [
+    {
+      "id": "thunder_overcharge_damage_half",
+      "timing": "placed",
+      "trigger": {
+        "kind": "before_damage_dealt"
+      },
+      "condition": {
+        "kind": "source_owner_is_self"
+      },
+      "operations": [
+        {
+          "kind": "multiply_pending_damage",
+          "value": 0.5
+        }
+      ]
+    },
+    {
+      "id": "thunder_overcharge_repeat",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates",
+        "attribute": "thunder"
+      },
+      "condition": {
+        "kind": "source_owner_is_self"
+      },
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_source_card"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "repeat",
+    "risk"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "id": "thunder_shock",
+  "name": "通電ショック",
+  "type": "attack",
+  "attribute": "thunder",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置: 自分がダメージを与えたとき、その後このカードが誘発する。他の『通電ショック』によるダメージに対してはラウンド中1回まで。\n発動: 通常攻撃{{+10}}、その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "thunder_shock_placed_non_shock",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_damage_dealt"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host_and_definition_is_not",
+        "definitionId": "thunder_shock"
+      },
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_self"
+        }
+      ]
+    },
+    {
+      "id": "thunder_shock_placed_from_shock",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_damage_dealt"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host_and_definition_is",
+        "definitionId": "thunder_shock"
+      },
+      "roundTriggerLimit": 1,
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_self"
+        }
+      ]
+    },
+    {
+      "id": "thunder_shock_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 10
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "attack",
+    "repeat"
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "thunder_shock_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ]
+}

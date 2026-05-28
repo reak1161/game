@@ -1,0 +1,38 @@
+{
+  "id": "enchant_magic_plus_10",
+  "name": "魔法強化10",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "enchant"
+  ],
+  "text": "発動: 基礎魔法{{+10}}",
+  "effects": [
+    {
+      "id": "enchant_magic_plus_10_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 10
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_magic_plus_10_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "enchant"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "ice_tsuranaru_tsurara",
+  "name": "つらなるつらら",
+  "type": "attack",
+  "attribute": "ice",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: このカードに連結するエンチャントが付与されたカード1枚につき、基礎攻撃{{×2}}。その後、ダメージを与える。",
+  "effects": [
+    {
+      "id": "ice_tsuranaru_tsurara_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_base_attack_per_connected_enchanted_count",
+          "value": 2
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "ice_tsuranaru_tsurara_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "ice",
+    "attack",
+    "connected"
+  ]
+}

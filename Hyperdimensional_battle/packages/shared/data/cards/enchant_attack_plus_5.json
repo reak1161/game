@@ -1,0 +1,39 @@
+{
+  "id": "enchant_attack_plus_5",
+  "name": "攻撃強化5",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "発動: 基礎攻撃{{+5}}",
+  "effects": [
+    {
+      "id": "enchant_attack_plus_5_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 5
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_attack_plus_5_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "enchant",
+    "ice"
+  ]
+}

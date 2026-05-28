@@ -1,0 +1,59 @@
+{
+  "id": "wind_kazematoi",
+  "name": "風まとい",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "activate",
+    "placed"
+  ],
+  "text": "発動: 基礎攻撃{{+10}}\n設置: ラウンドの終わりにこのカードの数値{{×2}}",
+  "effects": [
+    {
+      "id": "wind_kazematoi_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "id": "wind_kazematoi_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_self_numeric_counters",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_kazematoi_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "wind_kazematoi_placed",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "growth"
+  ]
+}

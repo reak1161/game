@@ -1,0 +1,66 @@
+{
+  "id": "thunder_voltage",
+  "name": "ボルテージ",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 攻撃カードを発動する度、一時攻撃{{×2}}。魔法カードを発動する度、一時魔法{{×2}}",
+  "effects": [
+    {
+      "id": "thunder_voltage_attack",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates",
+        "cardType": "attack"
+      },
+      "condition": {
+        "kind": "source_owner_is_self"
+      },
+      "operations": [
+        {
+          "kind": "multiply_temp_attack",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "thunder_voltage_spell",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates",
+        "cardType": "spell"
+      },
+      "condition": {
+        "kind": "source_owner_is_self"
+      },
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "thunder_voltage_attack",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "thunder_voltage_spell",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "thunder",
+    "repeat"
+  ]
+}

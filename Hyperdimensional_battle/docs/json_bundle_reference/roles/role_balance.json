@@ -1,0 +1,44 @@
+{
+  "id": "role_balance",
+  "name": "バランス",
+  "description": "攻撃カードと魔法カードを使うことができない。最終攻撃で自分のステータスを平均化し、かけ算する",
+  "initialBaseAttack": 50,
+  "initialBaseMagic": 50,
+  "passiveEffects": [
+    {
+      "id": "role_balance_restriction",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "disallow_card_types",
+          "cardTypes": [
+            "attack",
+            "spell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "role_balance_final_attack",
+      "timing": "placed",
+      "trigger": {
+        "kind": "before_final_attack"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "set_final_attack_formula",
+          "formula": "square_of_average_temp_stats"
+        }
+      ]
+    }
+  ],
+  "restrictions": {
+    "disallowCardTypes": [
+      "attack",
+      "spell"
+    ]
+  }
+}

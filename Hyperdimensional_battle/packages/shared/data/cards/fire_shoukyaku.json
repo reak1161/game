@@ -1,0 +1,42 @@
+{
+  "id": "fire_shoukyaku",
+  "name": "焼却処分",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: 自分の場のカードを1枚選び、破壊する。破壊したなら基礎ステータス{{×2}}",
+  "effects": [
+    {
+      "id": "fire_shoukyaku_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "destroy_target",
+          "target": "one_ally_field_card"
+        },
+        {
+          "kind": "multiply_base_both_if_last_destroy_succeeded",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_shoukyaku_consume",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "starter",
+    "fire"
+  ],
+  "consumeBehavior": "discard"
+}

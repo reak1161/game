@@ -1,0 +1,37 @@
+{
+  "id": "wind_summer_furin",
+  "name": "夏の風鈴",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 次のラウンドの開始時、基礎ステータス{{+100}}",
+  "effects": [
+    {
+      "id": "wind_summer_furin_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "schedule_add_base_both_at_next_round_start",
+          "value": 100
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_summer_furin_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "delayed"
+  ]
+}

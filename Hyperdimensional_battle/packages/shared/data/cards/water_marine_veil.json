@@ -1,0 +1,37 @@
+{
+  "id": "water_marine_veil",
+  "name": "マリンベール",
+  "type": "ability",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の場のカード1枚につき基礎ステータス{{+5}}",
+  "effects": [
+    {
+      "id": "water_marine_veil_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_both_per_ally_field_card_count",
+          "value": 5
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_marine_veil_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "field-count"
+  ]
+}

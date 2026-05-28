@@ -1,0 +1,27 @@
+{
+  "name": "hyperdimensional-battle",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @hyperdimensional-battle/web",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "node scripts/validate-card-texts.mjs && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260416.0",
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.10",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.12.0"
+  }
+}

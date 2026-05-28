@@ -1,0 +1,32 @@
+{
+  "id": "thunder_electric",
+  "name": "エレクトリック",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: このカードの1個右側にあるカードが追加で発動する",
+  "effects": [
+    {
+      "id": "thunder_electric_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates",
+        "target": "right_1_of_self"
+      },
+      "condition": null,
+      "roundTriggerLimit": 1,
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_relative_card",
+          "relativePosition": "right_1"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "repeat"
+  ]
+}

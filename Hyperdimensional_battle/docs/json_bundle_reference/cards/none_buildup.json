@@ -1,0 +1,29 @@
+{
+  "id": "none_buildup",
+  "name": "ビルドアップ",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費: 自分の場のカード1つにエンチャント『攻撃強化10』を付与する",
+  "effects": [
+    {
+      "id": "none_buildup_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant",
+          "target": "one_ally_field_card",
+          "enchantDefinitionId": "enchant_attack_plus_10"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "none",
+    "enchant"
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "ice_ice_pick",
+  "name": "アイスピック",
+  "type": "attack",
+  "attribute": "ice",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置: このカードのエンチャント数値{{+10}}\n発動: 基礎攻撃{{+10}}、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "ice_ice_pick_placed",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_self_enchant_numeric_bonus",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "id": "ice_ice_pick_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 10
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "ice_ice_pick_placed",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "enchant"
+    },
+    {
+      "effectId": "ice_ice_pick_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "ice",
+    "attack",
+    "enchant"
+  ]
+}

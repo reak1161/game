@@ -1,0 +1,39 @@
+{
+  "id": "enchant_magic_plus_5",
+  "name": "魔法強化5",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "発動: 基礎魔法{{+5}}",
+  "effects": [
+    {
+      "id": "enchant_magic_plus_5_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 5
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_magic_plus_5_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "enchant",
+    "ice"
+  ]
+}

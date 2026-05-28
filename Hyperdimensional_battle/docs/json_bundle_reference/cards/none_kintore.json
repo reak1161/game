@@ -1,0 +1,28 @@
+{
+  "id": "none_kintore",
+  "name": "筋トレ",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 基礎攻撃+30",
+  "effects": [
+    {
+      "id": "none_kintore_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 30
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "starter",
+    "none"
+  ]
+}

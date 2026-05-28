@@ -1,0 +1,39 @@
+{
+  "id": "enchant_frozen_air",
+  "name": "凍てつく冷気",
+  "type": "ability",
+  "attribute": "ice",
+  "timings": [
+    "enchant"
+  ],
+  "text": "発動: ダメージ計算時、一時魔法{{×2}}",
+  "effects": [
+    {
+      "id": "enchant_frozen_air_effect",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "before_host_damage_calculation"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_frozen_air_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "enchant",
+    "ice"
+  ]
+}

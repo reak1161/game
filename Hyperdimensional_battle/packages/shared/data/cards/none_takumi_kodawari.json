@@ -1,0 +1,54 @@
+{
+  "id": "none_takumi_kodawari",
+  "name": "匠のこだわり",
+  "type": "ability",
+  "attribute": "none",
+  "timings": [
+    "activate",
+    "placed"
+  ],
+  "text": "発動: 直前に発動したカードの属性と異なる属性を持つカードを無効化する\n設置: 直前に発動したカードの属性と同じ属性を持つカードが発動するたび基礎ステータス{{×3}}",
+  "effects": [
+    {
+      "id": "none_takumi_kodawari_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "invalidate_cards_with_attribute_different_from_previous"
+        }
+      ]
+    },
+    {
+      "id": "none_takumi_kodawari_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host_and_attribute_matches_previous"
+      },
+      "operations": [
+        {
+          "kind": "multiply_base_both",
+          "value": 3
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "none_takumi_kodawari_placed",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "none",
+    "ability",
+    "invalidate"
+  ]
+}
