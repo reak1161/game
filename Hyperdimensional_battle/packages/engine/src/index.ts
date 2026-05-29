@@ -126,7 +126,7 @@ function cloneGame(state: LocalGameState): LocalGameState {
 }
 
 function floorValue(value: number) {
-  return Math.floor(value);
+  return Math.round(value * 100) / 100;
 }
 
 function hashSeed(seed: string) {
@@ -2842,8 +2842,8 @@ function resolveSingleCard(
 
   const mainTiming = getMainTiming(definition);
   const referencedEffectDefinition = getResolvableCardDefinition(player, resolvingCard, cardsById);
-  runCardEffects(definition.effects.filter((effect) => effect.timing === mainTiming), context, null);
   executeHostEnchantmentEffects(context, "when_host_card_activates");
+  runCardEffects(definition.effects.filter((effect) => effect.timing === mainTiming), context, null);
   dispatchPlacedTrigger(state, player, cardsById, {
     kind: "after_card_activates",
     sourceCard: resolvingCard,

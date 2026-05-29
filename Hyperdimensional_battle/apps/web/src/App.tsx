@@ -867,6 +867,10 @@ function renderCardTextLine(
     const fullMatch = referenceMatch[0];
     const referenceName = referenceMatch[1];
     const definitionId = cardNameToDefinitionIdMap[referenceName];
+    const referenceDefinition = definitionId ? cardMap[definitionId] : undefined;
+    const referenceClassName = `card-text-reference-chip${
+      referenceDefinition?.timings.includes("enchant") ? " is-enchant-reference" : ""
+    }`;
     const referenceStart = referenceMatch.index;
     const referenceEnd = referenceMatch.index + fullMatch.length;
 
@@ -884,7 +888,7 @@ function renderCardTextLine(
         <button
           key={`reference_${referenceStart}`}
           type="button"
-          className="card-text-reference-chip"
+          className={referenceClassName}
           onMouseEnter={() => options?.onReferenceEnter?.(definitionId)}
           onMouseLeave={() => options?.onReferenceLeave?.(definitionId)}
         >
@@ -894,7 +898,7 @@ function renderCardTextLine(
       );
     } else if (definitionId) {
       parts.push(
-        <span key={`reference_${referenceStart}`} className="card-text-reference-chip">
+        <span key={`reference_${referenceStart}`} className={referenceClassName}>
           {fullMatch}
         </span>
       );

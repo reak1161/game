@@ -1940,6 +1940,14 @@ button.card-text-reference-chip {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.catalog-card .card-text-reference-chip.is-enchant-reference {
+  border-color: rgba(91, 33, 182, 0.28);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)),
+    url("/enchant.png") center / cover no-repeat;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
 .catalog-card .card-text-reference-chip:hover .catalog-inline-reference-popup,
 .catalog-card .card-text-reference-chip:focus-visible .catalog-inline-reference-popup {
   opacity: 1;

@@ -450,9 +450,9 @@ describe("engine", () => {
     game = finalizeRoundAndAdvance(game, [punch.instanceId, hadou.instanceId]);
 
     const advancedHybrid = game.players[0].field.find((card) => card.instanceId === hybrid.instanceId)!;
-    expect(game.players[0].baseAttack).toBe(58);
-    expect(game.players[0].baseMagic).toBe(58);
-    expect(advancedHybrid.counters?.cold_reaction_gain).toBe(14);
+    expect(game.players[0].baseAttack).toBe(58.5);
+    expect(game.players[0].baseMagic).toBe(58.5);
+    expect(advancedHybrid.counters?.cold_reaction_gain).toBe(13);
   });
 
   it("henden shisetsu turns non-thunder allies into thunder and scales their numeric value once", () => {
@@ -567,8 +567,8 @@ describe("engine", () => {
       placements: [{ handInstanceId: hybrid!.instanceId, order: 0, targetSelections: {} }]
     });
 
-    expect(afterResolve.players[0].baseAttack).toBe(49);
-    expect(afterResolve.players[0].baseMagic).toBe(49);
+    expect(afterResolve.players[0].baseAttack).toBe(49.5);
+    expect(afterResolve.players[0].baseMagic).toBe(49.5);
   });
 
   it("dolphin role gains water appearance weight at each round start", () => {
@@ -1173,7 +1173,7 @@ describe("engine", () => {
     const resolvedHybrid = game.players[0].field.find((entry) => entry.instanceId === hybrid!.instanceId);
     expect(resolvedHybrid?.enchantments.filter((entry) => entry.definitionId === "enchant_magic_plus_5")).toHaveLength(0);
     expect(game.players[0].baseAttack).toBe(115);
-    expect(game.players[0].baseMagic).toBe(125);
+    expect(game.players[0].baseMagic).toBe(135);
   });
 
   it("whole-field enchant logs are summarized", () => {
