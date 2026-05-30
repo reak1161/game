@@ -1941,11 +1941,9 @@ button.card-text-reference-chip {
 }
 
 .catalog-card .card-text-reference-chip.is-enchant-reference {
-  border-color: rgba(91, 33, 182, 0.28);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)),
-    url("/enchant.png") center / cover no-repeat;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.18);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: none;
 }
 
 .catalog-card .card-text-reference-chip:hover .catalog-inline-reference-popup,
@@ -2006,6 +2004,10 @@ button.card-text-reference-chip {
 
 .catalog-card[data-attribute="dark"] {
   --card-background-image: var(--card-bg-dark);
+}
+
+.catalog-card[data-is-enchant="true"] {
+  --card-background-image: url("/enchant.png");
 }
 
 .catalog-card > * {

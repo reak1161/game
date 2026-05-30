@@ -1,0 +1,59 @@
+{
+  "id": "dark_dark_hole",
+  "name": "ダークホール",
+  "type": "spell",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: {{20%}}の確率で「一時魔法{{×1.5}}、その後ダメージを与える、その後再発動する」",
+  "effects": [
+    {
+      "id": "dark_dark_hole_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 20,
+          "operations": [
+            {
+              "kind": "multiply_temp_magic",
+              "value": 1.5
+            },
+            {
+              "kind": "deal_damage_from_temp_magic"
+            },
+            {
+              "kind": "queue_additional_activation_for_self"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_dark_hole_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_dark_hole_activate",
+      "operationIndex": 0,
+      "operationPath": [0, 0],
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "spell",
+    "probability",
+    "additional"
+  ]
+}

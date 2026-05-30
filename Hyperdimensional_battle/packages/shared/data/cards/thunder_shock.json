@@ -67,7 +67,7 @@
     {
       "effectId": "thunder_shock_activate",
       "operationIndex": 0,
-      "occurrence": 0,
+      "occurrence": 1,
       "writtenValueKind": "normal",
       "affectsValueKind": "normal"
     }

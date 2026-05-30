@@ -1,0 +1,53 @@
+{
+  "id": "dark_requiem",
+  "name": "レクイエム",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の場のカードは毎ラウンドの終わり時、{{10%}}の確率で破壊される。自分の場のカードにエンチャント『揺れる魂』を付与する。",
+  "effects": [
+    {
+      "id": "dark_requiem_aura",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant_to_all_ally_field_cards",
+          "enchantDefinitionId": "enchant_yureru_tamashii"
+        }
+      ]
+    },
+    {
+      "id": "dark_requiem_round_end",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "destroy_each_ally_field_card_with_chance",
+          "value": 10
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_requiem_round_end",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "ability",
+    "probability",
+    "enchant"
+  ]
+}

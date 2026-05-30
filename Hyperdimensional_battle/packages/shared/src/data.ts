@@ -10,6 +10,17 @@ import enchantPhoenix from "../data/cards/enchant_phoenix.json";
 import enchantReikyakuHannou from "../data/cards/enchant_reikyaku_hannou.json";
 import enchantTenshiNoHashigo from "../data/cards/enchant_tenshi_no_hashigo.json";
 import enchantToushou from "../data/cards/enchant_toushou.json";
+import enchantYureruTamashii from "../data/cards/enchant_yureru_tamashii.json";
+import darkAkumaSasayaki from "../data/cards/dark_akuma_sasayaki.json";
+import darkDarkHole from "../data/cards/dark_dark_hole.json";
+import darkDoppelganger from "../data/cards/dark_doppelganger.json";
+import darkGunzei from "../data/cards/dark_gunzei.json";
+import darkHaiyoruKage from "../data/cards/dark_haiyoru_kage.json";
+import darkKagefumi from "../data/cards/dark_kagefumi.json";
+import darkPoltergeist from "../data/cards/dark_poltergeist.json";
+import darkRequiem from "../data/cards/dark_requiem.json";
+import darkShadowStep from "../data/cards/dark_shadow_step.json";
+import darkShinenBlade from "../data/cards/dark_shinen_blade.json";
 import fireBending from "../data/cards/fire_bending.json";
 import fireBurnout from "../data/cards/fire_burnout.json";
 import fireEruption from "../data/cards/fire_eruption.json";
@@ -88,6 +99,17 @@ const rawCards = [
   enchantReikyakuHannou,
   enchantTenshiNoHashigo,
   enchantToushou,
+  enchantYureruTamashii,
+  darkAkumaSasayaki,
+  darkDarkHole,
+  darkDoppelganger,
+  darkGunzei,
+  darkHaiyoruKage,
+  darkKagefumi,
+  darkPoltergeist,
+  darkRequiem,
+  darkShadowStep,
+  darkShinenBlade,
   fireBending,
   fireBurnout,
   fireEruption,

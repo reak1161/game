@@ -1,0 +1,55 @@
+{
+  "id": "dark_shadow_step",
+  "name": "シャドウステップ",
+  "type": "attack",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: {{30%}}の確率で「基礎攻撃{{+150}}、その後ダメージを与える」",
+  "effects": [
+    {
+      "id": "dark_shadow_step_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 30,
+          "operations": [
+            {
+              "kind": "add_base_attack",
+              "value": 150
+            },
+            {
+              "kind": "deal_damage_from_temp_attack"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_shadow_step_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_shadow_step_activate",
+      "operationIndex": 0,
+      "operationPath": [0, 0],
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "attack",
+    "probability"
+  ]
+}

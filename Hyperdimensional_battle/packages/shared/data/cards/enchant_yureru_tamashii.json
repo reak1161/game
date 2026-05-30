@@ -1,0 +1,58 @@
+{
+  "id": "enchant_yureru_tamashii",
+  "name": "揺れる魂",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "enchant"
+  ],
+  "text": "発動: {{20%}}の確率で「このカードの数値{{×2}}、その後このカードは再発動」",
+  "effects": [
+    {
+      "id": "enchant_yureru_tamashii_trigger",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 20,
+          "operations": [
+            {
+              "kind": "scale_self_numeric_value",
+              "value": 2
+            },
+            {
+              "kind": "queue_additional_activation_for_self"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_yureru_tamashii_trigger",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "enchant_yureru_tamashii_trigger",
+      "operationIndex": 0,
+      "operationPath": [0, 0],
+      "occurrence": 1,
+      "writtenValueKind": "enchant",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "enchant",
+    "probability",
+    "additional"
+  ]
+}

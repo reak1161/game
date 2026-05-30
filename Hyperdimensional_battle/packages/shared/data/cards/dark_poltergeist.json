@@ -1,0 +1,80 @@
+{
+  "id": "dark_poltergeist",
+  "name": "ポルターガイスト",
+  "type": "spell",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: {{30%}}の確率で「基礎魔法{{+20}}」\n（上の30%とは独立して）{{5%}}の確率で「基礎魔法{{+300}}」\nその後ダメージを与える",
+  "effects": [
+    {
+      "id": "dark_poltergeist_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 30,
+          "operations": [
+            {
+              "kind": "add_base_magic",
+              "value": 20
+            }
+          ]
+        },
+        {
+          "kind": "chance_percent",
+          "value": 5,
+          "operations": [
+            {
+              "kind": "add_base_magic",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_poltergeist_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_poltergeist_activate",
+      "operationIndex": 0,
+      "operationPath": [0, 0],
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_poltergeist_activate",
+      "operationIndex": 1,
+      "occurrence": 2,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_poltergeist_activate",
+      "operationIndex": 1,
+      "operationPath": [1, 0],
+      "occurrence": 3,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "spell",
+    "probability"
+  ]
+}

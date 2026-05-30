@@ -1,0 +1,56 @@
+{
+  "id": "dark_kagefumi",
+  "name": "かげふみ",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: {{30%}}の確率で「基礎攻撃{{+20}}、その後再発動する」",
+  "effects": [
+    {
+      "id": "dark_kagefumi_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 30,
+          "operations": [
+            {
+              "kind": "add_base_attack",
+              "value": 20
+            },
+            {
+              "kind": "queue_additional_activation_for_self"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_kagefumi_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_kagefumi_activate",
+      "operationIndex": 0,
+      "operationPath": [0, 0],
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "ability",
+    "probability",
+    "additional"
+  ]
+}

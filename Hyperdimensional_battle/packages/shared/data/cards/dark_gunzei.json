@@ -1,0 +1,39 @@
+{
+  "id": "dark_gunzei",
+  "name": "闇の軍勢",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動: 自分の場のカードを1枚選ぶ。そのカードの確率数値{{×2}}",
+  "effects": [
+    {
+      "id": "dark_gunzei_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "scale_target_probability_values",
+          "target": "one_ally_field_card",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_gunzei_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "probability"
+    }
+  ],
+  "tags": [
+    "dark",
+    "ability",
+    "probability"
+  ]
+}

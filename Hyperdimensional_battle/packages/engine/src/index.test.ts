@@ -422,6 +422,23 @@ describe("engine", () => {
     expect(fieldIcicle?.enchantments.some((entry) => entry.definitionId === "enchant_toushou")).toBe(true);
   });
 
+  it("tsuranaru tsurara multiplies base attack for connected enchanted ice cards", () => {
+    let game = createGame();
+    ensureCardsInHand(game, ["ice_wall", "ice_touketsu_noroi", "ice_tsuranaru_tsurara"]);
+    const wall = game.players[0].hand.find((card) => card.definitionId === "ice_wall")!;
+    const curse = game.players[0].hand.find((card) => card.definitionId === "ice_touketsu_noroi")!;
+    const icicle = game.players[0].hand.find((card) => card.definitionId === "ice_tsuranaru_tsurara")!;
+
+    game = startRoundResolution(game, [wall.instanceId, curse.instanceId, icicle.instanceId]);
+    game = resolveNextCard(game, {});
+    game = resolveNextCard(game, {});
+    const beforeIcicleAttack = game.players[0].baseAttack;
+
+    const afterResolve = resolveNextCard(game, {});
+
+    expect(afterResolve.players[0].baseAttack).toBeGreaterThan(beforeIcicleAttack);
+  });
+
   it("cooling reaction reduces next round base stats and adds the reduced amount to host numeric value", () => {
     let game = createGame();
     ensureCardsInHand(game, ["none_hybrid", "none_punch", "none_hadou", "ice_housha_reikyaku"]);
@@ -1707,6 +1724,53 @@ describe("engine", () => {
     });
 
     expect(afterResolve.players[0].baseAttack).toBe(80);
+  });
+
+  it("dark gunzei doubles the chosen card's probability values", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["dark_shadow_step", "dark_gunzei"]);
+    const shadowStep = game.players[0].hand.find((card) => card.definitionId === "dark_shadow_step");
+    const gunzei = game.players[0].hand.find((card) => card.definitionId === "dark_gunzei");
+    expect(shadowStep).toBeDefined();
+    expect(gunzei).toBeDefined();
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [
+        {
+          handInstanceId: shadowStep!.instanceId,
+          order: 0,
+          targetSelections: {}
+        },
+        {
+          handInstanceId: gunzei!.instanceId,
+          order: 1,
+          targetSelections: {
+            scale_target_probability_values: shadowStep!.instanceId
+          }
+        }
+      ]
+    });
+
+    const resolvedShadowStep = afterResolve.players[0].field.find((card) => card.instanceId === shadowStep!.instanceId);
+    expect(resolvedShadowStep?.derived?.probabilityValueMultiplier).toBe(2);
+  });
+
+  it("requiem applies yureru tamashii to allied field cards", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["none_hybrid", "dark_requiem"]);
+    const hybrid = game.players[0].hand.find((card) => card.definitionId === "none_hybrid");
+    const requiem = game.players[0].hand.find((card) => card.definitionId === "dark_requiem");
+    expect(hybrid).toBeDefined();
+    expect(requiem).toBeDefined();
+
+    const afterResolve = startRoundResolution(game, [hybrid!.instanceId, requiem!.instanceId]);
+
+    const resolvedHybrid = afterResolve.players[0].field.find((card) => card.instanceId === hybrid!.instanceId);
+    const resolvedRequiem = afterResolve.players[0].field.find((card) => card.instanceId === requiem!.instanceId);
+    expect(resolvedHybrid?.enchantments.some((entry) => entry.definitionId === "enchant_yureru_tamashii")).toBe(true);
+    expect(resolvedRequiem?.enchantments.some((entry) => entry.definitionId === "enchant_yureru_tamashii")).toBe(true);
   });
 });
 

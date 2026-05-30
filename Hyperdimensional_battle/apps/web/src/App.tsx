@@ -119,6 +119,16 @@ type ConnectedFieldGroup = {
   attribute: Attribute;
   instanceIds: string[];
 };
+
+type ConnectedEffectConfig =
+  | {
+      mode: "attribute";
+      attribute: Attribute;
+    }
+  | {
+      mode: "enchanted";
+      attribute: Attribute;
+    };
 type TokenPlacementRequirement = {
   selectionKey: string;
   tokenDefinitionId: string;
@@ -471,8 +481,12 @@ function getRoundBuffPlacementLimitBonus(buffIds: string[]) {
 }
 
 function extractLogGroupTitle(entry: EngineLogEntry) {
-  const match = entry.message.match(/^([^:?]+)[:?]\s*/);
-  return match?.[1] ?? null;
+  const colonMatch = entry.message.match(/^([^:]+):\s*/);
+  if (colonMatch) {
+    return colonMatch[1] ?? null;
+  }
+  const damageMatch = entry.message.match(/^(.+?)\s+が\s+/);
+  return damageMatch?.[1] ?? null;
 }
 
 function getLogGroupKind(entry: EngineLogEntry): LogGroup["kind"] {
@@ -649,6 +663,14 @@ function getCardHostEnchantNumericBonus(card: CardInstance | null | undefined) {
   return typeof bonus === "number" ? bonus : 0;
 }
 
+function getCardProbabilityValueMultiplier(card: CardInstance | null | undefined) {
+  if (!card) {
+    return 1;
+  }
+  const multiplier = card.derived?.probabilityValueMultiplier;
+  return typeof multiplier === "number" ? multiplier : 1;
+}
+
 function formatCardTextNumber(value: number) {
   return formatDisplayNumber(value);
 }
@@ -677,6 +699,30 @@ function formatEffectText(text: string) {
 }
 
 const CARD_TEXT_REFERENCE_PATTERN = /[『「]([^』」]+)[』」]/g;
+
+function formatMarkedProbabilityAwareTextNumber(template: string, value: number) {
+  const hasPlusPrefix = template.startsWith("+");
+  const hasMultiplyPrefix = template.startsWith("×");
+  const hasTimesSuffix = template.endsWith("倍");
+  const hasPercentSuffix = template.endsWith("%") || template.endsWith("％");
+  let formatted = formatCardTextNumber(value);
+
+  if (hasPlusPrefix && value > 0) {
+    formatted = `+${formatted}`;
+  } else if (hasMultiplyPrefix) {
+    formatted = `×${formatted}`;
+  }
+
+  if (hasTimesSuffix) {
+    formatted = `${formatted}倍`;
+  }
+
+  if (hasPercentSuffix) {
+    formatted = `${formatted}${template.endsWith("％") ? "％" : "%"}`;
+  }
+
+  return formatted;
+}
 
 function formatMarkedCardTextNumberSafe(template: string, value: number) {
   const hasPlusPrefix = template.startsWith("+");
@@ -806,7 +852,7 @@ function renderNumericAdjustedTextSegmentSafe(
               : ""
         }${replacement ? ` card-text-value-kind-${replacement.kind}` : ""}`}
       >
-        {replacement ? formatMarkedCardTextNumberSafe(markerValue, Number(replacement.value)) : markerValue}
+        {replacement ? formatMarkedProbabilityAwareTextNumber(markerValue, Number(replacement.value)) : markerValue}
       </span>
     );
     occurrence += 1;
@@ -1055,17 +1101,37 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
   const numericBonus = card ? getCardNumericBonus(card) : 0;
   const numericMultiplier = card ? getCardNumericMultiplier(card) : 1;
   const hostEnchantNumericBonus = card ? getCardHostEnchantNumericBonus(card) : 0;
+  const probabilityMultiplier = card ? getCardProbabilityValueMultiplier(card) : 1;
+  const isEnchantDefinition = definition?.timings.includes("enchant") ?? false;
   for (const binding of bindings) {
     const effect = definition?.effects.find((entry) => entry.id === binding.effectId);
-    const operation = effect?.operations[binding.operationIndex];
+    const operationPath = binding.operationPath ?? [binding.operationIndex];
+    let operation: { value?: number } | undefined = undefined;
+    let currentOperationList: any[] | undefined = effect?.operations;
+    for (const pathIndex of operationPath) {
+      const nextOperation = currentOperationList?.[pathIndex];
+      if (!nextOperation) {
+        currentOperationList = undefined;
+        operation = undefined;
+        break;
+      }
+      operation = nextOperation;
+      currentOperationList = "operations" in nextOperation && Array.isArray(nextOperation.operations) ? nextOperation.operations : undefined;
+    }
     if (!operation || !("value" in operation) || typeof operation.value !== "number") {
       continue;
     }
     const originalValue = operation.value;
-    const adjustedValue =
-      (binding.writtenValueKind ?? "normal") === "enchant"
-        ? originalValue + hostEnchantNumericBonus
-        : (originalValue + numericBonus) * numericMultiplier;
+    const adjustedValue = (() => {
+      const writtenKind = binding.writtenValueKind ?? "normal";
+      if (writtenKind === "enchant") {
+        return originalValue + hostEnchantNumericBonus;
+      }
+      if (writtenKind === "probability") {
+        return isEnchantDefinition ? originalValue : originalValue * probabilityMultiplier;
+      }
+      return (originalValue + numericBonus) * numericMultiplier;
+    })();
     const change = adjustedValue > originalValue ? "up" : adjustedValue < originalValue ? "down" : "none";
     replacements.set(binding.occurrence, {
       value: formatCardTextNumber(adjustedValue),
@@ -1108,11 +1174,20 @@ function renderCardIllustration(definitionId: string, name: string) {
   return null;
 }
 
-function getConnectedEffectAttribute(card: CardDefinition) {
+function getConnectedEffectConfig(card: CardDefinition): ConnectedEffectConfig | null {
   for (const effect of card.effects) {
     for (const operation of effect.operations) {
       if (operation.kind === "multiply_temp_magic_per_connected_attribute_count") {
-        return operation.attribute;
+        return {
+          mode: "attribute",
+          attribute: operation.attribute
+        };
+      }
+      if (operation.kind === "multiply_base_attack_per_connected_enchanted_count") {
+        return {
+          mode: "enchanted",
+          attribute: card.attribute
+        };
       }
     }
   }
@@ -1128,8 +1203,8 @@ function buildConnectedFieldGroups(field: CardInstance[]) {
     if (!definition) {
       return;
     }
-    const connectedAttribute = getConnectedEffectAttribute(definition);
-    if (!connectedAttribute) {
+    const connectedConfig = getConnectedEffectConfig(definition);
+    if (!connectedConfig) {
       return;
     }
 
@@ -1137,14 +1212,26 @@ function buildConnectedFieldGroups(field: CardInstance[]) {
     let end = index;
 
     for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
-      if (field[cursor]?.attribute !== connectedAttribute) {
+      const target = field[cursor];
+      if (
+        !target ||
+        (connectedConfig.mode === "attribute"
+          ? target.attribute !== connectedConfig.attribute
+          : target.enchantments.length === 0)
+      ) {
         break;
       }
       start = cursor;
     }
 
     for (let cursor = index + 1; cursor < field.length; cursor += 1) {
-      if (field[cursor]?.attribute !== connectedAttribute) {
+      const target = field[cursor];
+      if (
+        !target ||
+        (connectedConfig.mode === "attribute"
+          ? target.attribute !== connectedConfig.attribute
+          : target.enchantments.length === 0)
+      ) {
         break;
       }
       end = cursor;
@@ -1154,7 +1241,7 @@ function buildConnectedFieldGroups(field: CardInstance[]) {
       return;
     }
 
-    const key = `${start}-${end}-${connectedAttribute}`;
+    const key = `${start}-${end}-${connectedConfig.mode}-${connectedConfig.attribute}`;
     if (seen.has(key)) {
       return;
     }
@@ -1163,7 +1250,7 @@ function buildConnectedFieldGroups(field: CardInstance[]) {
       key,
       start,
       end,
-      attribute: connectedAttribute,
+      attribute: connectedConfig.attribute,
       instanceIds: field.slice(start, end + 1).map((entry) => entry.instanceId)
     });
   });
@@ -3755,6 +3842,7 @@ export function App() {
                   key={card.id}
                   className="catalog-card"
                   data-attribute={resolveVisualAttribute(card.attribute)}
+                  data-is-enchant={card.timings.includes("enchant") ? "true" : "false"}
                 >
                   {renderCardIllustration(card.id, card.name)}
                   <div className="catalog-card-top">

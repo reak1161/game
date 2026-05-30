@@ -73,6 +73,7 @@ export type LocalGameState = GameState & {
   cardCatalog: CardDefinition[];
   roleCatalog: RoleDefinition[];
   roundBuffCatalog: RoundBuffDefinition[];
+  chanceRollCount: number;
   pendingResolution?: PendingResolutionState | null;
   pendingFinalAction?: PendingFinalActionState | null;
   pendingRoundBuffChoice?: PendingRoundBuffChoiceState | null;
@@ -129,6 +130,20 @@ function floorValue(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+function formatLogNumber(value: number) {
+  if (Math.abs(value) >= 1_000_000_000_000) {
+    return value.toExponential(3).replace(/(\.\d*?[1-9])0+e/, "$1e").replace(/\.0+e/, "e");
+  }
+  if (Number.isInteger(value)) {
+    return `${value}`;
+  }
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function formatSignedLogNumber(value: number) {
+  return `${value > 0 ? "+" : ""}${formatLogNumber(value)}`;
+}
+
 function hashSeed(seed: string) {
   let hash = 0;
   for (const char of seed) {
@@ -181,14 +196,14 @@ function formatDelta(next: number, prev: number) {
   if (delta === 0) {
     return null;
   }
-  return `${delta > 0 ? "+" : ""}${delta}`;
+  return formatSignedLogNumber(delta);
 }
 
 function formatMultiplier(next: number, prev: number) {
   if (prev === 0 || next === prev) {
     return null;
   }
-  return `×${(next / prev).toFixed(2).replace(/\.?0+$/, "")}`;
+  return `×${formatLogNumber(next / prev)}`;
 }
 
 function addStatDeltaLog(
@@ -527,6 +542,14 @@ function getHostEnchantNumericBonus(card: CardInstance) {
   return typeof bonus === "number" ? bonus : 0;
 }
 
+function getProbabilityValueMultiplier(card: CardInstance | null) {
+  if (!card) {
+    return 1;
+  }
+  const multiplier = card.derived?.probabilityValueMultiplier;
+  return typeof multiplier === "number" ? multiplier : 1;
+}
+
 function getNumericMultiplier(card: CardInstance) {
   const multiplier = card.derived?.numericValueMultiplier;
   const roundBuffMultiplier = card.derived?.roundBuffNumericValueMultiplier;
@@ -538,6 +561,23 @@ function getScaledValue(value: number, card: CardInstance | null) {
     return value;
   }
   return (value + getNumericBonus(card)) * getNumericMultiplier(card);
+}
+
+function getScaledProbabilityValue(value: number, card: CardInstance | null) {
+  if (!card) {
+    return value;
+  }
+  return floorValue(value * getProbabilityValueMultiplier(card));
+}
+
+function rollChancePercent(state: LocalGameState, context: ResolutionContext, effectId: string, chancePercent: number) {
+  const clampedChance = Math.max(0, Math.min(100, chancePercent));
+  const rollIndex = state.chanceRollCount;
+  state.chanceRollCount += 1;
+  const rng = createRng(
+    `${state.rngSeed}:chance:${state.round}:${rollIndex}:${effectId}:${context.resolvingCard.instanceId}:${context.activeEnchantment?.instanceId ?? "card"}`
+  );
+  return rng() * 100 < clampedChance;
 }
 
 function countConnectedAttributeCards(player: PlayerState, sourceCard: CardInstance, attribute: Attribute) {
@@ -559,28 +599,23 @@ function countConnectedAttributeCards(player: PlayerState, sourceCard: CardInsta
 }
 
 function countConnectedEnchantedCards(player: PlayerState, sourceCard: CardInstance) {
-  const sourceAttribute = getEffectiveCardAttribute(sourceCard);
   const sourceIndex = sourceCard.fieldIndex ?? player.field.findIndex((card) => card.instanceId === sourceCard.instanceId);
   let connectedCount = 0;
 
   for (let index = sourceIndex - 1; index >= 0; index -= 1) {
     const card = player.field[index];
-    if (!card || getEffectiveCardAttribute(card) !== sourceAttribute) {
+    if (!card || card.enchantments.length === 0) {
       break;
     }
-    if (card.enchantments.length > 0) {
-      connectedCount += 1;
-    }
+    connectedCount += 1;
   }
 
   for (let index = sourceIndex + 1; index < player.field.length; index += 1) {
     const card = player.field[index];
-    if (!card || getEffectiveCardAttribute(card) !== sourceAttribute) {
+    if (!card || card.enchantments.length === 0) {
       break;
     }
-    if (card.enchantments.length > 0) {
-      connectedCount += 1;
-    }
+    connectedCount += 1;
   }
 
   return connectedCount;
@@ -1557,7 +1592,7 @@ function applyFutureChainMultipliers(context: ResolutionContext) {
     addLog(context.state, {
       level: "info",
       code: "CHAIN_MULTIPLIER_APPLIED",
-      message: `${context.resolvingCard.name}: 連続発動補正で一時ステータスを ${chainEffect.value} 倍にしました。`
+      message: `${context.resolvingCard.name}: 連続発動補正で一時ステータスを ×${formatLogNumber(chainEffect.value)} にしました。`
     });
   }
 
@@ -1647,7 +1682,7 @@ function applyRoleRoundStartEffects(state: LocalGameState, player: PlayerState, 
         addLog(state, {
           level: "info",
           code: "ROLE_DRAW_WEIGHT_UP",
-          message: `${role.name} の効果で ${operation.attribute} 属性の出現度が ${operation.value} 上がりました。`
+          message: `${role.name} の効果で ${operation.attribute} 属性の出現度が ${formatLogNumber(operation.value)} 上がりました。`
         });
       }
     }
@@ -1663,7 +1698,7 @@ function applyRoleRoundStartEffects(state: LocalGameState, player: PlayerState, 
       addLog(state, {
         level: "info",
         code: "ROLE_DOLPHIN_ROUND_START",
-        message: `ドルフィンの効果で、水カード ${waterCount} 枚ぶん一時ステータスを ${multiplier} 倍にしました。`
+        message: `ドルフィンの効果で、水カード ${waterCount} 枚ぶん一時ステータスを ×${formatLogNumber(multiplier)} にしました。`
       });
       pushStatusReplay(state, player);
     }
@@ -1714,7 +1749,7 @@ function dealDamage(
   addLog(context.state, {
     level: "info",
     code: "DAMAGE_DEALT",
-    message: `${context.resolvingCard.name} が ${sourceLabel} で ${finalAmount} ダメージを記録しました。`
+    message: `${context.resolvingCard.name} が ${sourceLabel} で ${formatLogNumber(finalAmount)} ダメージを記録しました。`
   });
   pushStatusReplay(context.state, context.player);
 
@@ -1768,8 +1803,21 @@ function resolveOperation(
         ? operation.value + getHostEnchantNumericBonus(resolvingCard)
         : getScaledValue(operation.value, resolvingCard)
       : null;
+  const scaledProbabilityValue =
+    "value" in operation && typeof operation.value === "number"
+      ? context.activeEnchantment
+        ? operation.value
+        : getScaledProbabilityValue(operation.value, resolvingCard)
+      : null;
 
   switch (operation.kind) {
+    case "chance_percent":
+      if (rollChancePercent(state, context, effectId, scaledProbabilityValue!)) {
+        for (const nestedOperation of operation.operations) {
+          event = resolveOperation(nestedOperation, context, effectId, event);
+        }
+      }
+      break;
     case "add_base_attack":
       player.baseAttack += scaledValue!;
       player.tempAttack += scaledValue!;
@@ -1809,7 +1857,7 @@ function resolveOperation(
       addLog(state, {
         level: "info",
         code: "NEXT_ROUND_DRAW_BONUS",
-        message: `${resolvingCard.name}: 次のラウンドの手札補充枚数が ${scaledValue} 増えました。`
+        message: `${resolvingCard.name}: 次のラウンドの手札補充枚数が ${formatLogNumber(scaledValue!)} 増えました。`
       });
       break;
     case "add_self_enchant_numeric_bonus":
@@ -1823,7 +1871,7 @@ function resolveOperation(
       addLog(state, {
         level: "info",
         code: "CARD_COUNTER_UPDATED",
-        message: `${resolvingCard.name}: 数値 ${operation.counter} が ${counterValue > 0 ? "+" : ""}${counterValue} 変化しました。`
+        message: `${resolvingCard.name}: 数値 ${operation.counter} が ${formatSignedLogNumber(counterValue)} 変化しました。`
       });
       break;
     }
@@ -1840,7 +1888,7 @@ function resolveOperation(
       addLog(state, {
         level: "info",
         code: "CARD_COUNTER_UPDATED",
-        message: `${resolvingCard.name}: 連結 ${connectedCount} 枚ぶん数値 ${operation.counter} が +${counterValue} 変化しました。`
+        message: `${resolvingCard.name}: 連結 ${connectedCount} 枚ぶん数値 ${operation.counter} が ${formatSignedLogNumber(counterValue)} 変化しました。`
       });
       break;
     }
@@ -1852,6 +1900,10 @@ function resolveOperation(
       break;
     case "multiply_temp_both":
       player.tempAttack = floorValue(player.tempAttack * scaledValue!);
+      player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+      break;
+    case "multiply_base_magic":
+      player.baseMagic = floorValue(player.baseMagic * scaledValue!);
       player.tempMagic = floorValue(player.tempMagic * scaledValue!);
       break;
     case "multiply_base_both":
@@ -1885,7 +1937,7 @@ function resolveOperation(
       addLog(state, {
         level: "info",
         code: "CARD_COUNTER_UPDATED",
-        message: `${resolvingCard.name}: カード数値を ${multiplier} 倍にしました。`
+        message: `${resolvingCard.name}: カード数値を ×${formatLogNumber(multiplier)} にしました。`
       });
       break;
     }
@@ -1941,7 +1993,7 @@ function resolveOperation(
         addLog(state, {
           level: "info",
           code: "CARD_COUNTER_UPDATED",
-          message: `${resolvingCard.name}: 減少した基礎ステータス ${reducedAmount} をカード数値に加算しました。`
+          message: `${resolvingCard.name}: 減少した基礎ステータス ${formatLogNumber(reducedAmount)} をカード数値に加算しました。`
         });
       }
       break;
@@ -1951,7 +2003,25 @@ function resolveOperation(
         addLog(state, {
           level: "info",
           code: "CARD_COUNTER_UPDATED",
-          message: `${resolvingCard.name}: カード数値を ${operation.value} 倍にしました。`
+          message: `${resolvingCard.name}: カード数値を ×${formatLogNumber(operation.value)} にしました。`
+        });
+      }
+      break;
+    }
+    case "scale_target_probability_values": {
+      const target =
+        operation.target === "self"
+          ? resolvingCard
+          : player.field.find((card) => card.instanceId === context.targetSelections[operation.kind]);
+      if (target) {
+        target.derived = {
+          ...(target.derived ?? {}),
+          probabilityValueMultiplier: floorValue(getProbabilityValueMultiplier(target) * operation.value)
+        };
+        addLog(state, {
+          level: "info",
+          code: "CARD_COUNTER_UPDATED",
+          message: `${target.name}: 確率数値を ×${formatLogNumber(operation.value)} にしました。`
         });
       }
       break;
@@ -2017,6 +2087,25 @@ function resolveOperation(
       context.lastDestroySucceeded = destroyCard(state, player, cardsById, resolvingCard, resolvingCard, context.activationTask);
       context.lastDestroyCount = context.lastDestroySucceeded ? 1 : 0;
       break;
+    case "destroy_each_ally_field_card_with_chance": {
+      let destroyedCount = 0;
+      for (const target of [...player.field]) {
+        const targetContext: ResolutionContext = {
+          ...context,
+          resolvingCard: target,
+          activeEnchantment: null
+        };
+        if (!rollChancePercent(state, targetContext, effectId, scaledProbabilityValue!)) {
+          continue;
+        }
+        if (destroyCard(state, player, cardsById, target, resolvingCard, context.activationTask)) {
+          destroyedCount += 1;
+        }
+      }
+      context.lastDestroyCount = destroyedCount;
+      context.lastDestroySucceeded = destroyedCount > 0;
+      break;
+    }
     case "invalidate_all_right_cards": {
       const sourceIndex = resolvingCard.fieldIndex ?? player.field.findIndex((card) => card.instanceId === resolvingCard.instanceId);
       let invalidatedCount = 0;
@@ -2313,6 +2402,7 @@ function resolveOperation(
 
   const after = snapshotPlayerStats(player);
   const operationLabelMap: Record<OperationDefinition["kind"], string> = {
+    chance_percent: "確率効果",
     add_base_attack: "基礎攻撃変化",
     add_base_magic: "基礎魔法変化",
     add_base_both: "基礎ステータス変化",
@@ -2327,6 +2417,7 @@ function resolveOperation(
     multiply_temp_attack: "一時攻撃変化",
     multiply_temp_magic: "一時魔法変化",
     multiply_temp_both: "一時ステータス変化",
+    multiply_base_magic: "基礎魔法倍化",
     multiply_base_both: "基礎ステータス倍化",
     multiply_base_both_if_last_destroy_succeeded: "破壊成功時の強化",
     multiply_pending_damage: "ダメージ補正",
@@ -2338,6 +2429,7 @@ function resolveOperation(
     multiply_base_attack_per_connected_enchanted_count: "連結エンチャント参照の基礎攻撃変化",
     multiply_base_both_and_add_reduction_to_self_numeric: "基礎ステータス減衰変化",
     scale_self_numeric_value: "カード数値倍率変化",
+    scale_target_probability_values: "確率数値変化",
     deal_damage_from_temp_attack: "攻撃ダメージ",
     deal_damage_from_temp_attack_fraction: "分割攻撃ダメージ",
     deal_damage_from_temp_magic: "魔法ダメージ",
@@ -2347,6 +2439,7 @@ function resolveOperation(
     destroy_all_other_cards_on_own_field: "全体破壊",
     destroy_all_self_enchantments: "エンチャント全破壊",
     destroy_self: "自壊",
+    destroy_each_ally_field_card_with_chance: "確率破壊",
     invalidate_all_right_cards: "右側無効",
     invalidate_cards_with_attribute_different_from_previous: "直前属性比較無効",
     trigger_round_end_effects_of_last_invalidated_cards: "無効化カードの終了時効果発動",
@@ -2622,7 +2715,7 @@ function computeFinalAttack(state: LocalGameState, player: PlayerState) {
     addLog(state, {
       level: "info",
       code: "ROLE_BLAZE_FINAL",
-      message: `ブレイズの効果で、そのラウンド中に破壊された ${player.roundDestroyedCardCount} 枚ぶん最終攻撃前の一時ステータスを ${multiplier} 倍にしました。`
+      message: `ブレイズの効果で、そのラウンド中に破壊された ${player.roundDestroyedCardCount} 枚ぶん最終攻撃前の一時ステータスを ×${formatLogNumber(multiplier)} にしました。`
     });
     return computeFinalAttackFromValues(
       player.roleId,
@@ -2660,7 +2753,7 @@ function completeRoundAfterResolution(state: LocalGameState, player: PlayerState
   addLog(state, {
     level: "info",
     code: "FINAL_ATTACK",
-    message: `最終攻撃で ${finalAttack.sourceLabel} を使い ${finalAttack.amount} ダメージを記録しました。`
+    message: `最終攻撃で ${finalAttack.sourceLabel} を使い ${formatLogNumber(finalAttack.amount)} ダメージを記録しました。`
   });
   clearRoundInvalidations(player);
   applyRoundEndEffects(state, player, cardsById);
@@ -2916,7 +3009,7 @@ function applyRoundBuffRoundEndEffects(state: LocalGameState, player: PlayerStat
   addLog(state, {
     level: "info",
     code: "ROUND_BUFF_APPLIED",
-    message: `追い風ラッシュの効果で、場の風属性 ${windCards.length} 枚の数値を ${multiplier.toFixed(2).replace(/\.?0+$/, "")} 倍にしました。`
+    message: `追い風ラッシュの効果で、場の風属性 ${windCards.length} 枚の数値を ×${formatLogNumber(multiplier)} にしました。`
   });
 }
 
@@ -2990,7 +3083,7 @@ function prepareNextRound(state: LocalGameState) {
     addLog(state, {
       level: "info",
       code: "SCHEDULED_EFFECT_APPLIED",
-      message: `予約効果で基礎ステータスが ${bonus} 増えました。`
+      message: `予約効果で基礎ステータスが ${formatLogNumber(bonus)} 増えました。`
     });
     pushStatusReplay(state, player);
   }
@@ -3053,6 +3146,7 @@ export function createLocalGame({ roleId, cards, roles, roundBuffs = [], seed: p
     cardCatalog: cards,
     roleCatalog: roles,
     roundBuffCatalog: roundBuffs,
+    chanceRollCount: 0,
     pendingResolution: null,
     pendingFinalAction: null,
     pendingRoundBuffChoice: null,

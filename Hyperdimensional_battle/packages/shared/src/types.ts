@@ -41,6 +41,7 @@ export type SealConditionDefinition = {
 };
 
 export type OperationDefinition =
+  | { kind: "chance_percent"; value: number; operations: OperationDefinition[] }
   | { kind: "add_base_attack"; value: number }
   | { kind: "add_base_magic"; value: number }
   | { kind: "add_base_both"; value: number }
@@ -54,6 +55,7 @@ export type OperationDefinition =
   | { kind: "multiply_temp_attack"; value: number }
   | { kind: "multiply_temp_magic"; value: number }
   | { kind: "multiply_temp_both"; value: number }
+  | { kind: "multiply_base_magic"; value: number }
   | { kind: "multiply_base_both"; value: number }
   | { kind: "multiply_base_both_if_last_destroy_succeeded"; value: number }
   | { kind: "multiply_pending_damage"; value: number }
@@ -65,6 +67,7 @@ export type OperationDefinition =
   | { kind: "multiply_base_attack_per_connected_enchanted_count"; value: number }
   | { kind: "multiply_base_both_and_add_reduction_to_self_numeric"; value: number }
   | { kind: "scale_self_numeric_value"; value: number }
+  | { kind: "scale_target_probability_values"; target: PlacementTarget; value: number }
   | { kind: "deal_damage_from_temp_attack" }
   | { kind: "deal_damage_from_temp_attack_fraction"; value: number }
   | { kind: "deal_damage_from_temp_magic" }
@@ -105,7 +108,8 @@ export type OperationDefinition =
     }
   | { kind: "set_pending_damage_to_zero" }
   | { kind: "set_round_placement_limit"; value: number }
-  | { kind: "add_base_magic_per_last_removed_enchant_count"; value: number };
+  | { kind: "add_base_magic_per_last_removed_enchant_count"; value: number }
+  | { kind: "destroy_each_ally_field_card_with_chance"; value: number };
 
 export type EffectDefinition = {
   id: string;
@@ -119,6 +123,7 @@ export type EffectDefinition = {
 export type CardTextValueBinding = {
   effectId: string;
   operationIndex: number;
+  operationPath?: number[];
   occurrence: number;
   writtenValueKind?: "normal" | "probability" | "enchant";
   affectsValueKind?: "normal" | "probability" | "enchant";

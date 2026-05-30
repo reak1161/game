@@ -1,0 +1,48 @@
+{
+  "id": "dark_doppelganger",
+  "name": "ドッペルゲンガー",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置: 自分の場のカードは{{10%}}の確率で2回発動する",
+  "effects": [
+    {
+      "id": "dark_doppelganger_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host"
+      },
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 10,
+          "operations": [
+            {
+              "kind": "queue_additional_activation_for_source_card"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_doppelganger_placed",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "ability",
+    "probability",
+    "additional"
+  ]
+}
