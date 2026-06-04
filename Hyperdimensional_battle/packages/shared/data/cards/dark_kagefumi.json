@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動: {{30%}}の確率で「基礎攻撃{{+20}}、その後再発動する」",
+  "text": "発動：{{30%}}の確率で「基礎攻撃{{+20}}、その後再発動する」",
   "effects": [
     {
       "id": "dark_kagefumi_activate",

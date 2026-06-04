@@ -55,6 +55,7 @@ export type OperationDefinition =
   | { kind: "multiply_temp_attack"; value: number }
   | { kind: "multiply_temp_magic"; value: number }
   | { kind: "multiply_temp_both"; value: number }
+  | { kind: "multiply_temp_both_by_self_numeric_value"; value: number }
   | { kind: "multiply_base_magic"; value: number }
   | { kind: "multiply_base_both"; value: number }
   | { kind: "multiply_base_both_if_last_destroy_succeeded"; value: number }
@@ -67,6 +68,7 @@ export type OperationDefinition =
   | { kind: "multiply_base_attack_per_connected_enchanted_count"; value: number }
   | { kind: "multiply_base_both_and_add_reduction_to_self_numeric"; value: number }
   | { kind: "scale_self_numeric_value"; value: number }
+  | { kind: "set_self_numeric_value"; value: number }
   | { kind: "scale_target_probability_values"; target: PlacementTarget; value: number }
   | { kind: "deal_damage_from_temp_attack" }
   | { kind: "deal_damage_from_temp_attack_fraction"; value: number }
@@ -99,6 +101,7 @@ export type OperationDefinition =
   | { kind: "schedule_add_base_both_at_next_round_start"; value: number }
   | { kind: "schedule_host_revive_at_round_end"; position: "same_slot" }
   | { kind: "set_activating_card_attribute_to_previous_attribute" }
+  | { kind: "transform_self_to_definition"; definitionId: string }
   | {
       kind: "transform_all_non_attribute_allies_to_attribute";
       excludedAttribute: Attribute;

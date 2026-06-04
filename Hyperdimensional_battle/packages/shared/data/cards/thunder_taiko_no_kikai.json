@@ -1,0 +1,76 @@
+{
+  "id": "thunder_taiko_no_kikai",
+  "name": "太古の機械",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置: 自分の場の『太古の機械』以外のカードが発動したとき誘発\n設置: ラウンド終了時にこのカードの数値を1.1にする\n発動: 一時ステータス{{×1.1}}、発動する度このカードの数値+0.1",
+  "deckEligible": false,
+  "effects": [
+    {
+      "id": "thunder_taiko_no_kikai_trigger",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host_and_definition_is_not",
+        "definitionId": "thunder_taiko_no_kikai"
+      },
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_self"
+        }
+      ]
+    },
+    {
+      "id": "thunder_taiko_no_kikai_round_end",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "set_self_numeric_value",
+          "value": 1.1
+        }
+      ]
+    },
+    {
+      "id": "thunder_taiko_no_kikai_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_both_by_self_numeric_value",
+          "value": 1.1
+        },
+        {
+          "kind": "add_self_numeric_counter",
+          "counter": "taiko_growth",
+          "value": 0.1
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "thunder_taiko_no_kikai_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "thunder",
+    "ability",
+    "repeat",
+    "numeric"
+  ]
+}

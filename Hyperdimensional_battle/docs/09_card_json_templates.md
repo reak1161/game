@@ -317,3 +317,16 @@
   "restrictions": {}
 }
 ```
+## 11. 設置効果の実装メモ
+- `timing: "placed"` で他カードへ持続的に作用する効果は、ソースカードが場から消えたら消える前提で設計する。
+- その種の効果は、対象カードの `counters` や `numericValueMultiplier` を恒久的に直接書き換えない。
+- 推奨:
+- `derived` に一時値を積む
+- persistent aura として毎回再計算する
+- 非推奨:
+- `placed` 効果の解決時に一度だけ他カードの実数値を焼き込むこと
+- 例:
+- `transform_all_non_attribute_allies_to_attribute`
+- `apply_enchant_to_adjacent_cards`
+- `apply_enchant_to_all_ally_field_cards`
+- これらは「場にいる間だけ有効」になっているかを実装時に必ず確認する。

@@ -6,3 +6,5 @@
 - `apps/web/src/App.tsx` と `packages/shared/data/cards/*.json` は表示文言が多いため、編集前後で文字化けの有無を必ず確認すること。
 - Cloudflare デプロイ方針は `docs/13_deployment_strategy.md` を正とすること。
 - 数値系の用語は `docs/03_game_rules_and_engine_spec.md` を正とし、`数値（ノーマル数値） / 確率数値 / カード数値 / エンチャント数値 / ステータス数値 / 数値全体` で統一すること。
+- `placed` の持続効果で他カードへ作用する処理は、ソースカードが場から消えたら必ず消える形にすること。
+- そのため、他カードの実データへ破壊的に数値や属性変更を書き込まない。`derived` か persistent aura の再計算へ寄せること。

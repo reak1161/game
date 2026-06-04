@@ -442,14 +442,33 @@ function getAttributeActivationTotal(player: PlayerState, attribute: Attribute) 
   return player.attributeActivationCounts[attribute] ?? 0;
 }
 
-function isSealSatisfied(player: PlayerState, definition: CardDefinition) {
+function getSealCounterKey(definition: CardDefinition) {
+  if (!definition.seal) {
+    return null;
+  }
+
+  switch (definition.seal.kind) {
+    case "ally_attribute_activation_total_at_least":
+      return `seal_progress_${definition.seal.kind}_${definition.seal.attribute}`;
+  }
+}
+
+function getCardSealProgress(card: CardInstance, definition: CardDefinition) {
+  const key = getSealCounterKey(definition);
+  if (!key) {
+    return 0;
+  }
+  return card.counters?.[key] ?? 0;
+}
+
+function isSealSatisfied(card: CardInstance, definition: CardDefinition) {
   if (!definition.seal) {
     return true;
   }
 
   switch (definition.seal.kind) {
     case "ally_attribute_activation_total_at_least":
-      return getAttributeActivationTotal(player, definition.seal.attribute) >= definition.seal.value;
+      return getCardSealProgress(card, definition) >= definition.seal.value;
   }
 }
 
@@ -458,7 +477,33 @@ function isCardSealed(player: PlayerState, card: CardInstance, cardsById: Record
   if (!definition?.seal) {
     return false;
   }
-  return !isSealSatisfied(player, definition);
+  return !isSealSatisfied(card, definition);
+}
+
+function advanceSealProgressForActivation(player: PlayerState, cardsById: Record<string, CardDefinition>, attribute: Attribute) {
+  for (const card of player.field) {
+    if (card.isInvalidated || card.isDestroyed) {
+      continue;
+    }
+    const definition = cardsById[card.definitionId];
+    if (!definition?.seal) {
+      continue;
+    }
+    if (definition.seal.kind !== "ally_attribute_activation_total_at_least") {
+      continue;
+    }
+    if (definition.seal.attribute !== attribute) {
+      continue;
+    }
+    const counterKey = getSealCounterKey(definition);
+    if (!counterKey) {
+      continue;
+    }
+    card.counters = {
+      ...(card.counters ?? {}),
+      [counterKey]: floorValue((card.counters?.[counterKey] ?? 0) + 1)
+    };
+  }
 }
 
 function getMainTiming(card: CardDefinition) {
@@ -553,7 +598,12 @@ function getProbabilityValueMultiplier(card: CardInstance | null) {
 function getNumericMultiplier(card: CardInstance) {
   const multiplier = card.derived?.numericValueMultiplier;
   const roundBuffMultiplier = card.derived?.roundBuffNumericValueMultiplier;
-  return (typeof multiplier === "number" ? multiplier : 1) * (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1);
+  const fieldTransformMultiplier = card.derived?.fieldTransformNumericValueMultiplier;
+  return (
+    (typeof multiplier === "number" ? multiplier : 1) *
+    (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1) *
+    (typeof fieldTransformMultiplier === "number" ? fieldTransformMultiplier : 1)
+  );
 }
 
 function getScaledValue(value: number, card: CardInstance | null) {
@@ -669,6 +719,27 @@ function scaleCardNumericValue(cardsById: Record<string, CardDefinition>, target
   targetCard.counters = {
     ...preservedCounters,
     merge_numeric: nextValue - baseValue
+  };
+  targetCard.derived = {
+    ...(targetCard.derived ?? {}),
+    numericValueMultiplier: 1
+  };
+  return true;
+}
+
+function setCardNumericValue(cardsById: Record<string, CardDefinition>, targetCard: CardInstance, value: number) {
+  const baseDefinition = cardsById[targetCard.definitionId];
+  const baseValue = baseDefinition ? getFirstNumericOperationBaseValue(baseDefinition) : null;
+  if (baseValue === null) {
+    return false;
+  }
+
+  const preservedCounters = Object.fromEntries(
+    Object.entries(targetCard.counters ?? {}).filter(([key]) => key.startsWith("round_triggered_"))
+  );
+  targetCard.counters = {
+    ...preservedCounters,
+    merge_numeric: floorValue(value - baseValue)
   };
   targetCard.derived = {
     ...(targetCard.derived ?? {}),
@@ -1201,6 +1272,7 @@ function syncPersistentAttributeTransforms(player: PlayerState, cardsById: Recor
   for (const card of player.field) {
     const derived = { ...(card.derived ?? {}) };
     delete derived.fieldAttributeOverride;
+    delete derived.fieldTransformNumericValueMultiplier;
     card.derived = derived;
   }
 
@@ -1227,20 +1299,46 @@ function syncPersistentAttributeTransforms(player: PlayerState, cardsById: Recor
           if (targetCard.attribute === operation.excludedAttribute) {
             continue;
           }
-          const transformTag = `field_transform_${sourceCard.instanceId}_${effect.id}`;
-          if (!targetCard.derived?.[transformTag]) {
-            const multiplier = targetCard.attribute === "none" ? operation.noneMultiplier : operation.otherMultiplier;
-            scaleCardNumericValue(cardsById, targetCard, multiplier);
-            targetCard.derived = {
-              ...(targetCard.derived ?? {}),
-              [transformTag]: true
-            };
-          }
+          const multiplier = targetCard.attribute === "none" ? operation.noneMultiplier : operation.otherMultiplier;
+          const currentMultiplier = targetCard.derived?.fieldTransformNumericValueMultiplier;
           targetCard.derived = {
             ...(targetCard.derived ?? {}),
+            fieldTransformNumericValueMultiplier:
+              floorValue((typeof currentMultiplier === "number" ? currentMultiplier : 1) * multiplier),
             fieldAttributeOverride: operation.targetAttribute
           };
         }
+      }
+    }
+  }
+}
+
+function syncSelfTransformingPlacedCards(player: PlayerState, cardsById: Record<string, CardDefinition>) {
+  for (const sourceCard of player.field) {
+    if (sourceCard.isInvalidated || sourceCard.isDestroyed) {
+      continue;
+    }
+    if (isCardSealed(player, sourceCard, cardsById)) {
+      continue;
+    }
+    const definition = cardsById[sourceCard.definitionId];
+    if (!definition) {
+      continue;
+    }
+    for (const effect of definition.effects.filter((entry) => entry.timing === "placed" && !entry.trigger)) {
+      for (const operation of effect.operations) {
+        if (operation.kind !== "transform_self_to_definition") {
+          continue;
+        }
+        const nextDefinition = cardsById[operation.definitionId];
+        if (!nextDefinition || sourceCard.definitionId === nextDefinition.id) {
+          continue;
+        }
+        sourceCard.definitionId = nextDefinition.id;
+        sourceCard.name = nextDefinition.name;
+        sourceCard.type = nextDefinition.type;
+        sourceCard.attribute = nextDefinition.attribute;
+        sourceCard.text = nextDefinition.text;
       }
     }
   }
@@ -1371,6 +1469,7 @@ function syncPersistentPlacedAuras(
     }
   }
 
+  syncSelfTransformingPlacedCards(player, cardsById);
   syncPersistentAttributeTransforms(player, cardsById);
   syncHostEnchantNumericModifiers(player, cardsById);
   syncRoundBuffFieldModifiers(player, cardsById);
@@ -1772,19 +1871,43 @@ function resolveImmediateAdditionalActivations(
     return;
   }
 
+  const previousResolvingInstanceId = state.pendingResolution.currentResolvingInstanceId;
+  let keepCurrentResolvingCard = false;
+
   while (state.pendingResolution.cursor < state.pendingResolution.queue.length) {
     const activationTask = state.pendingResolution.queue[state.pendingResolution.cursor];
     if (!activationTask?.isAdditional) {
       break;
     }
 
+    const resolvingCard = findCardByInstanceId(player, activationTask.instanceId);
+    if (!resolvingCard) {
+      state.pendingResolution.cursor += 1;
+      continue;
+    }
+    if (isCardSealed(player, resolvingCard, cardsById)) {
+      addLog(state, {
+        level: "info",
+        code: "CARD_SKIPPED_SEALED",
+        message: `${resolvingCard.name} は封印中のためスキップしました。`
+      });
+      state.pendingResolution.cursor += 1;
+      continue;
+    }
+
+    state.pendingResolution.currentResolvingInstanceId = resolvingCard.instanceId;
     const targetKeys = getCurrentResolutionTargetKeys(state);
     if (targetKeys.length > 0) {
+      keepCurrentResolvingCard = true;
       break;
     }
 
     state.pendingResolution.cursor += 1;
     resolveSingleCard(state, player, cardsById, activationTask, {});
+  }
+
+  if (!keepCurrentResolvingCard && state.pendingResolution) {
+    state.pendingResolution.currentResolvingInstanceId = previousResolvingInstanceId;
   }
 }
 
@@ -1902,6 +2025,12 @@ function resolveOperation(
       player.tempAttack = floorValue(player.tempAttack * scaledValue!);
       player.tempMagic = floorValue(player.tempMagic * scaledValue!);
       break;
+    case "multiply_temp_both_by_self_numeric_value": {
+      const multiplier = scaledValue!;
+      player.tempAttack = floorValue(player.tempAttack * multiplier);
+      player.tempMagic = floorValue(player.tempMagic * multiplier);
+      break;
+    }
     case "multiply_base_magic":
       player.baseMagic = floorValue(player.baseMagic * scaledValue!);
       player.tempMagic = floorValue(player.tempMagic * scaledValue!);
@@ -2004,6 +2133,16 @@ function resolveOperation(
           level: "info",
           code: "CARD_COUNTER_UPDATED",
           message: `${resolvingCard.name}: カード数値を ×${formatLogNumber(operation.value)} にしました。`
+        });
+      }
+      break;
+    }
+    case "set_self_numeric_value": {
+      if (setCardNumericValue(cardsById, resolvingCard, operation.value)) {
+        addLog(state, {
+          level: "info",
+          code: "CARD_COUNTER_UPDATED",
+          message: `${resolvingCard.name}: カード数値を ${formatLogNumber(operation.value)} にしました。`
         });
       }
       break;
@@ -2387,6 +2526,24 @@ function resolveOperation(
       }
       break;
     }
+    case "transform_self_to_definition": {
+      const nextDefinition = cardsById[operation.definitionId];
+      if (!nextDefinition) {
+        break;
+      }
+      const previousName = resolvingCard.name;
+      resolvingCard.definitionId = nextDefinition.id;
+      resolvingCard.name = nextDefinition.name;
+      resolvingCard.type = nextDefinition.type;
+      resolvingCard.attribute = nextDefinition.attribute;
+      resolvingCard.text = nextDefinition.text;
+      addLog(state, {
+        level: "info",
+        code: "CARD_TRANSFORMED",
+        message: `${previousName}: ${nextDefinition.name} に変化しました。`
+      });
+      break;
+    }
     case "transform_all_non_attribute_allies_to_attribute":
       syncPersistentPlacedAuras(state, player, cardsById, { suppressLogs: true, sourceCardInstanceId: resolvingCard.instanceId });
       break;
@@ -2417,6 +2574,7 @@ function resolveOperation(
     multiply_temp_attack: "一時攻撃変化",
     multiply_temp_magic: "一時魔法変化",
     multiply_temp_both: "一時ステータス変化",
+    multiply_temp_both_by_self_numeric_value: "カード数値参照の一時ステータス変化",
     multiply_base_magic: "基礎魔法倍化",
     multiply_base_both: "基礎ステータス倍化",
     multiply_base_both_if_last_destroy_succeeded: "破壊成功時の強化",
@@ -2429,6 +2587,7 @@ function resolveOperation(
     multiply_base_attack_per_connected_enchanted_count: "連結エンチャント参照の基礎攻撃変化",
     multiply_base_both_and_add_reduction_to_self_numeric: "基礎ステータス減衰変化",
     scale_self_numeric_value: "カード数値倍率変化",
+    set_self_numeric_value: "カード数値設定",
     scale_target_probability_values: "確率数値変化",
     deal_damage_from_temp_attack: "攻撃ダメージ",
     deal_damage_from_temp_attack_fraction: "分割攻撃ダメージ",
@@ -2462,6 +2621,7 @@ function resolveOperation(
     schedule_add_base_both_at_next_round_start: "次ラウンド予約",
     schedule_host_revive_at_round_end: "復活予約",
     set_activating_card_attribute_to_previous_attribute: "属性変化",
+    transform_self_to_definition: "自己変化",
     transform_all_non_attribute_allies_to_attribute: "属性変換",
     set_pending_damage_to_zero: "ダメージ無効化",
     set_round_placement_limit: "配置上限変化"
@@ -2920,13 +3080,14 @@ function resolveSingleCard(
     activationTask
   });
   applyRolePreActivationEffect(context);
-  applyFutureChainMultipliers(context);
-  updateChainState(state, resolvingCard);
-  const activationAttribute = getEffectiveCardAttribute(resolvingCard);
-  player.attributeActivationCounts[activationAttribute] = (player.attributeActivationCounts[activationAttribute] ?? 0) + 1;
+    applyFutureChainMultipliers(context);
+    updateChainState(state, resolvingCard);
+    const activationAttribute = getEffectiveCardAttribute(resolvingCard);
+    player.attributeActivationCounts[activationAttribute] = (player.attributeActivationCounts[activationAttribute] ?? 0) + 1;
+    advanceSealProgressForActivation(player, cardsById, activationAttribute);
 
-  addReplay(state, {
-    type: "CARD_ACTIVATED",
+    addReplay(state, {
+      type: "CARD_ACTIVATED",
     playerId: player.playerId,
     instanceId: resolvingCard.instanceId,
     attribute: activationAttribute,

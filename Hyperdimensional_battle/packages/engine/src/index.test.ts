@@ -420,6 +420,10 @@ describe("engine", () => {
     const fieldIcicle = afterResolve.players[0].field.find((card) => card.instanceId === icicle.instanceId);
     expect(fieldWall?.enchantments.some((entry) => entry.definitionId === "enchant_toushou")).toBe(true);
     expect(fieldIcicle?.enchantments.some((entry) => entry.definitionId === "enchant_toushou")).toBe(true);
+
+    const afterFinalize = finalizeRound(afterResolve, [curse.instanceId, icicle.instanceId]);
+    const remainingWall = afterFinalize.players[0].field.find((card) => card.instanceId === wall.instanceId);
+    expect(remainingWall?.enchantments.some((entry) => entry.definitionId === "enchant_toushou")).toBe(false);
   });
 
   it("tsuranaru tsurara multiplies base attack for connected enchanted ice cards", () => {
@@ -472,10 +476,11 @@ describe("engine", () => {
     expect(advancedHybrid.counters?.cold_reaction_gain).toBe(13);
   });
 
-  it("henden shisetsu turns non-thunder allies into thunder and scales their numeric value once", () => {
+  it("henden shisetsu only transforms and scales allies while it remains on the field", () => {
     const game = createGame();
-    ensureCardsInHand(game, ["none_kintore", "thunder_henden_shisetsu"]);
+    ensureCardsInHand(game, ["none_kintore", "none_punch", "thunder_henden_shisetsu"]);
     const kintore = game.players[0].hand.find((card) => card.definitionId === "none_kintore")!;
+    const punch = game.players[0].hand.find((card) => card.definitionId === "none_punch")!;
     const facility = game.players[0].hand.find((card) => card.definitionId === "thunder_henden_shisetsu")!;
 
     const afterResolve = applyRoundPlan(game, {
@@ -483,13 +488,19 @@ describe("engine", () => {
       mulliganInstanceIds: [],
       placements: [
         { handInstanceId: kintore.instanceId, order: 0, targetSelections: {} },
-        { handInstanceId: facility.instanceId, order: 1, targetSelections: {} }
+        { handInstanceId: punch.instanceId, order: 1, targetSelections: {} },
+        { handInstanceId: facility.instanceId, order: 2, targetSelections: {} }
       ]
     });
 
     const fieldKintore = afterResolve.players[0].field.find((card) => card.instanceId === kintore.instanceId)!;
     expect(fieldKintore.derived?.fieldAttributeOverride).toBe("thunder");
-    expect(fieldKintore.counters?.merge_numeric).toBe(-6);
+    expect(fieldKintore.derived?.fieldTransformNumericValueMultiplier).toBe(0.8);
+
+    const afterFinalize = finalizeRound(afterResolve, [facility.instanceId, punch.instanceId]);
+    const remainingKintore = afterFinalize.players[0].field.find((card) => card.instanceId === kintore.instanceId)!;
+    expect(remainingKintore.derived?.fieldAttributeOverride).toBeUndefined();
+    expect(remainingKintore.derived?.fieldTransformNumericValueMultiplier).toBeUndefined();
   });
 
   it("does not activate cards created to the left of the current resolving card during the same round", () => {
@@ -966,6 +977,57 @@ describe("engine", () => {
     expect(getCurrentResolutionTargetKeys(afterKagerou)).toEqual([]);
   });
 
+  it("stops immediate additional activation resolution when the next additional card needs a target", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["fire_karyoku_hatsuden", "wind_amakakeru_tsubasa", "none_hybrid"]);
+    const karyoku = game.players[0].hand.find((entry) => entry.definitionId === "fire_karyoku_hatsuden");
+    const tsubasa = game.players[0].hand.find((entry) => entry.definitionId === "wind_amakakeru_tsubasa");
+    const hybrid = game.players[0].hand.find((entry) => entry.definitionId === "none_hybrid");
+    expect(karyoku).toBeDefined();
+      expect(tsubasa).toBeDefined();
+      expect(hybrid).toBeDefined();
+
+      karyoku!.counters = {
+        ...(karyoku!.counters ?? {}),
+        seal_progress_ally_attribute_activation_total_at_least_fire: 10
+      };
+
+    const started = startRoundResolution(game, [karyoku!.instanceId, tsubasa!.instanceId, hybrid!.instanceId]);
+    expect(getCurrentResolutionCard(started)?.definitionId).toBe("fire_karyoku_hatsuden");
+
+    const afterKaryoku = resolveNextCard(started, {});
+    expect(getCurrentResolutionCard(afterKaryoku)?.definitionId).toBe("wind_amakakeru_tsubasa");
+    expect(getCurrentResolutionTargetKeys(afterKaryoku)).toEqual(["apply_enchant"]);
+  });
+
+  it("hyakka ryoran can queue into karyoku hatsuden and still stop on amakakeru tsubasa target selection", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["none_hyakka_ryoran", "fire_karyoku_hatsuden", "wind_amakakeru_tsubasa", "none_hybrid"]);
+    const hyakka = game.players[0].hand.find((entry) => entry.definitionId === "none_hyakka_ryoran");
+    const karyoku = game.players[0].hand.find((entry) => entry.definitionId === "fire_karyoku_hatsuden");
+    const tsubasa = game.players[0].hand.find((entry) => entry.definitionId === "wind_amakakeru_tsubasa");
+    const hybrid = game.players[0].hand.find((entry) => entry.definitionId === "none_hybrid");
+    expect(hyakka).toBeDefined();
+    expect(karyoku).toBeDefined();
+    expect(tsubasa).toBeDefined();
+    expect(hybrid).toBeDefined();
+
+    game.players[0].attributeActivationCounts.fire = 10;
+    game.rngSeed = "hyakka-karyoku-tsubasa";
+
+    const started = startRoundResolution(game, [
+      hyakka!.instanceId,
+      karyoku!.instanceId,
+      tsubasa!.instanceId,
+      hybrid!.instanceId
+    ]);
+
+    const afterHyakka = resolveNextCard(started, {});
+    expect(afterHyakka.pendingResolution).not.toBeNull();
+    expect(getCurrentResolutionCard(afterHyakka)?.definitionId).toBe("wind_amakakeru_tsubasa");
+    expect(getCurrentResolutionTargetKeys(afterHyakka)).toEqual(["apply_enchant"]);
+  });
+
   it("logs which effect queued an additional activation", () => {
     const game = createGame();
     ensureCardsInHand(game, ["none_hybrid", "thunder_vortex"]);
@@ -998,6 +1060,80 @@ describe("engine", () => {
           entry.message.includes("追加で発動")
       )
     ).toBe(true);
+  });
+
+  it("kowareta kikai transforms into taiko no kikai after its seal is satisfied", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["thunder_kowareta_kikai", "thunder_static", "none_punch"]);
+    const broken = game.players[0].hand.find((entry) => entry.definitionId === "thunder_kowareta_kikai");
+    const thunderStatic = game.players[0].hand.find((entry) => entry.definitionId === "thunder_static");
+    const punch = game.players[0].hand.find((entry) => entry.definitionId === "none_punch");
+    expect(broken).toBeDefined();
+    expect(thunderStatic).toBeDefined();
+    expect(punch).toBeDefined();
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [
+        { handInstanceId: broken!.instanceId, order: 0, targetSelections: {} },
+        { handInstanceId: thunderStatic!.instanceId, order: 1, targetSelections: {} },
+        { handInstanceId: punch!.instanceId, order: 2, targetSelections: {} }
+      ]
+    });
+    const brokenOnField = afterResolve.players[0].field.find((card) => card.instanceId === broken!.instanceId);
+    expect(brokenOnField?.definitionId).toBe("thunder_kowareta_kikai");
+    expect(brokenOnField?.counters?.seal_progress_ally_attribute_activation_total_at_least_thunder).toBe(1);
+
+    brokenOnField!.counters = {
+      ...(brokenOnField!.counters ?? {}),
+      seal_progress_ally_attribute_activation_total_at_least_thunder: 10
+    };
+
+    const advanced = finalizeRoundAndAdvance(afterResolve, [thunderStatic!.instanceId, punch!.instanceId]);
+    const nextRound = startRoundResolution(
+      advanced,
+      advanced.players[0].field.map((card) => card.instanceId)
+    );
+    expect(nextRound.players[0].field.some((card) => card.definitionId === "thunder_taiko_no_kikai")).toBe(true);
+  });
+
+  it("taiko no kikai is not included in the normal deck pool", () => {
+    const taikoDefinition = sampleCards.find((entry) => entry.id === "thunder_taiko_no_kikai");
+    expect(taikoDefinition?.deckEligible).toBe(false);
+  });
+
+  it("taiko no kikai uses its current numeric value for repeated activations and resets at round end", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["thunder_kowareta_kikai", "none_hybrid"]);
+    const taiko = game.players[0].hand.find((entry) => entry.definitionId === "thunder_kowareta_kikai");
+    const hybrid = game.players[0].hand.find((entry) => entry.definitionId === "none_hybrid");
+    expect(taiko).toBeDefined();
+    expect(hybrid).toBeDefined();
+    taiko!.counters = {
+      ...(taiko!.counters ?? {}),
+      seal_progress_ally_attribute_activation_total_at_least_thunder: 10
+    };
+
+      const started = startRoundResolution(game, [taiko!.instanceId, hybrid!.instanceId]);
+  
+      const afterFirstTaiko = resolveNextCard(started, {});
+      const taikoAfterFirstActivation = afterFirstTaiko.players[0].field.find((entry) => entry.definitionId === "thunder_taiko_no_kikai");
+      expect(afterFirstTaiko.players[0].tempAttack).toBeGreaterThan(50);
+      expect((taikoAfterFirstActivation?.counters?.taiko_growth ?? 0)).toBeGreaterThan(0);
+
+    const afterHybrid = resolveNextCard(afterFirstTaiko, {});
+    expect(
+      afterHybrid.log.some(
+        (entry) => entry.code === "ADDITIONAL_ACTIVATION_QUEUED" && entry.message.includes("自己誘発")
+      )
+    ).toBe(true);
+
+      const afterSecondTaiko = resolveNextCard(afterHybrid, {});
+      expect(afterSecondTaiko.players[0].tempAttack).toBeGreaterThan(afterHybrid.players[0].tempAttack);
+
+    const resolvedTaiko = afterSecondTaiko.players[0].field.find((entry) => entry.definitionId === "thunder_taiko_no_kikai");
+    expect(resolvedTaiko?.counters?.merge_numeric ?? 0).toBe(0);
   });
 
   it("vortex does not trigger its own placed effect on self activation", () => {
@@ -1604,7 +1740,6 @@ describe("engine", () => {
   it("sealed karyoku hatsuden does not grant extra activations until 10 fire activations are reached", () => {
     const game = createGame();
     ensureCardsInHand(game, ["fire_karyoku_hatsuden", "none_punch"]);
-    game.players[0].attributeActivationCounts.fire = 9;
     const hatsuden = game.players[0].hand.find((card) => card.definitionId === "fire_karyoku_hatsuden");
     const punch = game.players[0].hand.find((card) => card.definitionId === "none_punch");
     expect(hatsuden).toBeDefined();
@@ -1632,16 +1767,24 @@ describe("engine", () => {
     );
     expect(punchActivations).toHaveLength(1);
     expect(afterResolve.log.some((entry) => entry.code === "CARD_SKIPPED_SEALED")).toBe(true);
+    expect(
+      afterResolve.players[0].field.find((card) => card.instanceId === hatsuden!.instanceId)?.counters
+        ?.seal_progress_ally_attribute_activation_total_at_least_fire ?? 0
+    ).toBe(0);
   });
 
   it("unsealed karyoku hatsuden grants one additional activation to all field cards at round start", () => {
     const game = createGame();
     ensureCardsInHand(game, ["fire_karyoku_hatsuden", "none_punch"]);
-    game.players[0].attributeActivationCounts.fire = 10;
     const hatsuden = game.players[0].hand.find((card) => card.definitionId === "fire_karyoku_hatsuden");
     const punch = game.players[0].hand.find((card) => card.definitionId === "none_punch");
     expect(hatsuden).toBeDefined();
     expect(punch).toBeDefined();
+
+    hatsuden!.counters = {
+      ...(hatsuden!.counters ?? {}),
+      seal_progress_ally_attribute_activation_total_at_least_fire: 10
+    };
 
     const afterResolve = applyRoundPlan(game, {
       round: 1,

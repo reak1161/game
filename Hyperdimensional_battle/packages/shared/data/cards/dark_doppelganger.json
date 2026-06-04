@@ -6,7 +6,7 @@
   "timings": [
     "placed"
   ],
-  "text": "設置: 自分の場のカードは{{10%}}の確率で2回発動する",
+  "text": "設置：自分の場のカードは{{10%}}の確率で2回発動する",
   "effects": [
     {
       "id": "dark_doppelganger_placed",

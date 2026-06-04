@@ -178,6 +178,32 @@ input {
   gap: 16px;
 }
 
+.multi-home-entry-panel {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(241, 245, 249, 0.84);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.multi-home-entry-panel p {
+  color: #475569;
+}
+
+.multi-home-entry-row,
+.multi-lobby-share-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.multi-lobby-share-row {
+  align-items: center;
+}
+
 .solo-seed-input {
   display: grid;
   gap: 4px;
@@ -203,6 +229,69 @@ input {
   align-items: end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.multi-room-panel,
+.match-placeholder-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.multi-lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.multi-lobby-seed-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.multi-player-list {
+  display: grid;
+  gap: 10px;
+}
+
+.multi-player-list.compact {
+  gap: 8px;
+}
+
+.multi-player-row {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(241, 245, 249, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.multi-player-row.is-self {
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+}
+
+.multi-player-row-main {
+  display: grid;
+  gap: 8px;
+}
+
+.multi-player-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.multi-player-row-tags span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.95);
+  color: #334155;
+  font-size: 12px;
+}
+
+.error-text {
+  color: #b91c1c;
 }
 
 .ranking-panel {
@@ -876,7 +965,7 @@ input {
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   flex-wrap: nowrap;
   padding: 4px 0 8px;
   scrollbar-width: thin;
@@ -987,6 +1076,7 @@ input {
   padding: 0;
   border-radius: 16px;
   isolation: isolate;
+  z-index: 0;
 }
 
 .connected-field-group::before,
@@ -996,11 +1086,12 @@ input {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  z-index: 0;
 }
 
 .connected-field-group::before {
-  inset: -6px;
-  border: 2px solid var(--connection-color, rgba(255, 255, 255, 0.72));
+  inset: -8px;
+  border: 3px solid var(--connection-color, rgba(255, 255, 255, 0.72));
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--connection-color, #fff) 28%, transparent),
     0 0 24px color-mix(in srgb, var(--connection-color, #fff) 42%, transparent);
@@ -1008,7 +1099,7 @@ input {
 }
 
 .connected-field-group::after {
-  inset: -6px;
+  inset: -8px;
   background:
     radial-gradient(circle at 10% 30%, color-mix(in srgb, var(--connection-color, #fff) 92%, transparent) 0 2px, transparent 3px),
     radial-gradient(circle at 85% 24%, color-mix(in srgb, var(--connection-color, #fff) 88%, transparent) 0 2px, transparent 3px),
@@ -1049,6 +1140,11 @@ input {
 
 .connected-field-group[data-attribute="dark"] {
   --connection-color: #7c3aed;
+}
+
+.connected-field-group > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card-chip {
@@ -1189,6 +1285,13 @@ input {
 
 .card-chip.is-dragging {
   opacity: 0.92;
+}
+
+.card-chip.is-drag-origin-empty {
+  opacity: 0;
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
 }
 
 .card-chip.is-selected {
@@ -2427,35 +2530,37 @@ button.card-text-reference-chip {
 
 .battle-frame .field-panel {
   min-height: 0;
-  padding: 12px;
+  padding: 8px 12px 12px;
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 0;
   margin-right: 38px;
+  overflow: visible;
 }
 
 .battle-frame .hand-panel {
   min-height: 0;
-  padding: 12px;
+  padding: 8px 12px 12px;
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 0;
   margin-right: 38px;
+  overflow: visible;
 }
 
 .battle-frame .field-panel .horizontal-card-row {
-  height: 190px;
-  min-height: 190px;
-  max-height: 190px;
-  padding-top: 4px;
+  height: 214px;
+  min-height: 214px;
+  max-height: 214px;
+  padding-top: 10px;
   padding-bottom: 12px;
 }
 
 .battle-frame .hand-panel .horizontal-card-row {
-  height: 190px;
-  min-height: 190px;
-  max-height: 190px;
-  padding-top: 4px;
+  height: 214px;
+  min-height: 214px;
+  max-height: 214px;
+  padding-top: 10px;
   padding-bottom: 12px;
 }
 
@@ -2487,7 +2592,7 @@ button.card-text-reference-chip {
   position: absolute;
   top: 0;
   right: 0;
-  width: 394px;
+  width: 473px;
   height: 800px;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
@@ -2545,6 +2650,140 @@ button.card-text-reference-chip {
   overflow-y: auto;
 }
 
+.match-frame {
+  position: relative;
+}
+
+.match-status-panel,
+.match-action-panel,
+.match-placeholder-panel {
+  overflow: hidden;
+}
+
+.match-status-header,
+.match-status-actions,
+.match-player-card-top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.match-status-actions {
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.match-placeholder-body {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.match-edge-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 473px;
+  height: 800px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  transform: translateX(calc(100% - 30px));
+  transition: transform 180ms ease;
+  z-index: 32;
+  overflow: hidden;
+}
+
+.match-edge-drawer:hover,
+.match-edge-drawer:focus-within {
+  transform: translateX(0);
+}
+
+.match-edge-drawer-log {
+  z-index: 32;
+}
+
+.match-edge-drawer-player {
+  z-index: 31;
+}
+
+.match-edge-drawer-player:hover,
+.match-edge-drawer-player:focus-within {
+  z-index: 33;
+}
+
+.match-edge-drawer-handle {
+  display: grid;
+  place-items: center;
+  color: #eff6ff;
+  border-radius: 18px 0 0 18px;
+  border: 1px solid rgba(30, 64, 175, 0.54);
+  border-right: none;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  user-select: none;
+}
+
+.match-edge-drawer-log .match-edge-drawer-handle {
+  height: 400px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.92), rgba(29, 78, 216, 0.92));
+}
+
+.match-edge-drawer-player .match-edge-drawer-handle {
+  align-self: start;
+  margin-top: 400px;
+  height: 400px;
+  background: linear-gradient(180deg, rgba(14, 116, 144, 0.92), rgba(21, 94, 117, 0.92));
+  border-color: rgba(8, 145, 178, 0.54);
+}
+
+.match-edge-drawer-panel {
+  align-self: stretch;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.match-edge-drawer:hover .match-edge-drawer-panel,
+.match-edge-drawer:focus-within .match-edge-drawer-panel {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.match-edge-drawer-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-right: 2px;
+}
+
+.match-player-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(241, 245, 249, 0.94);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  display: grid;
+  gap: 8px;
+}
+
+.match-player-card.is-self {
+  border-color: rgba(8, 145, 178, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.2);
+}
+
 .battle-frame .transient-card-tray {
   left: 12px;
   right: 12px;
@@ -2559,6 +2798,10 @@ button.card-text-reference-chip {
 
   .status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .multi-lobby-grid {
+    grid-template-columns: 1fr;
   }
 
   .intro-header {

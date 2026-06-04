@@ -39,6 +39,17 @@ import {
   type ReplayEvent,
   type RoundBuffDefinition
 } from "@hyperdimensional-battle/shared";
+import {
+  getOrCreateMultiPlayerId,
+  joinRoom,
+  leaveRoom,
+  loadMultiPlayerName,
+  openRoomSocket,
+  saveMultiPlayerName,
+  startRoomMatch,
+  type MultiRoomState,
+  updateRoomPlayer
+} from "./multiplayer";
 import thunderElectricIllustration from "./assets/card-illustrations/thunder_electric.png";
 import thunderOverchargeIllustration from "./assets/card-illustrations/thunder_overcharge.png";
 import thunderShockIllustration from "./assets/card-illustrations/thunder_shock.png";
@@ -157,6 +168,8 @@ type SoloRankingEntry = {
   completedAt: string;
 };
 
+type MultiConnectionState = "idle" | "connecting" | "connected" | "error";
+
 const STATUS_KEYS = ["baseAttack", "tempAttack", "baseMagic", "tempMagic", "scoreThisRound", "totalScore"] as const;
 type StatusKey = (typeof STATUS_KEYS)[number];
 const ATTRIBUTE_ORDER: Attribute[] = ["none", "fire", "water", "ice", "wind", "thunder", "earth", "dark"];
@@ -241,6 +254,14 @@ function sanitizeRouteToken(value: string | undefined | null, fallback: string) 
   }
   const normalized = decodeURIComponent(value).trim().replace(/[^0-9A-Za-z_-]/g, "").slice(0, 32);
   return normalized.length > 0 ? normalized : fallback;
+}
+
+function formatMultiRoomError(caught: unknown) {
+  const message = caught instanceof Error ? caught.message : String(caught ?? "");
+  if (/failed to fetch/i.test(message) || /networkerror/i.test(message)) {
+    return "ルームサーバーに接続できません。マルチ用 worker のデプロイと VITE_ROOM_WORKER_URL を確認してください。";
+  }
+  return message || "ルーム通信に失敗しました。";
 }
 
 function parseAppRoute() {
@@ -652,7 +673,12 @@ function getCardNumericMultiplier(card: CardInstance | null | undefined) {
   }
   const multiplier = card.derived?.numericValueMultiplier;
   const roundBuffMultiplier = card.derived?.roundBuffNumericValueMultiplier;
-  return (typeof multiplier === "number" ? multiplier : 1) * (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1);
+  const fieldTransformMultiplier = card.derived?.fieldTransformNumericValueMultiplier;
+  return (
+    (typeof multiplier === "number" ? multiplier : 1) *
+    (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1) *
+    (typeof fieldTransformMultiplier === "number" ? fieldTransformMultiplier : 1)
+  );
 }
 
 function getCardHostEnchantNumericBonus(card: CardInstance | null | undefined) {
@@ -676,76 +702,54 @@ function formatCardTextNumber(value: number) {
 }
 
 function formatMarkedCardTextNumber(template: string, value: number) {
+  const multiplySymbol = "×";
+  const timesSuffix = "倍";
   const hasPlusPrefix = template.startsWith("+");
-  const hasMultiplyPrefix = template.startsWith("×");
-  const hasTimesSuffix = template.endsWith("倍");
+  const hasMultiplyPrefix = template.startsWith(multiplySymbol);
+  const hasTimesSuffix = template.endsWith(timesSuffix);
   let formatted = formatCardTextNumber(value);
 
   if (hasPlusPrefix && value > 0) {
     formatted = `+${formatted}`;
   } else if (hasMultiplyPrefix) {
-    formatted = `×${formatted}`;
+    formatted = `${multiplySymbol}${formatted}`;
   }
 
   if (hasTimesSuffix) {
-    formatted = `${formatted}倍`;
+    formatted = `${formatted}${timesSuffix}`;
   }
 
   return formatted;
 }
 
 function formatEffectText(text: string) {
-  return text.replace(/((?:発動|設置|消費|誘発|追加効果|ラウンドバフ):)/g, "\n$1").replace(/^\n/, "");
+  return text
+    .replace(/((?:発動：|設置：|消費：|封印：|ラウンド終了時：))/g, "\n$1")
+    .replace(/^\n/, "");
 }
 
-const CARD_TEXT_REFERENCE_PATTERN = /[『「]([^』」]+)[』」]/g;
+const CARD_TEXT_REFERENCE_PATTERN = /『([^』]+)』/g;
 
 function formatMarkedProbabilityAwareTextNumber(template: string, value: number) {
-  const hasPlusPrefix = template.startsWith("+");
-  const hasMultiplyPrefix = template.startsWith("×");
-  const hasTimesSuffix = template.endsWith("倍");
-  const hasPercentSuffix = template.endsWith("%") || template.endsWith("％");
-  let formatted = formatCardTextNumber(value);
+  const percentSuffix = "%";
+  let formatted = formatMarkedCardTextNumber(template, value);
 
-  if (hasPlusPrefix && value > 0) {
-    formatted = `+${formatted}`;
-  } else if (hasMultiplyPrefix) {
-    formatted = `×${formatted}`;
-  }
-
-  if (hasTimesSuffix) {
-    formatted = `${formatted}倍`;
-  }
-
-  if (hasPercentSuffix) {
-    formatted = `${formatted}${template.endsWith("％") ? "％" : "%"}`;
+  if (template.endsWith(percentSuffix) && !formatted.endsWith(percentSuffix)) {
+    formatted = `${formatted}${percentSuffix}`;
   }
 
   return formatted;
 }
 
 function formatMarkedCardTextNumberSafe(template: string, value: number) {
-  const hasPlusPrefix = template.startsWith("+");
-  const hasMultiplyPrefix = template.startsWith("×");
-  const hasTimesSuffix = template.endsWith("倍");
-  let formatted = formatCardTextNumber(value);
-
-  if (hasPlusPrefix && value > 0) {
-    formatted = `+${formatted}`;
-  } else if (hasMultiplyPrefix) {
-    formatted = `×${formatted}`;
-  }
-
-  if (hasTimesSuffix) {
-    formatted = `${formatted}倍`;
-  }
-
-  return formatted;
+  return formatMarkedCardTextNumber(template, value);
 }
 
 function formatEffectTextSafe(text: string) {
-  return text.replace(/((?:発動|設置|消費|封印|誘発|追加効果|ラウンドバフ):)/g, "\n$1").replace(/^\n/, "");
+  return formatEffectText(text);
 }
+
+
 
 function renderPlainNumericAdjustedTextSegmentSafe(
   text: string,
@@ -876,15 +880,16 @@ type CardTextRenderOptions = {
   renderReferencePopup?: (definitionId: string) => ReactNode;
 };
 
-function getSealProgress(definition: CardDefinition | undefined, player?: PlayerState | null) {
-  if (!definition?.seal || !player) {
+function getSealProgress(definition: CardDefinition | undefined, player?: PlayerState | null, card?: CardInstance | null) {
+  if (!definition?.seal || !player || !card) {
     return null;
   }
 
   switch (definition.seal.kind) {
     case "ally_attribute_activation_total_at_least":
+      const counterKey = `seal_progress_${definition.seal.kind}_${definition.seal.attribute}`;
       return {
-        current: player.attributeActivationCounts[definition.seal.attribute] ?? 0,
+        current: card.counters?.[counterKey] ?? 0,
         target: definition.seal.value
       };
   }
@@ -1096,7 +1101,7 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
     }
   >();
   const definition = card ? cardMap[card.definitionId] : options?.definitionId ? cardMap[options.definitionId] : undefined;
-  const sealProgress = getSealProgress(definition, options?.player);
+  const sealProgress = getSealProgress(definition, options?.player, card);
   const bindings = definition?.textValueBindings ?? [];
   const numericBonus = card ? getCardNumericBonus(card) : 0;
   const numericMultiplier = card ? getCardNumericMultiplier(card) : 1;
@@ -1285,7 +1290,13 @@ export function App() {
   const [appScreen, setAppScreen] = useState<AppScreen>(initialRoute.screen);
   const [soloSeed, setSoloSeed] = useState(initialRoute.soloSeed);
   const [lobbyId, setLobbyId] = useState(initialRoute.lobbyId);
+  const [multiLobbyEntryId, setMultiLobbyEntryId] = useState(initialRoute.lobbyId);
   const [multiSeed, setMultiSeed] = useState(createDefaultSoloSeed());
+  const [multiRoomState, setMultiRoomState] = useState<MultiRoomState | null>(null);
+  const [multiConnectionState, setMultiConnectionState] = useState<MultiConnectionState>("idle");
+  const [multiConnectionError, setMultiConnectionError] = useState<string | null>(null);
+  const [multiPlayerId] = useState(() => getOrCreateMultiPlayerId());
+  const [multiPlayerName, setMultiPlayerName] = useState(() => loadMultiPlayerName());
   const [selectedRoleId, setSelectedRoleId] = useState(sampleRoles[0]?.id ?? "");
   const [game, setGame] = useState<LocalGameState | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -1325,6 +1336,7 @@ export function App() {
   const previousStatusRef = useRef<StatSnapshot | null>(null);
   const particleTimeoutIdsRef = useRef<number[]>([]);
   const floatingTimeoutIdsRef = useRef<number[]>([]);
+  const gameRef = useRef<LocalGameState | null>(null);
   const statusPanelRef = useRef<HTMLElement | null>(null);
   const placementRowRef = useRef<HTMLDivElement | null>(null);
   const autoScrollFrameRef = useRef<number | null>(null);
@@ -1334,14 +1346,36 @@ export function App() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const activationToneCountRef = useRef(0);
   const savedRankingGameIdsRef = useRef(new Set<string>());
+  const multiSocketRef = useRef<WebSocket | null>(null);
 
   const player = game?.players[0] ?? null;
+  const latestHoveredCard = useMemo(() => {
+    if (!hoveredCard) {
+      return null;
+    }
+
+    return (
+      player?.field.find((card) => card.instanceId === hoveredCard.card.instanceId) ??
+      player?.hand.find((card) => card.instanceId === hoveredCard.card.instanceId) ??
+      hoveredCard.card
+    );
+  }, [hoveredCard, player]);
   const pendingDolphinFinalAction =
     game?.pendingFinalAction?.kind === "dolphin_duplicate" ? game.pendingFinalAction : null;
   const pendingRoundBuffChoice = game?.pendingRoundBuffChoice ?? null;
   const activeRoleId = game ? player?.roleId ?? selectedRoleId : selectedRoleId;
   const activeRole = roleMap[activeRoleId];
   const selectedRole = roleMap[selectedRoleId];
+  const currentMultiPlayer = useMemo(
+    () => multiRoomState?.players.find((entry) => entry.playerId === multiPlayerId) ?? null,
+    [multiRoomState, multiPlayerId]
+  );
+  const isMultiHost = multiRoomState?.hostPlayerId === multiPlayerId;
+  const multiPlayers = multiRoomState?.players ?? [];
+  const sharedMultiSeed = multiRoomState?.seed || multiSeed;
+  const multiRoomLogEntries = useMemo(() => (multiRoomState?.log ? [...multiRoomState.log].reverse() : []), [multiRoomState?.log]);
+  const allMultiPlayersReady = multiPlayers.length > 0 && multiPlayers.every((entry) => entry.ready);
+  const canStartMultiMatch = Boolean(isMultiHost && multiPlayers.length >= 2 && allMultiPlayersReady);
   const roundBuffCatalog = game?.roundBuffCatalog ?? sampleRoundBuffs;
   const roundBuffMap = useMemo(
     () => Object.fromEntries(roundBuffCatalog.map((buff) => [buff.id, buff] as const)),
@@ -1392,6 +1426,12 @@ export function App() {
     setLobbyId(nextLobbyId);
     setAppScreen(nextScreen);
   };
+  const multiInviteUrl = useMemo(() => {
+    if (typeof window === "undefined") {
+      return buildAppPath("multi_lobby", { lobbyId });
+    }
+    return `${window.location.origin}${buildAppPath("multi_lobby", { lobbyId })}`;
+  }, [lobbyId]);
   const filteredCatalogCards = useMemo(() => {
     const normalizedSearch = cardSearchText.trim();
     return sampleCards.filter((card) => {
@@ -1447,9 +1487,13 @@ export function App() {
     }));
   }, [player, selectedRoundBuffIds]);
   const referencedDefinitionIds = useMemo(
-    () => getReferencedDefinitionIdsForCard(hoveredCard?.card ?? null, player),
-    [hoveredCard, player]
+    () => getReferencedDefinitionIdsForCard(latestHoveredCard, player),
+    [latestHoveredCard, player]
   );
+
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
   useEffect(() => {
     if (game?.phase === "input" && player) {
@@ -1530,6 +1574,93 @@ export function App() {
     setSoloRankings(nextEntries);
     saveSoloRankings(nextEntries);
   }, [game, soloRankings]);
+
+  useEffect(() => {
+    saveMultiPlayerName(multiPlayerName);
+  }, [multiPlayerName]);
+
+  useEffect(() => {
+    if (appScreen !== "multi_lobby" && appScreen !== "multi_match") {
+      multiSocketRef.current?.close();
+      multiSocketRef.current = null;
+      setMultiConnectionState("idle");
+      setMultiConnectionError(null);
+      setMultiRoomState(null);
+      return;
+    }
+
+    let cancelled = false;
+    setMultiConnectionState("connecting");
+    setMultiConnectionError(null);
+
+    const connect = async () => {
+      try {
+        const joined = await joinRoom(lobbyId, {
+          playerId: multiPlayerId,
+          displayName: multiPlayerName,
+          seed: multiSeed
+        });
+        if (cancelled) {
+          return;
+        }
+        setMultiRoomState(joined);
+        if (joined.seed) {
+          setMultiSeed(joined.seed);
+        }
+        setMultiConnectionState("connected");
+
+        multiSocketRef.current?.close();
+        multiSocketRef.current = openRoomSocket(lobbyId, multiPlayerId, {
+          onState: (nextState) => {
+            if (cancelled) {
+              return;
+            }
+            setMultiRoomState(nextState);
+            if (nextState.seed) {
+              setMultiSeed(nextState.seed);
+            }
+            if (appScreen === "multi_lobby" && nextState.phase === "match") {
+              navigateToScreen("multi_match", { lobbyId, replace: true });
+            }
+            if (appScreen === "multi_match" && nextState.phase === "lobby") {
+              navigateToScreen("multi_lobby", { lobbyId, replace: true });
+            }
+          },
+          onOpen: () => {
+            if (!cancelled) {
+              setMultiConnectionState("connected");
+            }
+          },
+          onClose: () => {
+            if (!cancelled) {
+              setMultiConnectionState("error");
+              setMultiConnectionError("接続が切断されました。");
+            }
+          },
+          onError: () => {
+            if (!cancelled) {
+              setMultiConnectionState("error");
+              setMultiConnectionError("ルーム接続に失敗しました。");
+            }
+          }
+        });
+      } catch (caught) {
+        if (cancelled) {
+          return;
+        }
+        setMultiConnectionState("error");
+        setMultiConnectionError(caught instanceof Error ? caught.message : "ルーム接続に失敗しました。");
+      }
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      multiSocketRef.current?.close();
+      multiSocketRef.current = null;
+    };
+  }, [appScreen, lobbyId, multiPlayerId, multiPlayerName]);
 
   useEffect(() => {
     const primeAudio = () => {
@@ -1907,7 +2038,7 @@ export function App() {
     if (!player || !currentResolutionCard) {
       return [];
     }
-    return player.field.filter((card) => card.instanceId !== currentResolutionCard.instanceId);
+    return player.field;
   }, [player, currentResolutionCard]);
 
   const visibleHandCards = useMemo(() => {
@@ -1998,7 +2129,17 @@ export function App() {
 
     if (!currentResolutionCard) {
       const timeoutId = window.setTimeout(() => {
-        setGame((current) => (current ? resolveNextCard(current, {}) : current));
+        const currentGame = gameRef.current;
+        if (!currentGame) {
+          return;
+        }
+        try {
+          const nextState = resolveNextCard(currentGame, {});
+          setGame(nextState);
+          setError(null);
+        } catch (submitError) {
+          setError(submitError instanceof Error ? submitError.message : "Failed to auto-resolve card effect.");
+        }
       }, AUTO_RESOLVE_DELAY_MS);
 
       return () => {
@@ -2013,7 +2154,17 @@ export function App() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      setGame((current) => (current ? resolveNextCard(current, {}) : current));
+      const currentGame = gameRef.current;
+      if (!currentGame) {
+        return;
+      }
+      try {
+        const nextState = resolveNextCard(currentGame, {});
+        setGame(nextState);
+        setError(null);
+      } catch (submitError) {
+        setError(submitError instanceof Error ? submitError.message : "Failed to auto-resolve card effect.");
+      }
     }, AUTO_RESOLVE_DELAY_MS);
 
     return () => {
@@ -2152,6 +2303,8 @@ export function App() {
   const handleHandDragStart = (instanceId: string, event: ReactDragEvent<HTMLDivElement>) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", instanceId);
+    setHoveredCard(null);
+    setHoveredTooltipDetailDefinitionId(null);
     setDraggedCard({
       instanceId,
       source: "hand"
@@ -2164,6 +2317,8 @@ export function App() {
   const handleFieldDragStart = (instanceId: string, event: ReactDragEvent<HTMLDivElement>) => {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", instanceId);
+    setHoveredCard(null);
+    setHoveredTooltipDetailDefinitionId(null);
     setDraggedCard({
       instanceId,
       source: "field"
@@ -2542,6 +2697,9 @@ export function App() {
   };
 
   const showCardTooltip = (card: CardInstance, element: HTMLDivElement) => {
+    if (draggedCard || draggedTokenId) {
+      return;
+    }
     clearTooltipHideTimeout();
     const anchor = buildTooltipAnchor(element.getBoundingClientRect());
     setHoverTooltipHeight(260);
@@ -2595,9 +2753,33 @@ export function App() {
   };
 
   const openMultiLobby = () => {
+    const nextLobbyId = createDefaultLobbyId();
     setGame(null);
     setMultiSeed(createDefaultSoloSeed());
-    navigateToScreen("multi_lobby", { lobbyId: createDefaultLobbyId() });
+    setMultiConnectionError(null);
+    setMultiLobbyEntryId(nextLobbyId);
+    navigateToScreen("multi_lobby", { lobbyId: nextLobbyId });
+  };
+
+  const joinExistingMultiLobby = () => {
+    const nextLobbyId = sanitizeRouteToken(multiLobbyEntryId, createDefaultLobbyId());
+    setGame(null);
+    setMultiConnectionError(null);
+    setMultiLobbyEntryId(nextLobbyId);
+    navigateToScreen("multi_lobby", { lobbyId: nextLobbyId });
+  };
+
+  const copyMultiInviteUrl = async () => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) {
+      setMultiConnectionError("この環境ではクリップボードへコピーできません。");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(multiInviteUrl);
+      setMultiConnectionError(null);
+    } catch (caught) {
+      setMultiConnectionError(formatMultiRoomError(caught));
+    }
   };
 
   const openRanking = () => {
@@ -2605,8 +2787,39 @@ export function App() {
     navigateToScreen("ranking");
   };
 
-  const openMatchPlaceholder = () => {
-    navigateToScreen("multi_match", { lobbyId });
+  const updateMultiLobbyDetails = async (patch: { ready?: boolean; roleId?: string | null; seed?: string; displayName?: string }) => {
+    try {
+      const nextState = await updateRoomPlayer(lobbyId, {
+        playerId: multiPlayerId,
+        ...patch
+      });
+      setMultiRoomState(nextState);
+      if (patch.seed) {
+        setMultiSeed(patch.seed);
+      }
+    } catch (caught) {
+      setMultiConnectionError(caught instanceof Error ? caught.message : "ルーム更新に失敗しました。");
+    }
+  };
+
+  const openMatchPlaceholder = async () => {
+    try {
+      const nextState = await startRoomMatch(lobbyId, multiPlayerId);
+      setMultiRoomState(nextState);
+      navigateToScreen("multi_match", { lobbyId });
+    } catch (caught) {
+      setMultiConnectionError(caught instanceof Error ? caught.message : "マッチ開始に失敗しました。");
+    }
+  };
+
+  const leaveCurrentRoom = async () => {
+    try {
+      await leaveRoom(lobbyId, multiPlayerId);
+    } catch {
+      // no-op
+    } finally {
+      navigateToScreen("home");
+    }
   };
 
   const returnToHome = () => {
@@ -2684,6 +2897,25 @@ export function App() {
               <p>まずは5ラウンド合計得点の降順で記録します。項目は後から増やせます。</p>
             </button>
           </div>
+          <section className="multi-home-entry-panel">
+            <div>
+              <strong>既存ロビーに参加</strong>
+              <p>招待されたロビーIDを入力して参加します。マルチは別デプロイの worker が必要です。</p>
+            </div>
+            <div className="multi-home-entry-row">
+              <label className="solo-seed-input">
+                <span>ロビーID</span>
+                <input
+                  type="text"
+                  value={multiLobbyEntryId}
+                  onChange={(event) => setMultiLobbyEntryId(sanitizeRouteToken(event.target.value, createDefaultLobbyId()))}
+                />
+              </label>
+              <button type="button" className="secondary-button" onClick={joinExistingMultiLobby}>
+                ロビー参加
+              </button>
+            </div>
+          </section>
         </section>
       ) : null}
 
@@ -2812,6 +3044,237 @@ export function App() {
           </button>
         </section>
       ) : appScreen === "multi_lobby" ? (
+        <section className="panel intro-panel">
+          <div className="intro-header">
+            <div>
+              <h2>マルチロビー</h2>
+              <p>ルーム、シード、役職、準備状態を共有します。ホストが開始すると全員でマッチ画面へ移ります。</p>
+            </div>
+            <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>
+              ホームに戻る
+            </button>
+          </div>
+          <section className="selected-role-panel multi-room-panel">
+            <div className="selected-role-panel-top">
+              <div>
+                <p className="selected-role-eyebrow">ルーム情報</p>
+                <h3>オンライン対戦の準備</h3>
+              </div>
+              <span className="role-card-badge">{multiConnectionState === "connected" ? "接続中" : multiConnectionState}</span>
+            </div>
+            <div className="selected-role-tags">
+              <span>ロビーID: {lobbyId}</span>
+              <span>参加人数: {multiPlayers.length}</span>
+              <span>{isMultiHost ? "ホスト" : "ゲスト"}</span>
+            </div>
+            <div className="multi-lobby-share-row">
+              <span className="selected-role-description">招待リンク: {multiInviteUrl}</span>
+              <button type="button" className="secondary-button" onClick={() => void copyMultiInviteUrl()}>
+                リンクをコピー
+              </button>
+            </div>
+            <div className="multi-lobby-grid">
+              <label className="solo-seed-input">
+                <span>プレイヤー名</span>
+                <input
+                  type="text"
+                  value={multiPlayerName}
+                  maxLength={24}
+                  onChange={(event) => setMultiPlayerName(event.target.value.slice(0, 24))}
+                  onBlur={() => void updateMultiLobbyDetails({ displayName: multiPlayerName })}
+                />
+              </label>
+              <label className="solo-seed-input">
+                <span>シード値</span>
+                <input
+                  type="text"
+                  value={sharedMultiSeed}
+                  disabled={!isMultiHost}
+                  onChange={(event) => {
+                    const nextSeed = sanitizeRouteToken(event.target.value, createDefaultSoloSeed());
+                    setMultiSeed(nextSeed);
+                  }}
+                  onBlur={() => {
+                    if (isMultiHost) {
+                      void updateMultiLobbyDetails({ seed: sanitizeRouteToken(multiSeed, createDefaultSoloSeed()) });
+                    }
+                  }}
+                />
+              </label>
+              <div className="multi-lobby-seed-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={!isMultiHost}
+                  onClick={() => {
+                    const nextSeed = createDefaultSoloSeed();
+                    setMultiSeed(nextSeed);
+                    void updateMultiLobbyDetails({ seed: nextSeed });
+                  }}
+                >
+                  自動生成
+                </button>
+                <button
+                  type="button"
+                  className={currentMultiPlayer?.ready ? "secondary-button" : "primary-button"}
+                  onClick={() => void updateMultiLobbyDetails({ ready: !currentMultiPlayer?.ready })}
+                >
+                  {currentMultiPlayer?.ready ? "準備解除" : "準備完了"}
+                </button>
+              </div>
+            </div>
+            <label className="role-select">
+              <span>役職選択</span>
+              <select
+                value={currentMultiPlayer?.roleId ?? selectedRoleId}
+                onChange={(event) => {
+                  setSelectedRoleId(event.target.value);
+                  void updateMultiLobbyDetails({ roleId: event.target.value });
+                }}
+              >
+                {sampleRoles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {multiConnectionError ? <p className="selected-role-description error-text">{multiConnectionError}</p> : null}
+            <div className="multi-player-list">
+              {multiPlayers.map((entry) => {
+                const role = entry.roleId ? roleMap[entry.roleId] : null;
+                return (
+                  <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
+                    <div className="multi-player-row-main">
+                      <strong>{entry.displayName}</strong>
+                      <div className="multi-player-row-tags">
+                        {entry.playerId === multiRoomState?.hostPlayerId ? <span>ホスト</span> : null}
+                        <span>{entry.ready ? "準備完了" : "準備中"}</span>
+                        <span>{role?.name ?? "役職未選択"}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="action-row">
+              <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>
+                退出
+              </button>
+              <button type="button" className="primary-button" disabled={!canStartMultiMatch} onClick={openMatchPlaceholder}>
+                マッチ開始
+              </button>
+            </div>
+            {!canStartMultiMatch ? (
+              <p className="selected-role-description">
+                {isMultiHost
+                  ? "2人以上の参加と、全員の準備完了が必要です。"
+                  : "ホストがマッチ開始すると自動でマッチ画面へ移動します。"}
+              </p>
+            ) : null}
+          </section>
+        </section>
+      ) : false && appScreen === "multi_match" ? (
+        <main className="battle-frame match-frame" data-mode="multi">
+          <section className="panel status-panel match-status-panel">
+            <div className="match-status-header">
+              <div>
+                <p className="selected-role-eyebrow">マッチルーム</p>
+                <h2>{lobbyId}</h2>
+              </div>
+              <div className="match-status-actions">
+                <span className="role-card-badge">{multiConnectionState === "connected" ? "接続中" : multiConnectionState}</span>
+                <button type="button" className="secondary-button" onClick={() => navigateToScreen("multi_lobby", { lobbyId })}>
+                  ロビー
+                </button>
+                <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>
+                  退出
+                </button>
+              </div>
+            </div>
+            <div className="selected-role-tags">
+              <span>シード値: {sharedMultiSeed}</span>
+              <span>参加人数: {multiPlayers.length}</span>
+              <span>{isMultiHost ? "ホスト" : "ゲスト"}</span>
+            </div>
+            <p className="selected-role-description">
+              マルチ本編の同期は次段階ですが、ルーム、参加者、準備、開始状態はこの画面で共有されています。
+            </p>
+            {multiConnectionError ? <p className="selected-role-description error-text">{multiConnectionError}</p> : null}
+          </section>
+          <section className="panel action-panel match-action-panel">
+            <div className="action-panel-card">
+              <p className="selected-role-eyebrow">プレイヤー情報</p>
+              <h3>{currentMultiPlayer?.displayName ?? "参加者"}</h3>
+              <p className="selected-role-description">役職: {roleMap[currentMultiPlayer?.roleId ?? ""]?.name ?? "未選択"}</p>
+              <p className="selected-role-description">状態: {currentMultiPlayer?.ready ? "準備完了" : "準備中"}</p>
+            </div>
+          </section>
+          <section className="panel field-panel match-placeholder-panel">
+            <div className="match-placeholder-body">
+              <strong>マルチ対戦 UI 準備中</strong>
+              <p>この画面ではルーム状態を共有しつつ、右端のログバーとプレイヤーバーから情報を確認できます。</p>
+            </div>
+          </section>
+          <section className="panel hand-panel match-placeholder-panel">
+            <div className="match-placeholder-body">
+              <strong>共有プレイヤー一覧</strong>
+              <div className="multi-player-list compact">
+                {multiPlayers.map((entry) => (
+                  <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
+                    <div className="multi-player-row-main">
+                      <strong>{entry.displayName}</strong>
+                      <div className="multi-player-row-tags">
+                        {entry.playerId === multiRoomState?.hostPlayerId ? <span>ホスト</span> : null}
+                        <span>{entry.ready ? "準備完了" : "準備中"}</span>
+                        <span>{roleMap[entry.roleId ?? ""]?.name ?? "未選択"}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <aside className="match-edge-drawer match-edge-drawer-log" aria-label="マッチログ">
+            <div className="match-edge-drawer-handle">ログ</div>
+            <section className="panel match-edge-drawer-panel">
+              <h2>ログ</h2>
+              <div className="match-edge-drawer-scroll">
+                {multiRoomLogEntries.length > 0 ? (
+                  multiRoomLogEntries.map((entry, index) => (
+                    <div key={`${index}-${entry}`} className="log-entry log-entry-system">
+                      <p>{entry}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="log-entry log-entry-system">
+                    <p>まだログがありません。</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </aside>
+          <aside className="match-edge-drawer match-edge-drawer-player" aria-label="プレイヤー一覧">
+            <div className="match-edge-drawer-handle match-edge-drawer-handle-player">プレイヤー</div>
+            <section className="panel match-edge-drawer-panel">
+              <h2>プレイヤー一覧</h2>
+              <div className="match-edge-drawer-scroll match-player-drawer-scroll">
+                {multiPlayers.map((entry) => (
+                  <article key={entry.playerId} className={`match-player-card${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
+                    <div className="match-player-card-top">
+                      <strong>{entry.displayName}</strong>
+                      <span>{entry.playerId === multiRoomState?.hostPlayerId ? "ホスト" : "参加者"}</span>
+                    </div>
+                    <p>役職: {roleMap[entry.roleId ?? ""]?.name ?? "未選択"}</p>
+                    <p>準備状態: {entry.ready ? "準備完了" : "準備中"}</p>
+                    <p>参加時刻: {new Date(entry.joinedAt).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </aside>
+        </main>
+      ) : false && appScreen === "multi_lobby" ? (
         <section className="panel intro-panel">
           <div className="intro-header">
             <div>
@@ -3251,10 +3714,6 @@ export function App() {
             </div>
 
             <section className="panel field-panel">
-              <div className="section-heading">
-                <h2>場</h2>
-                <span>{previewCards.length} 枚</span>
-              </div>
               <div
                 className={`horizontal-card-row ${inputStep === "placement" ? "is-placement-row" : ""}`}
                 ref={inputStep === "placement" ? placementRowRef : null}
@@ -3313,6 +3772,8 @@ export function App() {
                         <div
                           className={`card-chip ${inputStep === "placement" ? "is-placement-draggable" : ""} ${
                             draggedCard?.instanceId === card.instanceId && draggedCard.source === "field" ? "is-dragging" : ""
+                          } ${
+                            draggedCard?.instanceId === card.instanceId && draggedCard.source === "field" ? "is-drag-origin-empty" : ""
                           }`}
                           data-attribute={resolveVisualAttribute(card.attribute)}
                           ref={(element) => setFieldCardRef(card.instanceId, element)}
@@ -3336,10 +3797,7 @@ export function App() {
                           onMouseLeave={hideCardTooltip}
                         >
                           {draggedCard?.instanceId === card.instanceId && draggedCard.source === "field" ? (
-                            <div className="drag-origin-placeholder-label">
-                              <strong>移動元</strong>
-                              <small>ここから移動中</small>
-                            </div>
+                            null
                           ) : (
                             <>
                               {renderCardIllustration(card.definitionId, card.name)}
@@ -3471,10 +3929,6 @@ export function App() {
               </div>
             </section>
             <section className="panel hand-panel">
-              <div className="section-heading">
-                <h2>手札</h2>
-                <span>{player?.hand.length ?? 0} 枚</span>
-              </div>
               <div
                 className={`horizontal-card-row ${canReturnPlacedCardToHand(player?.hand, draggedCard) ? "is-hand-return-target" : ""}`}
                 onDragOver={game.phase === "input" && inputStep === "placement" ? handleHandReturnDragOver : undefined}
@@ -3563,7 +4017,7 @@ export function App() {
         </main>
       ) : null}
 
-      {hoveredCard ? (
+      {hoveredCard && latestHoveredCard ? (
         (() => {
           const tooltipPosition = resolveTooltipPosition(
             {
@@ -3578,7 +4032,7 @@ export function App() {
           key={hoveredCard.card.instanceId}
           ref={hoverTooltipRef}
           className="hover-tooltip"
-          data-attribute={resolveVisualAttribute(hoveredCard.card.attribute)}
+          data-attribute={resolveVisualAttribute(latestHoveredCard.attribute)}
           style={{
             left: `${tooltipPosition.x}px`,
             top: `${tooltipPosition.y}px`
@@ -3586,18 +4040,18 @@ export function App() {
           onMouseEnter={clearTooltipHideTimeout}
           onMouseLeave={hideCardTooltip}
         >
-          <strong>{hoveredCard.card.name}</strong>
-          {renderCardIllustration(hoveredCard.card.definitionId, hoveredCard.card.name)}
+          <strong>{latestHoveredCard.name}</strong>
+          {renderCardIllustration(latestHoveredCard.definitionId, latestHoveredCard.name)}
           <p className="card-text-body">
-            {renderCardTextWithAdjustedNumbers(cardMap[hoveredCard.card.definitionId]?.text ?? hoveredCard.card.text, hoveredCard.card, {
+            {renderCardTextWithAdjustedNumbers(cardMap[latestHoveredCard.definitionId]?.text ?? latestHoveredCard.text, latestHoveredCard, {
               player,
               onReferenceEnter: setHoveredTooltipDetailDefinitionId,
               onReferenceLeave: (definitionId) =>
                 setHoveredTooltipDetailDefinitionId((current) => (current === definitionId ? null : current))
             })}
           </p>
-          <p>属性: {resolveAttributeLabel(hoveredCard.card.attribute)}</p>
-          <p>種類: {resolveCardTypeLabel(hoveredCard.card.type)}</p>
+          <p>属性: {resolveAttributeLabel(latestHoveredCard.attribute)}</p>
+          <p>種類: {resolveCardTypeLabel(latestHoveredCard.type)}</p>
           {referencedDefinitionIds.length > 0 ? (
             <div className="hover-tooltip-reference-block">
               <span>参照中のカード</span>
@@ -3618,11 +4072,11 @@ export function App() {
               </div>
             </div>
           ) : null}
-          {hoveredCard.card.enchantments.length > 0 ? (
+          {latestHoveredCard.enchantments.length > 0 ? (
             <div className="hover-tooltip-enchant-block">
               <span>付与エンチャント</span>
               <div className="hover-tooltip-enchant-list">
-                {hoveredCard.card.enchantments.map((enchant) => {
+                {latestHoveredCard.enchantments.map((enchant: CardInstance["enchantments"][number]) => {
                   return (
                     <button
                       key={enchant.instanceId}

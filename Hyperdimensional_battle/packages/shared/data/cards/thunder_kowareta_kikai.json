@@ -1,0 +1,35 @@
+{
+  "id": "thunder_kowareta_kikai",
+  "name": "壊れた機械",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "placed"
+  ],
+  "text": "封印: 雷属性のカードが10回発動\n設置: 『太古の機械』に変化する",
+  "seal": {
+    "kind": "ally_attribute_activation_total_at_least",
+    "attribute": "thunder",
+    "value": 10
+  },
+  "effects": [
+    {
+      "id": "thunder_kowareta_kikai_placed",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "transform_self_to_definition",
+          "definitionId": "thunder_taiko_no_kikai"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "ability",
+    "seal",
+    "transform"
+  ]
+}

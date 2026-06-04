@@ -54,10 +54,12 @@ import noneTakumi from "../data/cards/none_takumi.json";
 import noneTakumiKodawari from "../data/cards/none_takumi_kodawari.json";
 import thunderElectric from "../data/cards/thunder_electric.json";
 import thunderHendenShisetsu from "../data/cards/thunder_henden_shisetsu.json";
+import thunderKowaretaKikai from "../data/cards/thunder_kowareta_kikai.json";
 import thunderOvercharge from "../data/cards/thunder_overcharge.json";
 import thunderShock from "../data/cards/thunder_shock.json";
 import thunderSpeedOfLight from "../data/cards/thunder_speed_of_light.json";
 import thunderStatic from "../data/cards/thunder_static.json";
+import thunderTaikoNoKikai from "../data/cards/thunder_taiko_no_kikai.json";
 import thunderVoltage from "../data/cards/thunder_voltage.json";
 import thunderVortex from "../data/cards/thunder_vortex.json";
 import waterAqua from "../data/cards/water_aqua.json";
@@ -143,10 +145,12 @@ const rawCards = [
   noneTakumiKodawari,
   thunderElectric,
   thunderHendenShisetsu,
+  thunderKowaretaKikai,
   thunderOvercharge,
   thunderShock,
   thunderSpeedOfLight,
   thunderStatic,
+  thunderTaikoNoKikai,
   thunderVoltage,
   thunderVortex,
   waterAqua,

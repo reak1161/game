@@ -6,7 +6,7 @@
   "timings": [
     "enchant"
   ],
-  "text": "発動: {{20%}}の確率で「このカードの数値{{×2}}、その後このカードは再発動」",
+  "text": "発動：{{20%}}の確率で「このカードの数値{{×2}}、その後このカードは再発動」",
   "effects": [
     {
       "id": "enchant_yureru_tamashii_trigger",

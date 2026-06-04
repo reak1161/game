@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動: {{1%}}の確率で「基礎ステータス{{×4}}、その後このカードの数値{{×2}}」",
+  "text": "発動：{{1%}}の確率で「基礎ステータス{{×4}}、その後このカードの数値×2」",
   "effects": [
     {
       "id": "dark_akuma_sasayaki_activate",
@@ -42,16 +42,11 @@
     {
       "effectId": "dark_akuma_sasayaki_activate",
       "operationIndex": 0,
-      "operationPath": [0, 0],
+      "operationPath": [
+        0,
+        0
+      ],
       "occurrence": 1,
-      "writtenValueKind": "normal",
-      "affectsValueKind": "normal"
-    },
-    {
-      "effectId": "dark_akuma_sasayaki_activate",
-      "operationIndex": 0,
-      "operationPath": [0, 1],
-      "occurrence": 2,
       "writtenValueKind": "normal",
       "affectsValueKind": "normal"
     }

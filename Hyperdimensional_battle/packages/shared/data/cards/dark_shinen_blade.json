@@ -7,7 +7,7 @@
     "placed",
     "activate"
   ],
-  "text": "設置: 自分の場のカードが発動する度、{{20%}}の確率でこのカードの数値{{×1.2}}\n発動: 基礎攻撃{{+20}}、その後ダメージを与える",
+  "text": "設置：自分の場のカードが発動する度、{{20%}}の確率でこのカードの数値×1.2\n発動：基礎攻撃{{+20}}、その後ダメージを与える",
   "effects": [
     {
       "id": "dark_shinen_blade_placed",
@@ -53,14 +53,6 @@
       "operationIndex": 0,
       "occurrence": 0,
       "writtenValueKind": "probability",
-      "affectsValueKind": "normal"
-    },
-    {
-      "effectId": "dark_shinen_blade_placed",
-      "operationIndex": 0,
-      "operationPath": [0, 0],
-      "occurrence": 1,
-      "writtenValueKind": "normal",
       "affectsValueKind": "normal"
     },
     {
