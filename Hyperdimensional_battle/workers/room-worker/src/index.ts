@@ -108,6 +108,18 @@ function sanitizeSeed(value: unknown) {
   return value.trim().replace(/[^0-9A-Za-z_-]/g, "").slice(0, 32);
 }
 
+function sanitizeDisplayNameStrict(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const normalized = value
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han} _-]/gu, "")
+    .trim()
+    .slice(0, 24);
+  return normalized;
+}
+
 function appendRoomLog(state: RoomState, message: string) {
   state.log = [...state.log, message].slice(-80);
   state.updatedAt = new Date().toISOString();
@@ -249,7 +261,7 @@ export class RoomDurableObject {
     }
 
     const state = await this.getState(roomId);
-    const displayName = sanitizeDisplayName(payload.displayName);
+    const displayName = sanitizeDisplayNameStrict(payload.displayName);
     const seed = sanitizeSeed(payload.seed);
     const now = new Date().toISOString();
     const existing = state.players.find((player) => player.playerId === playerId);
@@ -295,7 +307,7 @@ export class RoomDurableObject {
     }
 
     if (typeof payload.displayName === "string") {
-      player.displayName = sanitizeDisplayName(payload.displayName);
+      player.displayName = sanitizeDisplayNameStrict(payload.displayName);
     }
     if (typeof payload.ready === "boolean") {
       player.ready = payload.ready;

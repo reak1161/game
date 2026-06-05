@@ -43,7 +43,7 @@ import {
   getOrCreateMultiPlayerId,
   joinRoom,
   leaveRoom,
-  loadMultiPlayerName,
+  MULTI_PLAYER_NAME_STORAGE_KEY,
   openRoomSocket,
   saveMultiPlayerName,
   startRoomMatch,
@@ -254,6 +254,14 @@ function sanitizeRouteToken(value: string | undefined | null, fallback: string) 
   }
   const normalized = decodeURIComponent(value).trim().replace(/[^0-9A-Za-z_-]/g, "").slice(0, 32);
   return normalized.length > 0 ? normalized : fallback;
+}
+
+function sanitizePlayerNameInput(value: string) {
+  return value
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han} _-]/gu, "")
+    .trim()
+    .slice(0, 24);
 }
 
 function formatMultiRoomError(caught: unknown) {
@@ -1296,7 +1304,13 @@ export function App() {
   const [multiConnectionState, setMultiConnectionState] = useState<MultiConnectionState>("idle");
   const [multiConnectionError, setMultiConnectionError] = useState<string | null>(null);
   const [multiPlayerId] = useState(() => getOrCreateMultiPlayerId());
-  const [multiPlayerName, setMultiPlayerName] = useState(() => loadMultiPlayerName());
+  const [multiPlayerName, setMultiPlayerName] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+    const saved = window.localStorage.getItem(MULTI_PLAYER_NAME_STORAGE_KEY);
+    return saved ?? "";
+  });
   const [selectedRoleId, setSelectedRoleId] = useState(sampleRoles[0]?.id ?? "");
   const [game, setGame] = useState<LocalGameState | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -2874,6 +2888,15 @@ export function App() {
               <p>遊び方に合わせて、ソロモードかマルチプレイを選んでください。</p>
             </div>
           </div>
+          <label className="solo-seed-input home-player-name-input">
+            <span>プレイヤー名</span>
+            <input
+              type="text"
+              value={multiPlayerName}
+              maxLength={24}
+              onChange={(event) => setMultiPlayerName(sanitizePlayerNameInput(event.target.value))}
+            />
+          </label>
           <div className="mode-card-grid">
             <button type="button" className="mode-card" onClick={openSoloSetup}>
               <div className="mode-card-top">
@@ -3080,7 +3103,7 @@ export function App() {
                   type="text"
                   value={multiPlayerName}
                   maxLength={24}
-                  onChange={(event) => setMultiPlayerName(event.target.value.slice(0, 24))}
+                  onChange={(event) => setMultiPlayerName(sanitizePlayerNameInput(event.target.value))}
                   onBlur={() => void updateMultiLobbyDetails({ displayName: multiPlayerName })}
                 />
               </label>

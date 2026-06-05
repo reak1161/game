@@ -169,23 +169,59 @@ input {
 }
 
 .home-panel {
-  width: min(1200px, 100%);
+  width: 980px;
+  min-width: 980px;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 20px 28px;
+  padding: 22px 24px;
+}
+
+.home-panel .intro-header,
+.home-panel .mode-card p,
+.home-panel .mode-card .role-card-badge,
+.multi-home-entry-panel > div:first-child {
+  display: none;
+}
+
+.home-panel-simple {
+  gap: 16px;
+}
+
+.home-player-name-input {
+  width: 360px;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.home-top-row {
+  display: contents;
 }
 
 .mode-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-items: stretch;
 }
 
 .multi-home-entry-panel {
-  margin-top: 16px;
+  margin-top: 0;
   display: grid;
   gap: 12px;
-  padding: 16px 18px;
+  padding: 12px 14px;
   border-radius: 18px;
   background: rgba(241, 245, 249, 0.84);
   border: 1px solid rgba(148, 163, 184, 0.28);
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  width: 320px;
 }
 
 .multi-home-entry-panel p {
@@ -200,6 +236,10 @@ input {
   flex-wrap: wrap;
 }
 
+.home-panel .multi-home-entry-row {
+  justify-content: flex-end;
+}
+
 .multi-lobby-share-row {
   align-items: center;
 }
@@ -211,17 +251,19 @@ input {
 }
 
 .solo-seed-input span {
-  font-size: 12px;
+  font-size: 13px;
   color: #475569;
 }
 
 .solo-seed-input input {
   min-width: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.92);
   color: #0f172a;
+  font-size: 17px;
+  line-height: 1.3;
 }
 
 .multi-seed-row {
@@ -242,6 +284,14 @@ input {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   align-items: end;
+}
+
+.multi-lobby-grid > .solo-seed-input:first-child {
+  display: none;
+}
+
+.multi-lobby-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .multi-lobby-seed-actions {
@@ -316,14 +366,17 @@ input {
 
 .mode-card {
   display: grid;
-  gap: 12px;
-  padding: 18px;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: 132px;
+  padding: 18px 20px;
   border: 1px solid rgba(148, 163, 184, 0.38);
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96)),
     linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(37, 99, 235, 0.04));
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition:
     transform 140ms ease,
@@ -339,9 +392,10 @@ input {
 
 .mode-card-top {
   display: flex;
-  align-items: start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   gap: 12px;
+  width: 100%;
 }
 
 .mode-card-top strong,
@@ -351,6 +405,7 @@ input {
 
 .mode-card-top strong {
   font-size: 22px;
+  text-align: center;
 }
 
 .mode-card p {
