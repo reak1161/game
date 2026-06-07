@@ -277,6 +277,7 @@ input {
 .match-placeholder-panel {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .multi-lobby-shell {
@@ -284,7 +285,7 @@ input {
   min-width: 1080px;
   max-width: 1080px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   align-items: start;
   gap: 18px;
 }
@@ -294,7 +295,12 @@ input {
 }
 
 .multi-lobby-player-panel {
-  align-self: stretch;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  align-self: start;
+  max-height: 680px;
+  overflow: auto;
 }
 
 .multi-lobby-grid {

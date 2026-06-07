@@ -96,8 +96,19 @@ function createOptionsResponse(request: Request, env: Env) {
 function getAllowedOrigins(env: Env, request: Request) {
   const allowedOrigins = new Set<string>(DEFAULT_ALLOWED_ORIGINS);
   allowedOrigins.add(new URL(request.url).origin);
+  const origin = request.headers.get("Origin");
 
   if (!env.ALLOWED_ORIGINS) {
+    if (origin) {
+      try {
+        const parsed = new URL(origin);
+        if (parsed.protocol === "https:") {
+          allowedOrigins.add(origin);
+        }
+      } catch {
+        // ignore invalid origins
+      }
+    }
     return allowedOrigins;
   }
 
