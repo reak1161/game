@@ -75,7 +75,7 @@ export function resolveRoomWorkerBaseUrl() {
     return "http://127.0.0.1:8787";
   }
 
-  return `${protocol}//${hostname}`;
+  throw new Error("VITE_ROOM_WORKER_URL is not configured for production");
 }
 
 function createJsonHeaders() {

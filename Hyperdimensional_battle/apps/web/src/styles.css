@@ -169,9 +169,9 @@ input {
 }
 
 .home-panel {
-  width: 980px;
-  min-width: 980px;
-  max-width: 980px;
+  width: 1080px;
+  min-width: 1080px;
+  max-width: 1080px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: start;
@@ -277,6 +277,24 @@ input {
 .match-placeholder-panel {
   display: grid;
   gap: 12px;
+}
+
+.multi-lobby-shell {
+  width: 1080px;
+  min-width: 1080px;
+  max-width: 1080px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 18px;
+}
+
+.multi-lobby-shell .multi-room-panel > .multi-player-list {
+  display: none;
+}
+
+.multi-lobby-player-panel {
+  align-self: stretch;
 }
 
 .multi-lobby-grid {

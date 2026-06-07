@@ -3067,7 +3067,7 @@ export function App() {
           </button>
         </section>
       ) : appScreen === "multi_lobby" ? (
-        <section className="panel intro-panel">
+        <section className="panel intro-panel multi-lobby-shell">
           <div className="intro-header">
             <div>
               <h2>マルチロビー</h2>
@@ -3196,6 +3196,32 @@ export function App() {
               </p>
             ) : null}
           </section>
+          <aside className="selected-role-panel multi-lobby-player-panel">
+            <div className="selected-role-panel-top">
+              <div>
+                <p className="selected-role-eyebrow">Players</p>
+                <h3>Joined Players</h3>
+              </div>
+              <span className="role-card-badge">{multiPlayers.length}</span>
+            </div>
+            <div className="multi-player-list">
+              {multiPlayers.map((entry) => {
+                const role = entry.roleId ? roleMap[entry.roleId] : null;
+                return (
+                  <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
+                    <div className="multi-player-row-main">
+                      <strong>{entry.displayName}</strong>
+                      <div className="multi-player-row-tags">
+                        {entry.playerId === multiRoomState?.hostPlayerId ? <span>Host</span> : null}
+                        <span>{entry.ready ? "Ready" : "Waiting"}</span>
+                        <span>{role?.name ?? "No Role"}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
         </section>
       ) : false && appScreen === "multi_match" ? (
         <main className="battle-frame match-frame" data-mode="multi">
