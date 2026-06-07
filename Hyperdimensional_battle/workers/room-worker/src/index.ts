@@ -49,8 +49,24 @@ function buildSecurityHeaders(extra?: HeadersInit) {
   return headers;
 }
 
-function createJsonResponse(payload: unknown, init?: ResponseInit) {
+function applyCorsHeaders(headers: Headers, request: Request, env: Env) {
+  const origin = request.headers.get("Origin");
+  if (!origin) {
+    return;
+  }
+  if (!getAllowedOrigins(env, request).has(origin)) {
+    return;
+  }
+  headers.set("Access-Control-Allow-Origin", origin);
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Content-Type");
+  headers.set("Access-Control-Max-Age", "86400");
+  headers.set("Vary", "Origin");
+}
+
+function createJsonResponse(payload: unknown, request: Request, env: Env, init?: ResponseInit) {
   const headers = buildSecurityHeaders(init?.headers);
+  applyCorsHeaders(headers, request, env);
   headers.set("Content-Type", "application/json; charset=utf-8");
   return new Response(JSON.stringify(payload), {
     ...init,
@@ -58,11 +74,21 @@ function createJsonResponse(payload: unknown, init?: ResponseInit) {
   });
 }
 
-function createTextResponse(body: string, init?: ResponseInit) {
+function createTextResponse(body: string, request: Request, env: Env, init?: ResponseInit) {
   const headers = buildSecurityHeaders(init?.headers);
+  applyCorsHeaders(headers, request, env);
   headers.set("Content-Type", "text/plain; charset=utf-8");
   return new Response(body, {
     ...init,
+    headers
+  });
+}
+
+function createOptionsResponse(request: Request, env: Env) {
+  const headers = buildSecurityHeaders();
+  applyCorsHeaders(headers, request, env);
+  return new Response(null, {
+    status: 204,
     headers
   });
 }
@@ -129,21 +155,28 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    if (request.method === "OPTIONS") {
+      if (!isAllowedOrigin(request, env)) {
+        return createTextResponse("Forbidden", request, env, { status: 403 });
+      }
+      return createOptionsResponse(request, env);
+    }
+
     if (request.method === "GET" && url.pathname === "/health") {
-      return createJsonResponse({ ok: true, runtime: "worker" });
+      return createJsonResponse({ ok: true, runtime: "worker" }, request, env);
     }
 
     const roomMatch = url.pathname.match(/^\/rooms\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})(?:\/(join|player|leave|start|ws))?$/);
     if (roomMatch) {
       const roomId = roomMatch[1];
       if (!ROOM_ID_PATTERN.test(roomId)) {
-        return createTextResponse("Invalid room id", { status: 400 });
+        return createTextResponse("Invalid room id", request, env, { status: 400 });
       }
       const id = env.ROOM_DO.idFromName(roomId);
       return env.ROOM_DO.get(id).fetch(request);
     }
 
-    return createTextResponse("Not Found", { status: 404 });
+    return createTextResponse("Not Found", request, env, { status: 404 });
   }
 };
 
@@ -162,7 +195,7 @@ export class RoomDurableObject {
 
     if (request.method === "GET" && action === "ws") {
       if (!isAllowedOrigin(request, this.env)) {
-        return createTextResponse("Forbidden", { status: 403 });
+        return createTextResponse("Forbidden", request, this.env, { status: 403 });
       }
       const pair = new WebSocketPair();
       const client = pair[0];
@@ -184,37 +217,44 @@ export class RoomDurableObject {
       });
     }
 
+    if (request.method === "OPTIONS") {
+      if (!isAllowedOrigin(request, this.env)) {
+        return createTextResponse("Forbidden", request, this.env, { status: 403 });
+      }
+      return createOptionsResponse(request, this.env);
+    }
+
     if (request.method === "GET" && !action) {
-      return createJsonResponse(await this.getState(roomId));
+      return createJsonResponse(await this.getState(roomId), request, this.env);
     }
 
     if (request.method !== "POST") {
-      return createTextResponse("Method Not Allowed", {
+      return createTextResponse("Method Not Allowed", request, this.env, {
         status: 405,
         headers: { Allow: "GET, POST" }
       });
     }
 
     if (!isAllowedOrigin(request, this.env)) {
-      return createTextResponse("Forbidden", { status: 403 });
+      return createTextResponse("Forbidden", request, this.env, { status: 403 });
     }
 
     const payload = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     if (!payload) {
-      return createTextResponse("Invalid JSON", { status: 400 });
+      return createTextResponse("Invalid JSON", request, this.env, { status: 400 });
     }
 
     switch (action) {
       case "join":
-        return createJsonResponse(await this.handleJoin(roomId, payload));
+        return createJsonResponse(await this.handleJoin(roomId, payload), request, this.env);
       case "player":
-        return createJsonResponse(await this.handlePlayerUpdate(roomId, payload));
+        return createJsonResponse(await this.handlePlayerUpdate(roomId, payload), request, this.env);
       case "leave":
-        return createJsonResponse(await this.handleLeave(roomId, payload));
+        return createJsonResponse(await this.handleLeave(roomId, payload), request, this.env);
       case "start":
-        return createJsonResponse(await this.handleStart(roomId, payload));
+        return createJsonResponse(await this.handleStart(roomId, payload), request, this.env);
       default:
-        return createTextResponse("Not Found", { status: 404 });
+        return createTextResponse("Not Found", request, this.env, { status: 404 });
     }
   }
 
