@@ -62,6 +62,13 @@ export function saveMultiPlayerName(name: string) {
   window.localStorage.setItem(MULTI_PLAYER_NAME_STORAGE_KEY, name);
 }
 
+export function loadStoredMultiPlayerName() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  return window.localStorage.getItem(MULTI_PLAYER_NAME_STORAGE_KEY) ?? "";
+}
+
 export function resolveRoomWorkerBaseUrl() {
   const envValue =
     typeof import.meta !== "undefined" && typeof import.meta.env?.VITE_ROOM_WORKER_URL === "string"

@@ -158,6 +158,10 @@ function sanitizeDisplayNameStrict(value: unknown) {
   return normalized;
 }
 
+function renderPlayerDisplayName(value: string) {
+  return value.trim().length > 0 ? value : "未入力";
+}
+
 function appendRoomLog(state: RoomState, message: string) {
   state.log = [...state.log, message].slice(-80);
   state.updatedAt = new Date().toISOString();

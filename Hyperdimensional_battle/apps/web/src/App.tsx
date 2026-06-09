@@ -44,7 +44,7 @@ import {
   getOrCreateMultiPlayerId,
   joinRoom,
   leaveRoom,
-  MULTI_PLAYER_NAME_STORAGE_KEY,
+  loadStoredMultiPlayerName,
   openRoomSocket,
   resolveRoomWorkerBaseUrl,
   saveMultiPlayerName,
@@ -264,6 +264,10 @@ function sanitizePlayerNameInput(value: string) {
     .replace(/[^\p{L}\p{N}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han} _-]/gu, "")
     .trim()
     .slice(0, 24);
+}
+
+function renderMultiPlayerName(value: string) {
+  return value.trim().length > 0 ? value : "未入力";
 }
 
 function formatMultiRoomError(caught: unknown) {
@@ -1308,13 +1312,7 @@ export function App() {
   const [multiWorkerUrl, setMultiWorkerUrl] = useState("");
   const [multiWorkerHealth, setMultiWorkerHealth] = useState<string>("idle");
   const [multiPlayerId] = useState(() => getOrCreateMultiPlayerId());
-  const [multiPlayerName, setMultiPlayerName] = useState(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-    const saved = window.localStorage.getItem(MULTI_PLAYER_NAME_STORAGE_KEY);
-    return saved ?? "";
-  });
+  const [multiPlayerName, setMultiPlayerName] = useState(() => loadStoredMultiPlayerName());
   const [selectedRoleId, setSelectedRoleId] = useState(sampleRoles[0]?.id ?? "");
   const [game, setGame] = useState<LocalGameState | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -3216,7 +3214,7 @@ export function App() {
                 return (
                   <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
                     <div className="multi-player-row-main">
-                      <strong>{entry.displayName}</strong>
+                      <strong>{renderMultiPlayerName(entry.displayName)}</strong>
                       <div className="multi-player-row-tags">
                         {entry.playerId === multiRoomState?.hostPlayerId ? <span>ホスト</span> : null}
                         <span>{entry.ready ? "準備完了" : "準備中"}</span>
@@ -3257,7 +3255,7 @@ export function App() {
                 return (
                   <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
                     <div className="multi-player-row-main">
-                      <strong>{entry.displayName}</strong>
+                      <strong>{renderMultiPlayerName(entry.displayName)}</strong>
                       <div className="multi-player-row-tags">
                         {entry.playerId === multiRoomState?.hostPlayerId ? <span>Host</span> : null}
                         <span>{entry.ready ? "Ready" : "Waiting"}</span>
@@ -3301,7 +3299,7 @@ export function App() {
           <section className="panel action-panel match-action-panel">
             <div className="action-panel-card">
               <p className="selected-role-eyebrow">プレイヤー情報</p>
-              <h3>{currentMultiPlayer?.displayName ?? "参加者"}</h3>
+              <h3>{renderMultiPlayerName(currentMultiPlayer?.displayName ?? "")}</h3>
               <p className="selected-role-description">役職: {roleMap[currentMultiPlayer?.roleId ?? ""]?.name ?? "未選択"}</p>
               <p className="selected-role-description">状態: {currentMultiPlayer?.ready ? "準備完了" : "準備中"}</p>
             </div>
@@ -3319,7 +3317,7 @@ export function App() {
                 {multiPlayers.map((entry) => (
                   <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
                     <div className="multi-player-row-main">
-                      <strong>{entry.displayName}</strong>
+                      <strong>{renderMultiPlayerName(entry.displayName)}</strong>
                       <div className="multi-player-row-tags">
                         {entry.playerId === multiRoomState?.hostPlayerId ? <span>ホスト</span> : null}
                         <span>{entry.ready ? "準備完了" : "準備中"}</span>
@@ -3358,7 +3356,7 @@ export function App() {
                 {multiPlayers.map((entry) => (
                   <article key={entry.playerId} className={`match-player-card${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
                     <div className="match-player-card-top">
-                      <strong>{entry.displayName}</strong>
+                      <strong>{renderMultiPlayerName(entry.displayName)}</strong>
                       <span>{entry.playerId === multiRoomState?.hostPlayerId ? "ホスト" : "参加者"}</span>
                     </div>
                     <p>役職: {roleMap[entry.roleId ?? ""]?.name ?? "未選択"}</p>
@@ -3483,7 +3481,7 @@ export function App() {
                 <div className="status-hero">
                   <div className="status-hero-top">
                     <div className="status-hero-player">
-                      <h2>{player?.displayName}</h2>
+                      <h2>{player ? renderMultiPlayerName(player.displayName) : ""}</h2>
                       <div className="role-summary-tooltip">
                         <button type="button" className="role-summary-button">
                           {activeRole?.name ?? "???"}
