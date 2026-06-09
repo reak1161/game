@@ -285,9 +285,21 @@ input {
   min-width: 1080px;
   max-width: 1080px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 760px 280px;
   align-items: start;
-  gap: 18px;
+  justify-content: start;
+  gap: 20px;
+}
+
+.multi-lobby-shell > .intro-header {
+  grid-column: 1 / -1;
+}
+
+.multi-lobby-shell > .multi-room-panel {
+  grid-column: 1;
+  width: 760px;
+  min-width: 760px;
+  max-width: 760px;
 }
 
 .multi-lobby-shell .multi-room-panel > .multi-player-list {
@@ -295,11 +307,13 @@ input {
 }
 
 .multi-lobby-player-panel {
+  grid-column: 2;
+  grid-row: 2;
   width: 280px;
   min-width: 280px;
   max-width: 280px;
   align-self: start;
-  max-height: 680px;
+  max-height: 640px;
   overflow: auto;
 }
 
