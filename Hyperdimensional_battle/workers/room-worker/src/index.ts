@@ -98,17 +98,18 @@ function getAllowedOrigins(env: Env, request: Request) {
   allowedOrigins.add(new URL(request.url).origin);
   const origin = request.headers.get("Origin");
 
-  if (!env.ALLOWED_ORIGINS) {
-    if (origin) {
-      try {
-        const parsed = new URL(origin);
-        if (parsed.protocol === "https:") {
-          allowedOrigins.add(origin);
-        }
-      } catch {
-        // ignore invalid origins
+  if (origin) {
+    try {
+      const parsed = new URL(origin);
+      if (parsed.protocol === "https:") {
+        allowedOrigins.add(origin);
       }
+    } catch {
+      // ignore invalid origins
     }
+  }
+
+  if (!env.ALLOWED_ORIGINS) {
     return allowedOrigins;
   }
 
