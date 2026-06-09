@@ -19,6 +19,11 @@ export type MultiRoomState = {
   updatedAt: string;
 };
 
+export type RoomWorkerHealth = {
+  ok: boolean;
+  runtime?: string;
+};
+
 export const MULTI_PLAYER_ID_STORAGE_KEY = "hyperdimensional_battle_multi_player_id";
 export const MULTI_PLAYER_NAME_STORAGE_KEY = "hyperdimensional_battle_multi_player_name";
 
@@ -90,6 +95,15 @@ async function parseRoomResponse(response: Response) {
     throw new Error(message || `Room request failed (${response.status})`);
   }
   return (await response.json()) as MultiRoomState;
+}
+
+export async function fetchRoomWorkerHealth() {
+  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/health`);
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Health request failed (${response.status})`);
+  }
+  return (await response.json()) as RoomWorkerHealth;
 }
 
 export async function fetchRoomState(roomId: string) {

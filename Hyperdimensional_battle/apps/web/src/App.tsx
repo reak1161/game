@@ -40,11 +40,13 @@ import {
   type RoundBuffDefinition
 } from "@hyperdimensional-battle/shared";
 import {
+  fetchRoomWorkerHealth,
   getOrCreateMultiPlayerId,
   joinRoom,
   leaveRoom,
   MULTI_PLAYER_NAME_STORAGE_KEY,
   openRoomSocket,
+  resolveRoomWorkerBaseUrl,
   saveMultiPlayerName,
   startRoomMatch,
   type MultiRoomState,
@@ -1303,6 +1305,8 @@ export function App() {
   const [multiRoomState, setMultiRoomState] = useState<MultiRoomState | null>(null);
   const [multiConnectionState, setMultiConnectionState] = useState<MultiConnectionState>("idle");
   const [multiConnectionError, setMultiConnectionError] = useState<string | null>(null);
+  const [multiWorkerUrl, setMultiWorkerUrl] = useState("");
+  const [multiWorkerHealth, setMultiWorkerHealth] = useState<string>("idle");
   const [multiPlayerId] = useState(() => getOrCreateMultiPlayerId());
   const [multiPlayerName, setMultiPlayerName] = useState(() => {
     if (typeof window === "undefined") {
@@ -1595,6 +1599,42 @@ export function App() {
 
   useEffect(() => {
     if (appScreen !== "multi_lobby" && appScreen !== "multi_match") {
+      setMultiWorkerUrl("");
+      setMultiWorkerHealth("idle");
+      return;
+    }
+
+    let cancelled = false;
+    try {
+      const resolvedUrl = resolveRoomWorkerBaseUrl();
+      setMultiWorkerUrl(resolvedUrl);
+      setMultiWorkerHealth("checking");
+      void fetchRoomWorkerHealth()
+        .then((health) => {
+          if (cancelled) {
+            return;
+          }
+          setMultiWorkerHealth(health.ok ? `ok (${health.runtime ?? "worker"})` : "error");
+        })
+        .catch((caught) => {
+          if (cancelled) {
+            return;
+          }
+          setMultiWorkerHealth(caught instanceof Error ? `error: ${caught.message}` : "error");
+        });
+    } catch (caught) {
+      setMultiWorkerUrl("");
+      setMultiWorkerHealth("error");
+      setMultiConnectionError(caught instanceof Error ? caught.message : "Room worker URL resolution failed");
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appScreen]);
+
+  useEffect(() => {
+    if (appScreen !== "multi_lobby" && appScreen !== "multi_match") {
       multiSocketRef.current?.close();
       multiSocketRef.current = null;
       setMultiConnectionState("idle");
@@ -1657,13 +1697,16 @@ export function App() {
               setMultiConnectionError("ルーム接続に失敗しました。");
             }
           }
-        });
-      } catch (caught) {
+        });      } catch (caught) {
         if (cancelled) {
           return;
         }
         setMultiConnectionState("error");
-        setMultiConnectionError(caught instanceof Error ? caught.message : "ルーム接続に失敗しました。");
+        setMultiConnectionError(
+          caught instanceof Error
+            ? `${caught.message}${multiWorkerUrl ? ` | worker: ${multiWorkerUrl}` : ""}`
+            : "Failed to connect to room worker"
+        );
       }
     };
 
@@ -1674,7 +1717,7 @@ export function App() {
       multiSocketRef.current?.close();
       multiSocketRef.current = null;
     };
-  }, [appScreen, lobbyId, multiPlayerId, multiPlayerName]);
+  }, [appScreen, lobbyId, multiPlayerId, multiPlayerName, multiSeed, multiWorkerUrl]);
 
   useEffect(() => {
     const primeAudio = () => {
@@ -3089,6 +3132,10 @@ export function App() {
               <span>ロビーID: {lobbyId}</span>
               <span>参加人数: {multiPlayers.length}</span>
               <span>{isMultiHost ? "ホスト" : "ゲスト"}</span>
+            </div>
+            <div className="selected-role-tags">
+              <span>worker: {multiWorkerUrl || "unresolved"}</span>
+              <span>health: {multiWorkerHealth}</span>
             </div>
             <div className="multi-lobby-share-row">
               <span className="selected-role-description">招待リンク: {multiInviteUrl}</span>
