@@ -1478,16 +1478,8 @@ function syncPersistentPlacedAuras(
     return;
   }
 
-  for (const addition of additions.values()) {
-    addLog(state, {
-      level: "info",
-      code: "ENCHANT_APPLIED",
-      message:
-        addition.targetNames.length === 1
-          ? `${addition.sourceCard.name}: ${addition.targetNames[0]} に ${addition.enchantName} を付与しました。`
-          : `${addition.sourceCard.name}: 場の ${addition.targetNames.length} 枚に ${addition.enchantName} をまとめて付与しました。`
-    });
-  }
+  // 常時同期で付くエンチャントはターンログに出さない。
+  return;
 }
 
 function syncRoundBuffFieldModifiers(player: PlayerState, cardsById: Record<string, CardDefinition>) {
@@ -1848,7 +1840,7 @@ function dealDamage(
   addLog(context.state, {
     level: "info",
     code: "DAMAGE_DEALT",
-    message: `${context.resolvingCard.name} が ${sourceLabel} で ${formatLogNumber(finalAmount)} ダメージを記録しました。`
+    message: `${context.resolvingCard.name}: ${sourceLabel} で ${formatLogNumber(finalAmount)} ダメージ`
   });
   pushStatusReplay(context.state, context.player);
 
@@ -1994,7 +1986,7 @@ function resolveOperation(
       addLog(state, {
         level: "info",
         code: "CARD_COUNTER_UPDATED",
-        message: `${resolvingCard.name}: 数値 ${operation.counter} が ${formatSignedLogNumber(counterValue)} 変化しました。`
+        message: `${resolvingCard.name}: 数値が ${formatSignedLogNumber(counterValue)} 変化しました。`
       });
       break;
     }
@@ -2011,7 +2003,7 @@ function resolveOperation(
       addLog(state, {
         level: "info",
         code: "CARD_COUNTER_UPDATED",
-        message: `${resolvingCard.name}: 連結 ${connectedCount} 枚ぶん数値 ${operation.counter} が ${formatSignedLogNumber(counterValue)} 変化しました。`
+        message: `${resolvingCard.name}: 連結 ${connectedCount} 枚ぶん数値が ${formatSignedLogNumber(counterValue)} 変化しました。`
       });
       break;
     }
@@ -2913,7 +2905,7 @@ function completeRoundAfterResolution(state: LocalGameState, player: PlayerState
   addLog(state, {
     level: "info",
     code: "FINAL_ATTACK",
-    message: `最終攻撃で ${finalAttack.sourceLabel} を使い ${formatLogNumber(finalAttack.amount)} ダメージを記録しました。`
+    message: `最終攻撃: ${finalAttack.sourceLabel} で ${formatLogNumber(finalAttack.amount)} ダメージ`
   });
   clearRoundInvalidations(player);
   applyRoundEndEffects(state, player, cardsById);

@@ -1051,6 +1051,7 @@ input {
 }
 
 .horizontal-card-row {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 2px;
@@ -1161,83 +1162,91 @@ input {
   margin-top: 0;
 }
 
-.connected-field-group {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-  padding: 0;
-  border-radius: 16px;
-  isolation: isolate;
-  z-index: 0;
-}
-
-.connected-field-group::before,
-.connected-field-group::after {
-  content: "";
+.field-connection-layer {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
   pointer-events: none;
   z-index: 0;
 }
 
-.connected-field-group::before {
-  inset: -8px;
-  border: 3px solid var(--connection-color, rgba(255, 255, 255, 0.72));
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--connection-color, #fff) 28%, transparent),
-    0 0 24px color-mix(in srgb, var(--connection-color, #fff) 42%, transparent);
-  opacity: 0.96;
+.field-connection-overlay {
+  --connection-color: #f8fafc;
+  position: absolute;
+  border-radius: 22px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--connection-color) 35%, transparent));
 }
 
-.connected-field-group::after {
-  inset: -8px;
-  background:
-    radial-gradient(circle at 10% 30%, color-mix(in srgb, var(--connection-color, #fff) 92%, transparent) 0 2px, transparent 3px),
-    radial-gradient(circle at 85% 24%, color-mix(in srgb, var(--connection-color, #fff) 88%, transparent) 0 2px, transparent 3px),
-    radial-gradient(circle at 28% 84%, color-mix(in srgb, var(--connection-color, #fff) 82%, transparent) 0 2px, transparent 3px),
-    radial-gradient(circle at 72% 78%, color-mix(in srgb, var(--connection-color, #fff) 78%, transparent) 0 2px, transparent 3px);
-  filter: blur(0.2px);
-  opacity: 0.95;
-  animation: connected-frame-pulse 1.8s ease-in-out infinite alternate;
+.field-connection-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid color-mix(in srgb, var(--connection-color) 78%, transparent);
+  opacity: 0.32;
 }
 
-.connected-field-group[data-attribute="none"] {
+.field-connection-overlay[data-mode="enchanted"]::before {
+  border-style: dashed;
+  opacity: 0.4;
+}
+
+.field-connection-overlay[data-attribute="none"] {
   --connection-color: #f8fafc;
 }
 
-.connected-field-group[data-attribute="fire"] {
+.field-connection-overlay[data-attribute="fire"] {
   --connection-color: #fb923c;
 }
 
-.connected-field-group[data-attribute="water"] {
+.field-connection-overlay[data-attribute="water"] {
   --connection-color: #38bdf8;
 }
 
-.connected-field-group[data-attribute="ice"] {
+.field-connection-overlay[data-attribute="ice"] {
   --connection-color: #93c5fd;
 }
 
-.connected-field-group[data-attribute="wind"] {
+.field-connection-overlay[data-attribute="wind"] {
   --connection-color: #86efac;
 }
 
-.connected-field-group[data-attribute="thunder"] {
+.field-connection-overlay[data-attribute="thunder"] {
   --connection-color: #facc15;
 }
 
-.connected-field-group[data-attribute="earth"] {
+.field-connection-overlay[data-attribute="earth"] {
   --connection-color: #a16207;
 }
 
-.connected-field-group[data-attribute="dark"] {
+.field-connection-overlay[data-attribute="dark"] {
   --connection-color: #7c3aed;
 }
 
-.connected-field-group > * {
-  position: relative;
-  z-index: 1;
+.field-connection-particle {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  offset-path: inset(0 round 22px);
+  offset-rotate: 0deg;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--connection-color) 96%, white) 0 45%, color-mix(in srgb, var(--connection-color) 70%, transparent) 65%, transparent 100%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--connection-color) 72%, transparent);
+  animation: connection-orbit var(--particle-duration, 3s) linear infinite;
+  animation-delay: var(--particle-delay, 0s);
+}
+
+.field-connection-overlay[data-mode="enchanted"] .field-connection-particle {
+  width: 8px;
+  height: 8px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--connection-color) 92%, white) 0 40%, color-mix(in srgb, var(--connection-color) 82%, transparent) 62%, transparent 100%);
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--connection-color) 80%, transparent),
+    0 0 16px color-mix(in srgb, var(--connection-color) 42%, transparent);
 }
 
 .card-chip {
@@ -1381,10 +1390,7 @@ input {
 }
 
 .card-chip.is-drag-origin-empty {
-  opacity: 0;
-  border-color: transparent;
-  box-shadow: none;
-  background: transparent;
+  display: none;
 }
 
 .card-chip.is-selected {
@@ -1726,6 +1732,10 @@ button.card-text-reference-chip {
 
 .card-text-value-kind-probability::before {
   border-top-color: #2563eb;
+}
+
+.card-text-value-kind-special::before {
+  border-top-color: #eab308;
 }
 
 .card-text-value-modified-up {
@@ -2434,6 +2444,23 @@ button.card-text-reference-chip {
   100% {
     transform: scale(1.004);
     opacity: 1;
+  }
+}
+
+@keyframes connection-orbit {
+  0% {
+    offset-distance: 0%;
+    transform: scale(0.9);
+    opacity: 0.72;
+  }
+  40% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    transform: scale(0.9);
+    opacity: 0.72;
   }
 }
 

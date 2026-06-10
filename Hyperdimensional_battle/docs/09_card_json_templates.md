@@ -66,11 +66,15 @@
 - 最小構成では、次の 2 つを使う
   - `writtenValueKind`
     - その値が「どこに書かれている変動数値か」
-    - `normal | probability | enchant`
+    - `normal | probability | enchant | special`
   - `affectsValueKind`
     - その効果が「何を変動させる対象か」
-    - `normal | probability | enchant`
+    - `normal | probability | enchant | special`
 - これらは表示用ではなく、仕様整理・将来の処理分岐用の内部タグである
+- `special`
+  - 一般的な数値変動効果では変動しない
+  - 固有の効果でのみ変動する数値
+  - UI では黄色タグで表示する
 
 ### 例
 ```json

@@ -102,11 +102,15 @@
 - カード定義 JSON の `textValueBindings` には、処理側の意味づけ用に補助タグを持たせてよい
 - `writtenValueKind`
   - その値がどこに書かれている変動数値か
-  - `normal | probability | enchant`
+  - `normal | probability | enchant | special`
 - `affectsValueKind`
   - その効果が何を変動させる対象か
-  - `normal | probability | enchant`
+  - `normal | probability | enchant | special`
 - これらは UI 表示用ではなく、仕様整理・処理分岐用の内部情報として扱う
+- `special`
+  - 一般的な数値変動効果では変動しない
+  - カード固有の処理でのみ変動する数値
+  - UI では黄色タグで表示する
 
 ## 6. 複数回発動 / 追加発動の特殊ルール
 ### 自分自身を再発動する場合

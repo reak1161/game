@@ -128,8 +128,8 @@ export type CardTextValueBinding = {
   operationIndex: number;
   operationPath?: number[];
   occurrence: number;
-  writtenValueKind?: "normal" | "probability" | "enchant";
-  affectsValueKind?: "normal" | "probability" | "enchant";
+  writtenValueKind?: "normal" | "probability" | "enchant" | "special";
+  affectsValueKind?: "normal" | "probability" | "enchant" | "special";
 };
 
 export type RoundBuffDefinition = {

@@ -1,6 +1,7 @@
 import {
   Fragment,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -130,7 +131,19 @@ type ConnectedFieldGroup = {
   start: number;
   end: number;
   attribute: Attribute;
+  mode: "attribute" | "enchanted";
   instanceIds: string[];
+};
+
+type ConnectedFieldOverlay = {
+  key: string;
+  attribute: Attribute;
+  mode: "attribute" | "enchanted";
+  lane: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 };
 
 type ConnectedEffectConfig =
@@ -175,7 +188,7 @@ type MultiConnectionState = "idle" | "connecting" | "connected" | "error";
 const STATUS_KEYS = ["baseAttack", "tempAttack", "baseMagic", "tempMagic", "scoreThisRound", "totalScore"] as const;
 type StatusKey = (typeof STATUS_KEYS)[number];
 const ATTRIBUTE_ORDER: Attribute[] = ["none", "fire", "water", "ice", "wind", "thunder", "earth", "dark"];
-const ACTIVATION_TONE_STEPS = [0, 2, 4, 7, 9, 12, 14, 16];
+const ACTIVATION_TONE_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 const SOLO_RANKING_STORAGE_KEY = "hyperdimensional_battle_solo_rankings";
 
 function renderUtilityIcon(kind: UtilityIconKind) {
@@ -561,9 +574,13 @@ function getLogGroupKind(entry: EngineLogEntry): LogGroup["kind"] {
 function buildLogGroups(entries: EngineLogEntry[]) {
 
   const groups: LogGroup[] = [];
+  let pendingRoundEndSection = false;
 
   for (const entry of entries) {
     if (entry.code === "CARD_ACTIVATED_DONE") {
+      continue;
+    }
+    if (entry.code === "ENCHANT_APPLIED") {
       continue;
     }
     const kind = getLogGroupKind(entry);
@@ -574,7 +591,25 @@ function buildLogGroups(entries: EngineLogEntry[]) {
         kind,
         entries: [entry]
       });
+      pendingRoundEndSection = entry.code === "ROUND_END" || entry.code === "ROUND_ENDED";
       continue;
+    }
+    if (pendingRoundEndSection) {
+      groups.push({
+        key: `group_round_end_${entry.id}`,
+        title: null,
+        kind: "system-shared",
+        entries: [
+          {
+            id: `round_end_section_${entry.id}`,
+            ts: entry.ts,
+            level: "info",
+            code: "ROUND_END_SECTION",
+            message: "ラウンド終了時処理"
+          }
+        ]
+      });
+      pendingRoundEndSection = false;
     }
     const title = extractLogGroupTitle(entry);
     const currentGroup = groups[groups.length - 1];
@@ -772,7 +807,7 @@ function renderPlainNumericAdjustedTextSegmentSafe(
     {
       value: string;
       change: "none" | "up" | "down";
-      kind: "normal" | "probability" | "enchant";
+      kind: "normal" | "probability" | "enchant" | "special";
     }
   >,
   occurrenceStart: number
@@ -836,7 +871,7 @@ function renderNumericAdjustedTextSegmentSafe(
     {
       value: string;
       change: "none" | "up" | "down";
-      kind: "normal" | "probability" | "enchant";
+      kind: "normal" | "probability" | "enchant" | "special";
     }
   >,
   occurrenceStart: number
@@ -916,7 +951,7 @@ function renderCardTextLine(
     {
       value: string;
       change: "none" | "up" | "down";
-      kind: "normal" | "probability" | "enchant";
+      kind: "normal" | "probability" | "enchant" | "special";
     }
   >,
   occurrenceStart: number,
@@ -990,7 +1025,7 @@ function renderPlainNumericAdjustedTextSegment(
     {
       value: string;
       change: "none" | "up" | "down";
-      kind: "normal" | "probability" | "enchant";
+      kind: "normal" | "probability" | "enchant" | "special";
     }
   >,
   occurrenceStart: number
@@ -1054,7 +1089,7 @@ function renderNumericAdjustedTextSegment(
     {
       value: string;
       change: "none" | "up" | "down";
-      kind: "normal" | "probability" | "enchant";
+      kind: "normal" | "probability" | "enchant" | "special";
     }
   >,
   occurrenceStart: number
@@ -1111,7 +1146,7 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
     {
       value: string;
       change: "none" | "up" | "down";
-      kind: "normal" | "probability" | "enchant";
+      kind: "normal" | "probability" | "enchant" | "special";
     }
   >();
   const definition = card ? cardMap[card.definitionId] : options?.definitionId ? cardMap[options.definitionId] : undefined;
@@ -1148,6 +1183,9 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
       }
       if (writtenKind === "probability") {
         return isEnchantDefinition ? originalValue : originalValue * probabilityMultiplier;
+      }
+      if (writtenKind === "special") {
+        return originalValue;
       }
       return (originalValue + numericBonus) * numericMultiplier;
     })();
@@ -1270,11 +1308,58 @@ function buildConnectedFieldGroups(field: CardInstance[]) {
       start,
       end,
       attribute: connectedConfig.attribute,
+      mode: connectedConfig.mode,
       instanceIds: field.slice(start, end + 1).map((entry) => entry.instanceId)
     });
   });
 
   return groups;
+}
+
+function buildConnectedFieldOverlays(
+  groups: ConnectedFieldGroup[],
+  rowElement: HTMLDivElement | null,
+  cardRefs: Map<string, HTMLDivElement>
+) {
+  if (!rowElement) {
+    return [] as ConnectedFieldOverlay[];
+  }
+
+  const rowRect = rowElement.getBoundingClientRect();
+  const overlays: ConnectedFieldOverlay[] = [];
+  const laneUsage = new Map<string, number>();
+
+  for (const group of groups) {
+    const cardRects = group.instanceIds
+      .map((instanceId) => cardRefs.get(instanceId)?.getBoundingClientRect() ?? null)
+      .filter((rect): rect is DOMRect => Boolean(rect));
+
+    if (cardRects.length < 2) {
+      continue;
+    }
+
+    const minLeft = Math.min(...cardRects.map((rect) => rect.left));
+    const maxRight = Math.max(...cardRects.map((rect) => rect.right));
+    const minTop = Math.min(...cardRects.map((rect) => rect.top));
+    const maxBottom = Math.max(...cardRects.map((rect) => rect.bottom));
+    const laneKey = `${group.start}-${group.end}`;
+    const lane = laneUsage.get(laneKey) ?? 0;
+    laneUsage.set(laneKey, lane + 1);
+    const inset = 6 + lane * 12;
+
+    overlays.push({
+      key: group.key,
+      attribute: group.attribute,
+      mode: group.mode,
+      lane,
+      left: minLeft - rowRect.left + rowElement.scrollLeft - inset,
+      top: minTop - rowRect.top - inset,
+      width: maxRight - minLeft + inset * 2,
+      height: maxBottom - minTop + inset * 2
+    });
+  }
+
+  return overlays;
 }
 
 function getReferencedDefinitionIdsForCard(card: CardInstance | null, player: PlayerState | null) {
@@ -1344,7 +1429,9 @@ export function App() {
   const [soloRankings, setSoloRankings] = useState<SoloRankingEntry[]>(() => loadSoloRankings());
   const [particleBursts, setParticleBursts] = useState<ParticleBurst[]>([]);
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+  const [connectionOverlayVersion, setConnectionOverlayVersion] = useState(0);
   const fieldCardRefs = useRef(new Map<string, HTMLDivElement>());
+  const fieldRowRef = useRef<HTMLDivElement | null>(null);
   const statusBlockRefs = useRef(new Map<StatusKey, HTMLDivElement>());
   const lastProcessedReplayIndexRef = useRef(0);
   const lastProcessedLogIndexRef = useRef(0);
@@ -1748,23 +1835,14 @@ export function App() {
     if (audioContext.state === "suspended") {
       audioContext.resume().catch(() => undefined);
     }
-    const semitone = ACTIVATION_TONE_STEPS[activationToneCountRef.current % ACTIVATION_TONE_STEPS.length] ?? 0;
+    const semitone =
+      ACTIVATION_TONE_STEPS[Math.min(activationToneCountRef.current, ACTIVATION_TONE_STEPS.length - 1)] ?? 0;
     const baseFrequency = 261.63;
     const frequency = baseFrequency * 2 ** (semitone / 12);
-    const waveformByAttribute: Record<Attribute, OscillatorType> = {
-      none: "sine",
-      fire: "triangle",
-      water: "sine",
-      ice: "triangle",
-      wind: "sawtooth",
-      thunder: "square",
-      earth: "triangle",
-      dark: "sine"
-    };
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    oscillator.type = waveformByAttribute[attribute] ?? "sine";
+    oscillator.type = "triangle";
     oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
     gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, audioVolume / 2200), audioContext.currentTime + 0.02);
@@ -1898,10 +1976,6 @@ export function App() {
 
     for (const event of newEvents) {
       handleReplayEventParticle(event, spawnBurst, lastActivationRef);
-
-      if (event.type === "ROUND_START") {
-        activationToneCountRef.current = 0;
-      }
 
       if (event.type === "CARD_ACTIVATED") {
         playActivationTone(event.attribute);
@@ -2176,6 +2250,37 @@ export function App() {
     }
     return buildConnectedFieldGroups(player.field);
   }, [inputStep, player]);
+  const connectedFieldOverlays = useMemo(
+    () => buildConnectedFieldOverlays(connectedFieldGroups, fieldRowRef.current, fieldCardRefs.current),
+    [connectedFieldGroups, connectionOverlayVersion]
+  );
+
+  useLayoutEffect(() => {
+    if (inputStep === "placement") {
+      return;
+    }
+
+    const handleLayoutChange = () => setConnectionOverlayVersion((current) => current + 1);
+    const rowElement = fieldRowRef.current;
+    handleLayoutChange();
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && rowElement
+        ? new ResizeObserver(() => {
+            handleLayoutChange();
+          })
+        : null;
+
+    if (resizeObserver && rowElement) {
+      resizeObserver.observe(rowElement);
+    }
+    window.addEventListener("resize", handleLayoutChange);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", handleLayoutChange);
+    };
+  }, [connectedFieldGroups, inputStep, player?.field.length]);
 
   useEffect(() => {
     if (!game?.pendingResolution) {
@@ -3810,7 +3915,7 @@ export function App() {
             <section className="panel field-panel">
               <div
                 className={`horizontal-card-row ${inputStep === "placement" ? "is-placement-row" : ""}`}
-                ref={inputStep === "placement" ? placementRowRef : null}
+                ref={inputStep === "placement" ? placementRowRef : fieldRowRef}
                 onDragOver={
                   inputStep === "placement"
                     ? handlePlacementRowDragOver
@@ -3993,31 +4098,42 @@ export function App() {
                       );
                     }
 
-                    const groupedCardIds = new Set(connectedFieldGroups.flatMap((group) => group.instanceIds));
-                    const groupByStart = new Map<number, ConnectedFieldGroup>(
-                      connectedFieldGroups.map((group) => [group.start, group] as const)
-                    );
-
-                    return player.field.map((card, index) => {
-                      const group = groupByStart.get(index);
-                      if (group) {
-                        return (
-                          <div
-                            key={group.key}
-                            className="connected-field-group"
-                            data-attribute={resolveVisualAttribute(group.attribute)}
-                          >
-                            {player.field.slice(group.start, group.end + 1).map((groupCard) => renderFieldCard(groupCard))}
-                          </div>
-                        );
-                      }
-
-                      if (groupedCardIds.has(card.instanceId)) {
-                        return null;
-                      }
-
-                      return renderFieldCard(card);
-                    });
+                    return [
+                      connectedFieldOverlays.length > 0 ? (
+                        <div key="connection-layer" className="field-connection-layer" aria-hidden="true">
+                          {connectedFieldOverlays.map((overlay) => (
+                            <div
+                              key={overlay.key}
+                              className="field-connection-overlay"
+                              data-attribute={resolveVisualAttribute(overlay.attribute)}
+                              data-mode={overlay.mode}
+                              style={
+                                {
+                                  left: `${overlay.left}px`,
+                                  top: `${overlay.top}px`,
+                                  width: `${overlay.width}px`,
+                                  height: `${overlay.height}px`
+                                } as CSSProperties
+                              }
+                            >
+                              {Array.from({ length: overlay.mode === "enchanted" ? 8 : 6 }, (_, particleIndex) => (
+                                <span
+                                  key={`${overlay.key}_particle_${particleIndex}`}
+                                  className="field-connection-particle"
+                                  style={
+                                    {
+                                      "--particle-delay": `${particleIndex * 0.16}s`,
+                                      "--particle-duration": `${overlay.mode === "enchanted" ? 2.6 : 3.1}s`
+                                    } as CSSProperties
+                                  }
+                                />
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null,
+                      ...player.field.map((card) => renderFieldCard(card))
+                    ];
                   })()
                 ) : null}
               </div>
