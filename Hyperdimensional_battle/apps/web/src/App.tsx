@@ -140,6 +140,7 @@ type ConnectedFieldOverlay = {
   attribute: Attribute;
   mode: "attribute" | "enchanted";
   lane: number;
+  particleCount: number;
   left: number;
   top: number;
   width: number;
@@ -1309,6 +1310,17 @@ function buildConnectedFieldGroups(field: CardInstance[]) {
   return groups;
 }
 
+function getTargetOperationLabel(key: string) {
+  switch (key) {
+    case "destroy_target":
+      return "破壊するカード";
+    case "apply_enchant":
+      return "エンチャントを付与するカード";
+    default:
+      return "対象カード";
+  }
+}
+
 function buildConnectedFieldOverlays(
   groups: ConnectedFieldGroup[],
   rowElement: HTMLDivElement | null,
@@ -1339,15 +1351,21 @@ function buildConnectedFieldOverlays(
     const lane = laneUsage.get(laneKey) ?? 0;
     laneUsage.set(laneKey, lane + 1);
     const inset = 6 + lane * 12;
+    const overlayWidth = maxRight - minLeft + inset * 2;
+    const baseParticleCount = group.mode === "enchanted" ? 8 : 6;
+    const countByCards = Math.max(0, group.instanceIds.length - 2) * 2;
+    const countByWidth = Math.max(0, Math.ceil((overlayWidth - 260) / 90));
+    const particleCount = Math.min(24, baseParticleCount + countByCards + countByWidth);
 
     overlays.push({
       key: group.key,
       attribute: group.attribute,
       mode: group.mode,
       lane,
+      particleCount,
       left: minLeft - rowRect.left + rowElement.scrollLeft - inset,
       top: minTop - rowRect.top - inset,
-      width: maxRight - minLeft + inset * 2,
+      width: overlayWidth,
       height: maxBottom - minTop + inset * 2
     });
   }
@@ -2100,11 +2118,18 @@ export function App() {
 
   const currentResolutionCard = useMemo(() => (game ? getCurrentResolutionCard(game) : null), [game]);
   const currentResolutionOperations = useMemo(() => {
-    if (!currentResolutionCard) {
+    if (!game || !currentResolutionCard) {
       return [];
     }
+    const targetKeys = getCurrentResolutionTargetKeys(game);
+    if (targetKeys.length > 0) {
+      return targetKeys.map((key) => ({
+        key,
+        label: getTargetOperationLabel(key)
+      }));
+    }
     return getTargetOperations(cardMap[currentResolutionCard.definitionId]);
-  }, [currentResolutionCard]);
+  }, [currentResolutionCard, game]);
   const currentTokenPlacementRequirement = useMemo<TokenPlacementRequirement | null>(() => {
     if (!currentResolutionCard) {
       return null;
@@ -4109,13 +4134,13 @@ export function App() {
                                 } as CSSProperties
                               }
                             >
-                              {Array.from({ length: overlay.mode === "enchanted" ? 8 : 6 }, (_, particleIndex) => (
+                              {Array.from({ length: overlay.particleCount }, (_, particleIndex) => (
                                 <span
                                   key={`${overlay.key}_particle_${particleIndex}`}
                                   className="field-connection-particle"
                                   style={
                                     {
-                                      "--particle-delay": `${particleIndex * 0.16}s`,
+                                      "--particle-delay": `${particleIndex * 0.1}s`,
                                       "--particle-duration": `${overlay.mode === "enchanted" ? 2.6 : 3.1}s`
                                     } as CSSProperties
                                   }
