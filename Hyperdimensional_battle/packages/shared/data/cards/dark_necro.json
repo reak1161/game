@@ -1,0 +1,49 @@
+{
+  "id": "dark_necro",
+  "name": "ネクロ",
+  "type": "attack",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動：{{30%}}の確率で「破壊する」。\nその後、1/2のダメージを与える。",
+  "deckEligible": false,
+  "effects": [
+    {
+      "id": "dark_necro_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 30,
+          "operations": [
+            {
+              "kind": "destroy_self"
+            }
+          ]
+        },
+        {
+          "kind": "deal_damage_from_temp_attack_fraction",
+          "value": 0.5
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_necro_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "attack",
+    "token",
+    "probability"
+  ]
+}

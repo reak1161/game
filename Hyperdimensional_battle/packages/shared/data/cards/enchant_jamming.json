@@ -1,0 +1,31 @@
+{
+  "id": "enchant_jamming",
+  "name": "ジャミング",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置：左のカードを無効化する。\nこのエンチャントが付与されたカードは再発動する。",
+  "effects": [
+    {
+      "id": "enchant_jamming_trigger",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_self"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "enchant",
+    "additional",
+    "invalidate"
+  ]
+}

@@ -3,10 +3,8 @@
   "name": "オーバーフロー",
   "type": "ability",
   "attribute": "water",
-  "timings": [
-    "activate"
-  ],
-  "text": "発動: 自分の場に水属性のカードが10枚以上あるとき、基礎ステータス{{+100}}",
+  "timings": ["activate"],
+  "text": "発動: 自分の場に水属性のカードが10枚以上あるとき、基礎ステータス{{+300}}",
   "effects": [
     {
       "id": "water_overflow_activate",
@@ -20,7 +18,7 @@
       "operations": [
         {
           "kind": "add_base_both",
-          "value": 100
+          "value": 300
         }
       ]
     }
@@ -34,8 +32,5 @@
       "affectsValueKind": "normal"
     }
   ],
-  "tags": [
-    "water",
-    "field-count"
-  ]
+  "tags": ["water", "field-count"]
 }

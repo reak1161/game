@@ -230,7 +230,7 @@ describe("engine", () => {
     expect(afterResolve.players[0].baseAttack).toBe(125);
     expect(
       afterResolve.log.some(
-        (entry) => entry.code === "ROUND_BUFF_APPLIED" && entry.message.includes("もう一回") && entry.message.includes("筋トレ")
+        (entry) => entry.code === "ROUND_BUFF_ONE_MORE" && entry.message.includes("もう一回") && entry.message.includes("筋トレ")
       )
     ).toBe(true);
   });
@@ -1355,9 +1355,7 @@ describe("engine", () => {
     });
 
     const enchantLogs = afterResolve.log.filter((entry) => entry.code === "ENCHANT_APPLIED");
-    const summaryLog = enchantLogs.find((entry) => entry.code === "ENCHANT_APPLIED");
-    expect(summaryLog).toBeDefined();
-    expect(enchantLogs).toHaveLength(1);
+    expect(enchantLogs).toHaveLength(0);
   });
 
   it("consumed card can be temporarily restored and reactivated by another effect", () => {

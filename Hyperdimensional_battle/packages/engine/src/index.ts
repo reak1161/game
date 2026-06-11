@@ -130,6 +130,10 @@ function floorValue(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+function floorDamageValue(value: number) {
+  return Math.max(0, Math.floor(value));
+}
+
 function formatLogNumber(value: number) {
   if (Math.abs(value) >= 1_000_000_000_000) {
     return value.toExponential(3).replace(/(\.\d*?[1-9])0+e/, "$1e").replace(/\.0+e/, "e");
@@ -780,6 +784,8 @@ function resetRoundStats(player: PlayerState, role: RoleDefinition) {
   player.tempAttack = player.baseAttack;
   player.tempMagic = player.baseMagic;
   player.scoreThisRound = 0;
+  player.finalAttackMultiplier = 1;
+  player.finalAttackForcedZero = false;
   player.roundDestroyedCardCount = 0;
   player.currentRoundLastEffectDefinitionId = null;
   player.roundPlacementLimit = 5;
@@ -849,6 +855,14 @@ function conditionSatisfied(
         return false;
       }
       return event.sourceCard.ownerPlayerId === hostCard?.ownerPlayerId;
+    case "source_owner_is_self_and_source_main_timing_is_consume":
+      if (!event || !("sourceCard" in event) || !event.sourceCard || !hostCard) {
+        return false;
+      }
+      return (
+        event.sourceCard.ownerPlayerId === hostCard.ownerPlayerId &&
+        getMainTiming(getCardDefinitionMap(state.cardCatalog)[event.sourceCard.definitionId]!) === "consume"
+      );
     case "source_owner_is_self_and_not_host":
       if (!event || !("sourceCard" in event) || !event.sourceCard || !hostCard) {
         return false;
@@ -1473,6 +1487,7 @@ function syncPersistentPlacedAuras(
   syncPersistentAttributeTransforms(player, cardsById);
   syncHostEnchantNumericModifiers(player, cardsById);
   syncRoundBuffFieldModifiers(player, cardsById);
+  syncJammingInvalidations(player);
 
   if (options?.suppressLogs) {
     return;
@@ -1480,6 +1495,43 @@ function syncPersistentPlacedAuras(
 
   // 常時同期で付くエンチャントはターンログに出さない。
   return;
+}
+
+function syncJammingInvalidations(player: PlayerState) {
+  for (const card of player.field) {
+    if (card.derived?.jammingInvalidated) {
+      card.isInvalidated = Boolean(card.derived.preJammingInvalidated);
+      const derived = { ...(card.derived ?? {}) };
+      delete derived.jammingInvalidated;
+      delete derived.preJammingInvalidated;
+      card.derived = derived;
+    }
+  }
+
+  const jammedInstanceIds = new Set<string>();
+  for (const sourceCard of player.field) {
+    if (sourceCard.isDestroyed) {
+      continue;
+    }
+    if (!sourceCard.enchantments.some((enchantment) => enchantment.definitionId === "enchant_jamming")) {
+      continue;
+    }
+    const leftCard = getRelativeCard(player, sourceCard, "left_1");
+    if (leftCard) {
+      jammedInstanceIds.add(leftCard.instanceId);
+    }
+  }
+
+  for (const card of player.field) {
+    if (!jammedInstanceIds.has(card.instanceId)) {
+      continue;
+    }
+    const derived = { ...(card.derived ?? {}) };
+    derived.preJammingInvalidated = Boolean(card.isInvalidated);
+    derived.jammingInvalidated = true;
+    card.derived = derived;
+    card.isInvalidated = true;
+  }
 }
 
 function syncRoundBuffFieldModifiers(player: PlayerState, cardsById: Record<string, CardDefinition>) {
@@ -1653,6 +1705,59 @@ function createTokenCards(
   runFieldStateChecks(state, player, cardsById);
 }
 
+function createRandomPositionTokenCards(
+  state: LocalGameState,
+  player: PlayerState,
+  cardsById: Record<string, CardDefinition>,
+  resolvingCard: CardInstance,
+  tokenDefinitionId: string,
+  minCount: number,
+  maxCount: number,
+  effectId: string
+) {
+  const tokenDefinition = cardsById[tokenDefinitionId];
+  if (!tokenDefinition) {
+    return;
+  }
+
+  const random = createRng(
+    `${state.rngSeed}:random_token:${state.round}:${effectId}:${state.pendingResolution?.activationCount ?? 0}`
+  );
+  const countRange = Math.max(0, maxCount - minCount);
+  const count = minCount + Math.floor(random() * (countRange + 1));
+
+  for (let index = 0; index < count; index += 1) {
+    const tokenCard = buildCardInstance(tokenDefinition, player.playerId, Date.now() + index);
+    tokenCard.zone = "field";
+    const insertIndex = Math.floor(random() * (player.field.length + 1));
+    player.field.splice(insertIndex, 0, tokenCard);
+    assignFieldIndexes(player);
+    applyRoleRoundInvalidations(state, player);
+    if (getMainTiming(tokenDefinition) === "activate" || getMainTiming(tokenDefinition) === "consume") {
+      queueActivationByFieldOrder(state, player, tokenCard);
+    }
+    addReplay(state, {
+      type: "CARD_CREATED",
+      playerId: player.playerId,
+      instanceId: tokenCard.instanceId,
+      definitionId: tokenCard.definitionId,
+      fieldIndex: tokenCard.fieldIndex ?? insertIndex
+    });
+    addLog(state, {
+      level: "info",
+      code: "CARD_CREATED",
+      message: `${resolvingCard.name}: ${tokenCard.name} を場に作成しました。`
+    });
+    dispatchPlacedTrigger(state, player, cardsById, {
+      kind: "on_enter_field",
+      enteredCard: tokenCard
+    });
+  }
+
+  syncPersistentPlacedAuras(state, player, cardsById);
+  runFieldStateChecks(state, player, cardsById);
+}
+
 function applyFutureChainMultipliers(context: ResolutionContext) {
   const pending = getChainState(context.state);
   const currentAttribute = getEffectiveCardAttribute(context.resolvingCard);
@@ -1796,14 +1901,22 @@ function applyRoleRoundStartEffects(state: LocalGameState, player: PlayerState, 
   }
 }
 
-function executeHostEnchantmentEffects(context: ResolutionContext, triggerKind: "when_host_card_activates" | "before_host_damage_calculation") {
+function executeHostEnchantmentEffects(
+  context: ResolutionContext,
+  triggerKind: "when_host_card_activates" | "when_host_card_additionally_activates" | "before_host_damage_calculation"
+) {
   for (const enchantment of [...context.resolvingCard.enchantments]) {
     const enchantContext: ResolutionContext = {
       ...context,
       activeEnchantment: enchantment
     };
     runCardEffects(
-      enchantment.effects.filter((effect) => effect.timing === "enchant" && effect.trigger?.kind === triggerKind),
+      enchantment.effects.filter(
+        (effect) =>
+          effect.timing === "enchant" &&
+          effect.trigger?.kind === triggerKind &&
+          !context.activationTask.skippedReactiveEffectIds.includes(effect.id)
+      ),
       enchantContext,
       null
     );
@@ -1813,7 +1926,7 @@ function executeHostEnchantmentEffects(context: ResolutionContext, triggerKind: 
 function dealDamage(
   context: ResolutionContext,
   calculateAmount: () => number,
-  sourceLabel: "一時攻撃" | "一時魔法" | "最大一時ステータス"
+  sourceLabel: "一時攻撃" | "一時魔法" | "最大一時ステータス" | "効果"
 ) {
   executeHostEnchantmentEffects(context, "before_host_damage_calculation");
   const amount = calculateAmount();
@@ -1828,7 +1941,7 @@ function dealDamage(
     { kind: "before_damage_dealt" }
   >;
 
-  const finalAmount = Math.max(0, floorValue(event.pendingDamage));
+  const finalAmount = floorDamageValue(event.pendingDamage);
   context.player.scoreThisRound += finalAmount;
   context.player.totalScore += finalAmount;
   addReplay(context.state, {
@@ -2163,6 +2276,11 @@ function resolveOperation(
     case "deal_damage_from_temp_attack_fraction":
       dealDamage(context, () => floorValue(player.tempAttack * scaledValue!), "一時攻撃");
       break;
+    case "deal_damage_from_ally_field_definition_count_multiplier": {
+      const count = player.field.filter((card) => card.definitionId === operation.definitionId).length;
+      dealDamage(context, () => floorValue(count * scaledValue!), "効果");
+      break;
+    }
     case "deal_damage_from_temp_magic":
       dealDamage(context, () => player.tempMagic, "一時魔法");
       break;
@@ -2218,6 +2336,19 @@ function resolveOperation(
       context.lastDestroySucceeded = destroyCard(state, player, cardsById, resolvingCard, resolvingCard, context.activationTask);
       context.lastDestroyCount = context.lastDestroySucceeded ? 1 : 0;
       break;
+    case "invalidate_relative_card": {
+      const target = getRelativeCard(player, resolvingCard, operation.relativePosition);
+      if (target && !target.isInvalidated) {
+        target.isInvalidated = true;
+        addReplay(state, { type: "CARD_INVALIDATED", playerId: player.playerId, instanceId: target.instanceId });
+        addLog(state, {
+          level: "info",
+          code: "CARD_INVALIDATED",
+          message: `${target.name} が無効化されました。`
+        });
+      }
+      break;
+    }
     case "destroy_each_ally_field_card_with_chance": {
       let destroyedCount = 0;
       for (const target of [...player.field]) {
@@ -2353,6 +2484,18 @@ function resolveOperation(
         operation.tokenDefinitionId,
         operation.count,
         operation.position
+      );
+      break;
+    case "create_token_random_count_random_positions":
+      createRandomPositionTokenCards(
+        state,
+        player,
+        cardsById,
+        resolvingCard,
+        operation.tokenDefinitionId,
+        operation.minCount,
+        operation.maxCount,
+        effectId
       );
       break;
     case "merge_adjacent_same_definition_cards": {
@@ -2506,6 +2649,22 @@ function resolveOperation(
         message: `${resolvingCard.name}: ラウンド終了時の復活を予約しました。`
       });
       break;
+    case "schedule_source_card_revive_at_round_end":
+      if (event && "sourceCard" in event && event.sourceCard) {
+        state.scheduledRoundEndRevives.push({
+          card: structuredClone(event.sourceCard),
+          fieldIndex:
+            typeof event.sourceCard.derived?.reviveFieldIndex === "number"
+              ? (event.sourceCard.derived.reviveFieldIndex as number)
+              : player.field.length
+        });
+        addLog(state, {
+          level: "info",
+          code: "SCHEDULED_EFFECT",
+          message: `${event.sourceCard.name}: ラウンド終了時の復活を予約しました。`
+        });
+      }
+      break;
     case "set_activating_card_attribute_to_previous_attribute": {
       const previousAttribute = state.pendingResolution?.lastResolvedAttribute;
       if (previousAttribute) {
@@ -2544,6 +2703,40 @@ function resolveOperation(
         event.pendingDamage = 0;
       }
       break;
+    case "multiply_final_attack":
+      player.finalAttackMultiplier = floorValue(player.finalAttackMultiplier * scaledValue!);
+      addLog(state, {
+        level: "info",
+        code: "FINAL_ATTACK_MODIFIED",
+        message: `${resolvingCard.name}: 最終攻撃を ×${formatLogNumber(scaledValue!)} にしました。`
+      });
+      break;
+    case "set_final_attack_to_zero":
+      player.finalAttackForcedZero = true;
+      addLog(state, {
+        level: "info",
+        code: "FINAL_ATTACK_MODIFIED",
+        message: `${resolvingCard.name}: 最終攻撃を 0 にしました。`
+      });
+      break;
+    case "gamble_final_attack_double_or_zero": {
+      const random = createRng(
+        `${state.rngSeed}:final_attack_gamble:${state.round}:${effectId}:${state.pendingResolution?.activationCount ?? 0}:${state.chanceRollCount}`
+      );
+      state.chanceRollCount += 1;
+      const won = random() < 0.5;
+      if (won) {
+        player.finalAttackMultiplier = floorValue(player.finalAttackMultiplier * 2);
+      } else {
+        player.finalAttackForcedZero = true;
+      }
+      addLog(state, {
+        level: "info",
+        code: "FINAL_ATTACK_MODIFIED",
+        message: `${resolvingCard.name}: ${won ? "闇のギャンブル成功で最終攻撃を ×2 にしました。" : "闇のギャンブル失敗で最終攻撃を 0 にしました。"}`
+      });
+      break;
+    }
     case "set_round_placement_limit":
       player.roundPlacementLimit = scaledValue!;
       break;
@@ -2583,6 +2776,7 @@ function resolveOperation(
     scale_target_probability_values: "確率数値変化",
     deal_damage_from_temp_attack: "攻撃ダメージ",
     deal_damage_from_temp_attack_fraction: "分割攻撃ダメージ",
+    deal_damage_from_ally_field_definition_count_multiplier: "カード数参照ダメージ",
     deal_damage_from_temp_magic: "魔法ダメージ",
     deal_damage_from_max_temp_stat: "最大ステータスダメージ",
     destroy_target: "破壊",
@@ -2591,6 +2785,7 @@ function resolveOperation(
     destroy_all_self_enchantments: "エンチャント全破壊",
     destroy_self: "自壊",
     destroy_each_ally_field_card_with_chance: "確率破壊",
+    invalidate_relative_card: "相対無効",
     invalidate_all_right_cards: "右側無効",
     invalidate_cards_with_attribute_different_from_previous: "直前属性比較無効",
     trigger_round_end_effects_of_last_invalidated_cards: "無効化カードの終了時効果発動",
@@ -2598,6 +2793,7 @@ function resolveOperation(
     apply_enchant_to_all_ally_field_cards: "全体付与",
     apply_enchant_to_adjacent_cards: "両隣付与",
     create_token: "生成",
+    create_token_random_count_random_positions: "ランダム生成",
     merge_adjacent_same_definition_cards: "融合",
     queue_additional_activation_for_leftmost_ally_field_card: "左端追加発動",
     queue_additional_activation_for_all_ally_field_cards: "全体追加発動",
@@ -2612,10 +2808,14 @@ function resolveOperation(
     repeat_previous_round_last_effect_as_self: "前ラウンド効果再現",
     schedule_add_base_both_at_next_round_start: "次ラウンド予約",
     schedule_host_revive_at_round_end: "復活予約",
+    schedule_source_card_revive_at_round_end: "元カード復活予約",
     set_activating_card_attribute_to_previous_attribute: "属性変化",
     transform_self_to_definition: "自己変化",
     transform_all_non_attribute_allies_to_attribute: "属性変換",
     set_pending_damage_to_zero: "ダメージ無効化",
+    multiply_final_attack: "最終攻撃補正",
+    set_final_attack_to_zero: "最終攻撃無効化",
+    gamble_final_attack_double_or_zero: "最終攻撃ギャンブル",
     set_round_placement_limit: "配置上限変化"
   };
 
@@ -2869,14 +3069,18 @@ function computeFinalAttack(state: LocalGameState, player: PlayerState) {
       code: "ROLE_BLAZE_FINAL",
       message: `ブレイズの効果で、そのラウンド中に破壊された ${player.roundDestroyedCardCount} 枚ぶん最終攻撃前の一時ステータスを ×${formatLogNumber(multiplier)} にしました。`
     });
-    return computeFinalAttackFromValues(
+    const computed = computeFinalAttackFromValues(
       player.roleId,
       floorValue(player.tempAttack * multiplier),
       floorValue(player.tempMagic * multiplier)
     );
+    computed.amount = player.finalAttackForcedZero ? 0 : floorValue(computed.amount * player.finalAttackMultiplier);
+    return computed;
   }
 
-  return computeFinalAttackFromValues(player.roleId, player.tempAttack, player.tempMagic);
+  const computed = computeFinalAttackFromValues(player.roleId, player.tempAttack, player.tempMagic);
+  computed.amount = player.finalAttackForcedZero ? 0 : floorValue(computed.amount * player.finalAttackMultiplier);
+  return computed;
 }
 
 function cloneCardForDuplication(sourceCard: CardInstance) {
@@ -2899,13 +3103,14 @@ function cloneCardForDuplication(sourceCard: CardInstance) {
 
 function completeRoundAfterResolution(state: LocalGameState, player: PlayerState, cardsById: Record<string, CardDefinition>) {
   const finalAttack = computeFinalAttack(state, player);
-  player.scoreThisRound += finalAttack.amount;
-  player.totalScore += finalAttack.amount;
-  addReplay(state, { type: "FINAL_ATTACK", playerId: player.playerId, amount: finalAttack.amount });
+  const finalAttackAmount = floorDamageValue(finalAttack.amount);
+  player.scoreThisRound += finalAttackAmount;
+  player.totalScore += finalAttackAmount;
+  addReplay(state, { type: "FINAL_ATTACK", playerId: player.playerId, amount: finalAttackAmount });
   addLog(state, {
     level: "info",
     code: "FINAL_ATTACK",
-    message: `最終攻撃: ${finalAttack.sourceLabel} で ${formatLogNumber(finalAttack.amount)} ダメージ`
+    message: `最終攻撃: ${finalAttack.sourceLabel} で ${formatLogNumber(finalAttackAmount)} ダメージ`
   });
   clearRoundInvalidations(player);
   applyRoundEndEffects(state, player, cardsById);
@@ -3089,6 +3294,9 @@ function resolveSingleCard(
   const mainTiming = getMainTiming(definition);
   const referencedEffectDefinition = getResolvableCardDefinition(player, resolvingCard, cardsById);
   executeHostEnchantmentEffects(context, "when_host_card_activates");
+  if (activationTask.isAdditional) {
+    executeHostEnchantmentEffects(context, "when_host_card_additionally_activates");
+  }
   runCardEffects(definition.effects.filter((effect) => effect.timing === mainTiming), context, null);
   dispatchPlacedTrigger(state, player, cardsById, {
     kind: "after_card_activates",
@@ -3111,6 +3319,21 @@ function resolveSingleCard(
 }
 
 function applyRoundEndEffects(state: LocalGameState, player: PlayerState, cardsById: Record<string, CardDefinition>) {
+  const hasPlacedRoundEndEffects = player.field.some((card) => {
+    const definition = cardsById[card.definitionId];
+    return !!definition?.effects.some((effect) => effect.timing === "placed" && effect.trigger?.kind === "at_round_end");
+  });
+  const hasRoundBuffRoundEndEffects =
+    getEffectiveRoundBuffCount(player, "round_buff_tailwind_rush") > 0 &&
+    player.field.some((card) => card.attribute === "wind");
+  const hasScheduledRevives = state.scheduledRoundEndRevives.length > 0;
+  if (hasPlacedRoundEndEffects || hasRoundBuffRoundEndEffects || hasScheduledRevives) {
+    addLog(state, {
+      level: "info",
+      code: "ROUND_END_EFFECTS_TRIGGERED",
+      message: "ラウンド終了時効果"
+    });
+  }
   dispatchPlacedTrigger(state, player, cardsById, { kind: "at_round_end" });
 
   const revives = [...state.scheduledRoundEndRevives].sort((left, right) => left.fieldIndex - right.fieldIndex);
@@ -3327,6 +3550,8 @@ export function createLocalGame({ roleId, cards, roles, roundBuffs = [], seed: p
         deck,
         scoreThisRound: 0,
         totalScore: 0,
+        finalAttackMultiplier: 1,
+        finalAttackForcedZero: false,
         statusFlags: [],
         roundPlacementLimit: 5,
         nextRoundDrawBonus: 0,
@@ -3455,7 +3680,7 @@ export function startRoundResolution(currentState: LocalGameState, orderedFieldI
     if (rightmostCard) {
       addLog(state, {
         level: "info",
-        code: "ROUND_BUFF_APPLIED",
+        code: "ROUND_BUFF_ONE_MORE",
         message: `もう一回の効果で、右端の ${rightmostCard.name} が ${oneMoreCount} 回追加発動します。`
       });
     }

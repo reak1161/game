@@ -1,0 +1,29 @@
+{
+  "id": "dark_yami_no_gamble",
+  "name": "闇のギャンブル",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費：50%の確率で「現在のダメージを2倍にする」\n外れたら「現在のダメージを0にする」",
+  "effects": [
+    {
+      "id": "dark_yami_no_gamble_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "gamble_final_attack_double_or_zero"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "dark",
+    "ability",
+    "gamble"
+  ],
+  "consumeBehavior": "discard"
+}

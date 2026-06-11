@@ -561,6 +561,7 @@ function getLogGroupKind(entry: EngineLogEntry): LogGroup["kind"] {
     "ROUND_FINALIZED"
   ]);
   const sharedCodes = new Set([
+    "ROUND_END_EFFECTS_TRIGGERED",
     "DRAW_UP_TO",
     "MULLIGAN_USED",
     "HAND_REFILLED",
@@ -585,7 +586,6 @@ function getLogGroupKind(entry: EngineLogEntry): LogGroup["kind"] {
 function buildLogGroups(entries: EngineLogEntry[]) {
 
   const groups: LogGroup[] = [];
-  let pendingRoundEndSection = false;
 
   for (const entry of entries) {
     if (entry.code === "CARD_ACTIVATED_DONE") {
@@ -602,25 +602,7 @@ function buildLogGroups(entries: EngineLogEntry[]) {
         kind,
         entries: [entry]
       });
-      pendingRoundEndSection = entry.code === "ROUND_END" || entry.code === "ROUND_ENDED";
       continue;
-    }
-    if (pendingRoundEndSection) {
-      groups.push({
-        key: `group_round_end_${entry.id}`,
-        title: null,
-        kind: "system-shared",
-        entries: [
-          {
-            id: `round_end_section_${entry.id}`,
-            ts: entry.ts,
-            level: "info",
-            code: "ROUND_END_SECTION",
-            message: "ラウンド終了時処理"
-          }
-        ]
-      });
-      pendingRoundEndSection = false;
     }
     const title = extractLogGroupTitle(entry);
     const currentGroup = groups[groups.length - 1];
@@ -4321,7 +4303,7 @@ export function App() {
             <div key={hoveredTooltipDetailDefinitionId} className="hover-tooltip-subpopup">
               <strong>{cardMap[hoveredTooltipDetailDefinitionId]!.name}</strong>
               <p className="card-text-body">
-                {renderCardTextWithAdjustedNumbers(cardMap[hoveredTooltipDetailDefinitionId]!.text, null, {
+                {renderCardTextWithAdjustedNumbers(cardMap[hoveredTooltipDetailDefinitionId]!.text, latestHoveredCard, {
                   definitionId: hoveredTooltipDetailDefinitionId,
                   player
                 })}

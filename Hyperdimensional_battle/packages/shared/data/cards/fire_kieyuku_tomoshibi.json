@@ -1,0 +1,33 @@
+{
+  "id": "fire_kieyuku_tomoshibi",
+  "name": "消えゆく灯",
+  "type": "ability",
+  "attribute": "fire",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置：自分の場の消費カードが発動したとき、ラウンド終了時に同じ位置に復活する",
+  "effects": [
+    {
+      "id": "fire_kieyuku_tomoshibi_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_source_main_timing_is_consume"
+      },
+      "operations": [
+        {
+          "kind": "schedule_source_card_revive_at_round_end",
+          "position": "same_slot"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "fire",
+    "ability",
+    "revive"
+  ]
+}

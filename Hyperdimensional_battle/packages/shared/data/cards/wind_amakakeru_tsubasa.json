@@ -3,14 +3,12 @@
   "name": "天駆ける翼",
   "type": "ability",
   "attribute": "wind",
-  "timings": [
-    "activate"
-  ],
-  "text": "発動: 自分の場のカードを1枚選ぶ。そのカードにエンチャント「天使の梯子」を付与する。",
+  "timings": ["consume"],
+  "text": "消費: 自分の場のカードを1枚選ぶ。そのカードにエンチャント「天使の梯子」を付与する。",
   "effects": [
     {
-      "id": "wind_amakakeru_tsubasa_activate",
-      "timing": "activate",
+      "id": "wind_amakakeru_tsubasa_consume",
+      "timing": "consume",
       "trigger": null,
       "condition": null,
       "operations": [
@@ -22,9 +20,6 @@
       ]
     }
   ],
-  "tags": [
-    "wind",
-    "ability",
-    "enchant"
-  ]
+  "tags": ["wind", "ability", "enchant"],
+  "consumeBehavior": "discard"
 }

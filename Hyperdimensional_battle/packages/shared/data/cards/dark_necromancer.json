@@ -1,0 +1,36 @@
+{
+  "id": "dark_necromancer",
+  "name": "ネクロマンサー",
+  "type": "spell",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動：場のランダムな位置に「ネクロ」を1～3体生成する。\nその後、自分の場のネクロの数×0.5のダメージを与える。",
+  "effects": [
+    {
+      "id": "dark_necromancer_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "create_token_random_count_random_positions",
+          "tokenDefinitionId": "dark_necro",
+          "minCount": 1,
+          "maxCount": 3
+        },
+        {
+          "kind": "deal_damage_from_ally_field_definition_count_multiplier",
+          "definitionId": "dark_necro",
+          "value": 0.5
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "dark",
+    "spell",
+    "token"
+  ]
+}

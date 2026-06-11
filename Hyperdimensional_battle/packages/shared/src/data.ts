@@ -3,6 +3,8 @@ import enchantAttackPlus10 from "../data/cards/enchant_attack_plus_10.json";
 import enchantAttackPlus5 from "../data/cards/enchant_attack_plus_5.json";
 import enchantColdSleep from "../data/cards/enchant_cold_sleep.json";
 import enchantFrozenAir from "../data/cards/enchant_frozen_air.json";
+import enchantJamming from "../data/cards/enchant_jamming.json";
+import enchantJikoYudo from "../data/cards/enchant_jiko_yudo.json";
 import enchantKiramekuYukigeshiki from "../data/cards/enchant_kirameku_yukigeshiki.json";
 import enchantMagicPlus10 from "../data/cards/enchant_magic_plus_10.json";
 import enchantMagicPlus5 from "../data/cards/enchant_magic_plus_5.json";
@@ -17,15 +19,19 @@ import darkDoppelganger from "../data/cards/dark_doppelganger.json";
 import darkGunzei from "../data/cards/dark_gunzei.json";
 import darkHaiyoruKage from "../data/cards/dark_haiyoru_kage.json";
 import darkKagefumi from "../data/cards/dark_kagefumi.json";
+import darkNecro from "../data/cards/dark_necro.json";
+import darkNecromancer from "../data/cards/dark_necromancer.json";
 import darkPoltergeist from "../data/cards/dark_poltergeist.json";
 import darkRequiem from "../data/cards/dark_requiem.json";
 import darkShadowStep from "../data/cards/dark_shadow_step.json";
 import darkShinenBlade from "../data/cards/dark_shinen_blade.json";
+import darkYamiNoGamble from "../data/cards/dark_yami_no_gamble.json";
 import fireBending from "../data/cards/fire_bending.json";
 import fireBurnout from "../data/cards/fire_burnout.json";
 import fireEruption from "../data/cards/fire_eruption.json";
 import fireFellowFire from "../data/cards/fire_fellow_fire.json";
 import fireHellflame from "../data/cards/fire_hellflame.json";
+import fireKieyukuTomoshibi from "../data/cards/fire_kieyuku_tomoshibi.json";
 import fireKaryokuHatsuden from "../data/cards/fire_karyoku_hatsuden.json";
 import fireKagerou from "../data/cards/fire_kagerou.json";
 import firePhoenixLike from "../data/cards/fire_phoenix_like.json";
@@ -53,6 +59,8 @@ import noneSuperChain from "../data/cards/none_super_chain.json";
 import noneTakumi from "../data/cards/none_takumi.json";
 import noneTakumiKodawari from "../data/cards/none_takumi_kodawari.json";
 import thunderElectric from "../data/cards/thunder_electric.json";
+import thunderEmpPulse from "../data/cards/thunder_emp_pulse.json";
+import thunderDenjiCoil from "../data/cards/thunder_denji_coil.json";
 import thunderHendenShisetsu from "../data/cards/thunder_henden_shisetsu.json";
 import thunderKowaretaKikai from "../data/cards/thunder_kowareta_kikai.json";
 import thunderOvercharge from "../data/cards/thunder_overcharge.json";
@@ -94,6 +102,8 @@ const rawCards = [
   enchantAttackPlus5,
   enchantColdSleep,
   enchantFrozenAir,
+  enchantJamming,
+  enchantJikoYudo,
   enchantKiramekuYukigeshiki,
   enchantMagicPlus10,
   enchantMagicPlus5,
@@ -108,15 +118,19 @@ const rawCards = [
   darkGunzei,
   darkHaiyoruKage,
   darkKagefumi,
+  darkNecro,
+  darkNecromancer,
   darkPoltergeist,
   darkRequiem,
   darkShadowStep,
   darkShinenBlade,
+  darkYamiNoGamble,
   fireBending,
   fireBurnout,
   fireEruption,
   fireFellowFire,
   fireHellflame,
+  fireKieyukuTomoshibi,
   fireKaryokuHatsuden,
   fireKagerou,
   firePhoenixLike,
@@ -144,6 +158,8 @@ const rawCards = [
   noneTakumi,
   noneTakumiKodawari,
   thunderElectric,
+  thunderEmpPulse,
+  thunderDenjiCoil,
   thunderHendenShisetsu,
   thunderKowaretaKikai,
   thunderOvercharge,
@@ -179,7 +195,9 @@ const tokenDefinitionIds = new Set(
   rawCards.flatMap((card) =>
     card.effects.flatMap((effect) =>
       effect.operations.flatMap((operation) =>
-        operation.kind === "create_token" ? [operation.tokenDefinitionId] : []
+        operation.kind === "create_token" || operation.kind === "create_token_random_count_random_positions"
+          ? [operation.tokenDefinitionId]
+          : []
       )
     )
   )

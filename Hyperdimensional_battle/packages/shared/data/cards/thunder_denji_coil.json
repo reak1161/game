@@ -1,0 +1,31 @@
+{
+  "id": "thunder_denji_coil",
+  "name": "電磁コイル",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費：自分の場のカードを1枚選ぶ。そのカードにエンチャント「自己誘導」を付与する。",
+  "effects": [
+    {
+      "id": "thunder_denji_coil_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant",
+          "target": "one_ally_field_card",
+          "enchantDefinitionId": "enchant_jiko_yudo"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "ability",
+    "enchant"
+  ],
+  "consumeBehavior": "discard"
+}

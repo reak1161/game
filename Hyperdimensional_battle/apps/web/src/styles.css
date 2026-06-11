@@ -1390,7 +1390,18 @@ input {
 }
 
 .card-chip.is-drag-origin-empty {
-  display: none;
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .card-chip.is-selected {

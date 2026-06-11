@@ -1,0 +1,30 @@
+{
+  "id": "enchant_jiko_yudo",
+  "name": "自己誘導",
+  "type": "ability",
+  "attribute": "thunder",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置：このエンチャントが付与されたカードが、（このエンチャントを除く）何らかの効果で追加発動するとき、さらに再発動する",
+  "effects": [
+    {
+      "id": "enchant_jiko_yudo_trigger",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_additionally_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "queue_additional_activation_for_self"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "thunder",
+    "enchant",
+    "additional"
+  ]
+}

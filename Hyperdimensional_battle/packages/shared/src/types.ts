@@ -12,6 +12,7 @@ export type TriggerDefinition =
   | { kind: "before_damage_dealt" }
   | { kind: "after_damage_dealt" }
   | { kind: "when_host_card_activates" }
+  | { kind: "when_host_card_additionally_activates" }
   | { kind: "before_host_damage_calculation" }
   | { kind: "when_host_card_destroyed" }
   | { kind: "when_ally_field_card_destroyed" }
@@ -24,6 +25,7 @@ export type ConditionDefinition =
   | { kind: "host_card_type_is"; value: CardType }
   | { kind: "is_final_round" }
   | { kind: "source_owner_is_self" }
+  | { kind: "source_owner_is_self_and_source_main_timing_is_consume" }
   | { kind: "source_owner_is_self_and_not_host" }
   | { kind: "source_owner_is_self_and_not_host_and_attribute_matches_previous" }
   | { kind: "source_owner_is_self_and_not_host_and_definition_is"; definitionId: string }
@@ -79,6 +81,7 @@ export type OperationDefinition =
   | { kind: "destroy_all_other_cards_on_own_field" }
   | { kind: "destroy_all_self_enchantments" }
   | { kind: "destroy_self" }
+  | { kind: "invalidate_relative_card"; relativePosition: RelativePosition }
   | { kind: "invalidate_all_right_cards" }
   | { kind: "invalidate_cards_with_attribute_different_from_previous" }
   | { kind: "trigger_round_end_effects_of_last_invalidated_cards" }
@@ -86,6 +89,7 @@ export type OperationDefinition =
   | { kind: "apply_enchant_to_all_ally_field_cards"; enchantDefinitionId: string }
   | { kind: "apply_enchant_to_adjacent_cards"; enchantDefinitionId: string }
   | { kind: "create_token"; tokenDefinitionId: string; position: "right_of_self" | "chosen_positions"; count: number }
+  | { kind: "create_token_random_count_random_positions"; tokenDefinitionId: string; minCount: number; maxCount: number }
   | { kind: "merge_adjacent_same_definition_cards"; definitionId: string; mergeRule: "multiply_numeric_counters" }
   | { kind: "queue_additional_activation_for_leftmost_ally_field_card" }
   | { kind: "queue_additional_activation_for_all_ally_field_cards" }
@@ -100,6 +104,7 @@ export type OperationDefinition =
   | { kind: "repeat_previous_round_last_effect_as_self" }
   | { kind: "schedule_add_base_both_at_next_round_start"; value: number }
   | { kind: "schedule_host_revive_at_round_end"; position: "same_slot" }
+  | { kind: "schedule_source_card_revive_at_round_end"; position: "same_slot" }
   | { kind: "set_activating_card_attribute_to_previous_attribute" }
   | { kind: "transform_self_to_definition"; definitionId: string }
   | {
@@ -110,6 +115,10 @@ export type OperationDefinition =
       otherMultiplier: number;
     }
   | { kind: "set_pending_damage_to_zero" }
+  | { kind: "multiply_final_attack"; value: number }
+  | { kind: "set_final_attack_to_zero" }
+  | { kind: "gamble_final_attack_double_or_zero" }
+  | { kind: "deal_damage_from_ally_field_definition_count_multiplier"; definitionId: string; value: number }
   | { kind: "set_round_placement_limit"; value: number }
   | { kind: "add_base_magic_per_last_removed_enchant_count"; value: number }
   | { kind: "destroy_each_ally_field_card_with_chance"; value: number };
@@ -241,6 +250,8 @@ export type PlayerState = {
   deck: CardInstance[];
   scoreThisRound: number;
   totalScore: number;
+  finalAttackMultiplier: number;
+  finalAttackForcedZero: boolean;
   statusFlags: string[];
   roundPlacementLimit: number;
   nextRoundDrawBonus: number;

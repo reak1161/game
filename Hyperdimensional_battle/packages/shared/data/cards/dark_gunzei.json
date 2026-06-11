@@ -3,14 +3,12 @@
   "name": "闇の軍勢",
   "type": "ability",
   "attribute": "dark",
-  "timings": [
-    "activate"
-  ],
-  "text": "発動：自分の場のカードを1枚選ぶ。そのカードの確率数値を×2",
+  "timings": ["consume"],
+  "text": "消費: 自分の場のカードを1枚選ぶ。そのカードの確率数値を×2。",
   "effects": [
     {
-      "id": "dark_gunzei_activate",
-      "timing": "activate",
+      "id": "dark_gunzei_consume",
+      "timing": "consume",
       "trigger": null,
       "condition": null,
       "operations": [
@@ -23,9 +21,6 @@
     }
   ],
   "textValueBindings": [],
-  "tags": [
-    "dark",
-    "ability",
-    "probability"
-  ]
+  "tags": ["dark", "ability", "probability"],
+  "consumeBehavior": "discard"
 }
