@@ -35,38 +35,57 @@ function createRandomToken(length = 8) {
   return token.slice(0, length);
 }
 
+function safeLocalStorageGet(key: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    return;
+  }
+}
+
 export function getOrCreateMultiPlayerId() {
   if (typeof window === "undefined") {
     return `player_${createRandomToken(10)}`;
   }
-  const saved = window.localStorage.getItem(MULTI_PLAYER_ID_STORAGE_KEY);
+  const saved = safeLocalStorageGet(MULTI_PLAYER_ID_STORAGE_KEY);
   if (saved) {
     return saved;
   }
   const created = `player_${createRandomToken(10)}`;
-  window.localStorage.setItem(MULTI_PLAYER_ID_STORAGE_KEY, created);
+  safeLocalStorageSet(MULTI_PLAYER_ID_STORAGE_KEY, created);
   return created;
 }
 
 export function loadMultiPlayerName() {
   if (typeof window === "undefined") {
-    return "プレイヤー";
+    return "";
   }
-  return window.localStorage.getItem(MULTI_PLAYER_NAME_STORAGE_KEY) ?? "プレイヤー";
+  return safeLocalStorageGet(MULTI_PLAYER_NAME_STORAGE_KEY) ?? "";
 }
 
 export function saveMultiPlayerName(name: string) {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(MULTI_PLAYER_NAME_STORAGE_KEY, name);
+  safeLocalStorageSet(MULTI_PLAYER_NAME_STORAGE_KEY, name);
 }
 
 export function loadStoredMultiPlayerName() {
   if (typeof window === "undefined") {
     return "";
   }
-  return window.localStorage.getItem(MULTI_PLAYER_NAME_STORAGE_KEY) ?? "";
+  return safeLocalStorageGet(MULTI_PLAYER_NAME_STORAGE_KEY) ?? "";
 }
 
 export function resolveRoomWorkerBaseUrl() {
@@ -82,7 +101,7 @@ export function resolveRoomWorkerBaseUrl() {
     return "http://127.0.0.1:8787";
   }
 
-  const { protocol, hostname } = window.location;
+  const { hostname } = window.location;
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://127.0.0.1:8787";
   }

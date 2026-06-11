@@ -236,7 +236,12 @@ function getInitialAudioVolume() {
   if (typeof window === "undefined") {
     return 55;
   }
-  const storedValue = window.localStorage.getItem(AUDIO_VOLUME_STORAGE_KEY);
+  let storedValue: string | null = null;
+  try {
+    storedValue = window.localStorage.getItem(AUDIO_VOLUME_STORAGE_KEY);
+  } catch {
+    return 55;
+  }
   if (!storedValue) {
     return 55;
   }
@@ -267,7 +272,13 @@ function sanitizeRouteToken(value: string | undefined | null, fallback: string) 
   if (!value) {
     return fallback;
   }
-  const normalized = decodeURIComponent(value).trim().replace(/[^0-9A-Za-z_-]/g, "").slice(0, 32);
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    decoded = value;
+  }
+  const normalized = decoded.trim().replace(/[^0-9A-Za-z_-]/g, "").slice(0, 32);
   return normalized.length > 0 ? normalized : fallback;
 }
 
