@@ -15,7 +15,7 @@
       "condition": null,
       "operations": [
         {
-          "kind": "gamble_final_attack_double_or_zero"
+          "kind": "gamble_total_score_double_or_zero"
         }
       ]
     }

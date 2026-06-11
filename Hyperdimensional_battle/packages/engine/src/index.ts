@@ -2719,21 +2719,21 @@ function resolveOperation(
         message: `${resolvingCard.name}: 最終攻撃を 0 にしました。`
       });
       break;
-    case "gamble_final_attack_double_or_zero": {
+    case "gamble_total_score_double_or_zero": {
       const random = createRng(
-        `${state.rngSeed}:final_attack_gamble:${state.round}:${effectId}:${state.pendingResolution?.activationCount ?? 0}:${state.chanceRollCount}`
+        `${state.rngSeed}:total_score_gamble:${state.round}:${effectId}:${state.pendingResolution?.activationCount ?? 0}:${state.chanceRollCount}`
       );
       state.chanceRollCount += 1;
       const won = random() < 0.5;
       if (won) {
-        player.finalAttackMultiplier = floorValue(player.finalAttackMultiplier * 2);
+        player.totalScore = floorValue(player.totalScore * 2);
       } else {
-        player.finalAttackForcedZero = true;
+        player.totalScore = 0;
       }
       addLog(state, {
         level: "info",
-        code: "FINAL_ATTACK_MODIFIED",
-        message: `${resolvingCard.name}: ${won ? "闇のギャンブル成功で最終攻撃を ×2 にしました。" : "闇のギャンブル失敗で最終攻撃を 0 にしました。"}`
+        code: "TOTAL_SCORE_MODIFIED",
+        message: `${resolvingCard.name}: ${won ? "闇のギャンブル成功で合計得点を ×2 にしました。" : "闇のギャンブル失敗で合計得点を 0 にしました。"}`
       });
       break;
     }
@@ -2815,7 +2815,7 @@ function resolveOperation(
     set_pending_damage_to_zero: "ダメージ無効化",
     multiply_final_attack: "最終攻撃補正",
     set_final_attack_to_zero: "最終攻撃無効化",
-    gamble_final_attack_double_or_zero: "最終攻撃ギャンブル",
+    gamble_total_score_double_or_zero: "合計得点ギャンブル",
     set_round_placement_limit: "配置上限変化"
   };
 

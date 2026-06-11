@@ -117,7 +117,7 @@ export type OperationDefinition =
   | { kind: "set_pending_damage_to_zero" }
   | { kind: "multiply_final_attack"; value: number }
   | { kind: "set_final_attack_to_zero" }
-  | { kind: "gamble_final_attack_double_or_zero" }
+  | { kind: "gamble_total_score_double_or_zero" }
   | { kind: "deal_damage_from_ally_field_definition_count_multiplier"; definitionId: string; value: number }
   | { kind: "set_round_placement_limit"; value: number }
   | { kind: "add_base_magic_per_last_removed_enchant_count"; value: number }

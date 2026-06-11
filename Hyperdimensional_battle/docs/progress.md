@@ -1,5 +1,35 @@
 # progress
 
+## 2026-06-11
+- 新カード8枚を追加
+  - 「ネクロマンサー」 / 「ネクロ」 / 「闇のギャンブル」
+  - 「消えゆく灯」
+  - 「EMPパルス」 / 「電磁コイル」
+  - 「ジャミング」 / 「自己誘導」
+  - `packages/shared/data/cards/*.json`
+  - `packages/shared/src/data.ts`
+
+- engineに新効果を追加
+  - ランダム枚数・ランダム位置のトークン生成
+  - consumeカードのラウンド終了時復活予約
+  - 追加発動時専用エンチャントトリガー
+  - 最終攻撃を2倍または0にするギャンブル処理
+  - `packages/shared/src/types.ts`
+  - `packages/engine/src/index.ts`
+
+- 「火力発電」由来の追加発動中に対象選択UIが止まる問題を修正
+  - 対象選択UIを静的カード定義ではなく engine の `getCurrentResolutionTargetKeys(game)` ベースへ変更
+  - `apps/web/src/App.tsx`
+
+- 連結パーティクル密度を調整
+  - 横長の連結ほど粒数を増やすように変更
+  - `apps/web/src/App.tsx`
+
+- 確認
+  - `npm run typecheck`
+  - `npm run build`
+  - `npm test`
+
 ## 2026-05-25
 - カードポップアップの下端位置固定を実寸基準へ変更
   - 固定想定高さではなく、実際のポップアップ高さを測って下端をカード高の上2:下8境界へ合わせるよう修正
