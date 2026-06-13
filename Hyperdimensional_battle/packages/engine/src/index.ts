@@ -1179,7 +1179,14 @@ function destroyCard(
   assignFieldIndexes(player);
   syncPersistentPlacedAuras(state, player, cardsById, { suppressLogs: true });
   moveCard(existing, "discard", player.discard);
-  addReplay(state, { type: "CARD_DESTROYED", playerId: player.playerId, instanceId: existing.instanceId });
+  addReplay(state, {
+    type: "CARD_DESTROYED",
+    playerId: player.playerId,
+    instanceId: existing.instanceId,
+    attribute: existing.attribute,
+    name: existing.name,
+    fieldIndex: existing.fieldIndex ?? 0
+  });
   addLog(state, {
     level: "info",
     code: "CARD_DESTROYED",

@@ -1390,11 +1390,14 @@ input {
 }
 
 .card-chip.is-drag-origin-empty {
-  width: 0;
-  min-width: 0;
-  max-width: 0;
-  height: 0;
-  min-height: 0;
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 116px;
+  min-width: 116px;
+  max-width: 116px;
+  height: 174px;
+  min-height: 174px;
   padding: 0;
   margin: 0;
   border: 0;
@@ -2305,6 +2308,47 @@ button.card-text-reference-chip {
   color: #c084fc;
 }
 
+.card-motion-overlay {
+  position: fixed;
+  z-index: 142;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.card-motion-overlay-shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: start;
+  padding: 10px 8px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72));
+  color: #f8fafc;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--card-accent, #94a3b8) 36%, transparent),
+    0 18px 30px rgba(15, 23, 42, 0.3);
+}
+
+.card-motion-overlay-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(15, 23, 42, 0.35);
+}
+
+.card-motion-overlay.motion-destroy .card-motion-overlay-shell {
+  animation: card-destroy-motion 430ms ease-in forwards;
+}
+
+.destroy-motion-spacer {
+  opacity: 0;
+  pointer-events: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .particle-burst {
   position: absolute;
   width: 0;
@@ -2444,6 +2488,27 @@ button.card-text-reference-chip {
   100% {
     opacity: 0;
     transform: translate(-50%, -135%) scale(1.05);
+  }
+}
+
+@keyframes card-destroy-motion {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+    filter: saturate(1) brightness(1);
+  }
+  12% {
+    opacity: 1;
+  }
+  58% {
+    opacity: 1;
+    transform: scale(1.05) rotate(-2deg);
+    filter: saturate(1.12) brightness(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.62) rotate(6deg);
+    filter: saturate(0.7) brightness(1.35) blur(2px);
   }
 }
 

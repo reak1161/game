@@ -117,6 +117,17 @@ type FloatingText = {
   tone: FloatingTextTone;
   scope: "status" | "card";
 };
+type CardMotionOverlay = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  name: string;
+  attribute: Attribute;
+  fieldIndex: number;
+  motion: "destroy";
+};
 type StatSnapshot = {
   baseAttack: number;
   baseMagic: number;
@@ -1423,6 +1434,7 @@ export function App() {
   const [mulliganIds, setMulliganIds] = useState<string[]>([]);
   const [previewFieldOrder, setPreviewFieldOrder] = useState<string[]>([]);
   const [draggedCard, setDraggedCard] = useState<DraggedCardState | null>(null);
+  const [collapsedDragOriginId, setCollapsedDragOriginId] = useState<string | null>(null);
   const [placementPreviewIndex, setPlacementPreviewIndex] = useState<number | null>(null);
   const [currentTargets, setCurrentTargets] = useState<Record<string, string>>({});
   const [tokenPlacementOrder, setTokenPlacementOrder] = useState<string[]>([]);
@@ -1440,6 +1452,7 @@ export function App() {
   const [soloRankings, setSoloRankings] = useState<SoloRankingEntry[]>(() => loadSoloRankings());
   const [particleBursts, setParticleBursts] = useState<ParticleBurst[]>([]);
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+  const [cardMotionOverlays, setCardMotionOverlays] = useState<CardMotionOverlay[]>([]);
   const [connectionOverlayVersion, setConnectionOverlayVersion] = useState(0);
   const fieldCardRefs = useRef(new Map<string, HTMLDivElement>());
   const fieldRowRef = useRef<HTMLDivElement | null>(null);
@@ -1450,6 +1463,9 @@ export function App() {
   const previousStatusRef = useRef<StatSnapshot | null>(null);
   const particleTimeoutIdsRef = useRef<number[]>([]);
   const floatingTimeoutIdsRef = useRef<number[]>([]);
+  const replayStepTimeoutRef = useRef<number | null>(null);
+  const replayQueueRef = useRef<ReplayEvent[]>([]);
+  const replayProcessingRef = useRef(false);
   const gameRef = useRef<LocalGameState | null>(null);
   const statusPanelRef = useRef<HTMLElement | null>(null);
   const placementRowRef = useRef<HTMLDivElement | null>(null);
@@ -1615,6 +1631,7 @@ export function App() {
       setMulliganIds([]);
       setPreviewFieldOrder(player.field.map((card) => card.instanceId));
       setDraggedCard(null);
+      setCollapsedDragOriginId(null);
       setCurrentTargets({});
       setAvailableTokenIds([]);
       setRoundEndDiscardIds([]);
@@ -1890,6 +1907,13 @@ export function App() {
       previousStatusRef.current = null;
       setParticleBursts([]);
       setFloatingTexts([]);
+      setCardMotionOverlays([]);
+      replayQueueRef.current = [];
+      replayProcessingRef.current = false;
+      if (replayStepTimeoutRef.current !== null) {
+        window.clearTimeout(replayStepTimeoutRef.current);
+        replayStepTimeoutRef.current = null;
+      }
       return;
     }
 
@@ -1985,59 +2009,117 @@ export function App() {
       };
     };
 
-    for (const event of newEvents) {
-      handleReplayEventParticle(event, spawnBurst, lastActivationRef);
-
-      if (event.type === "CARD_ACTIVATED") {
-        playActivationTone(event.attribute);
-        activationToneCountRef.current += 1;
+    const spawnDestroyOverlay = (event: Extract<ReplayEvent, { type: "CARD_DESTROYED" }>) => {
+      const rowRect = fieldRowRef.current?.getBoundingClientRect();
+      if (!rowRect) {
+        return;
       }
+      const overlayId = `destroy_${event.instanceId}_${Date.now()}`;
+      const cardWidth = 116;
+      const cardHeight = 174;
+      const cardGap = 2;
+      const left = rowRect.left + cardWidth / 2 + event.fieldIndex * (cardWidth + cardGap) - fieldRowRef.current!.scrollLeft;
+      const top = rowRect.top + 10 + cardHeight / 2;
+      setCardMotionOverlays((current) => [
+        ...current,
+        {
+          id: overlayId,
+          x: left,
+          y: top,
+          width: cardWidth,
+          height: cardHeight,
+          name: event.name,
+          attribute: event.attribute,
+          fieldIndex: event.fieldIndex,
+          motion: "destroy"
+        }
+      ]);
+      const timeoutId = window.setTimeout(() => {
+        setCardMotionOverlays((current) => current.filter((entry) => entry.id !== overlayId));
+        floatingTimeoutIdsRef.current = floatingTimeoutIdsRef.current.filter((entry) => entry !== timeoutId);
+      }, 430);
+      floatingTimeoutIdsRef.current.push(timeoutId);
+    };
 
-      if (event.type === "STATUS_CHANGED") {
-        const previous = previousStatusRef.current;
-        const nextSnapshot: StatSnapshot = {
-          baseAttack: event.baseAttack,
-          baseMagic: event.baseMagic,
-          tempAttack: event.tempAttack,
-          tempMagic: event.tempMagic,
-          scoreThisRound: game.players[0]?.scoreThisRound ?? 0,
-          totalScore: game.players[0]?.totalScore ?? 0
-        };
+    const processReplayQueue = () => {
+      if (replayProcessingRef.current) {
+        return;
+      }
+      replayProcessingRef.current = true;
+      const step = () => {
+        const event = replayQueueRef.current.shift();
+        if (!event) {
+          replayProcessingRef.current = false;
+          replayStepTimeoutRef.current = null;
+          return;
+        }
 
-        if (previous) {
-          const statusDiffs: Array<{ key: StatusKey; delta: number }> = [
-            { key: "baseAttack", delta: nextSnapshot.baseAttack - previous.baseAttack },
-            { key: "tempAttack", delta: nextSnapshot.tempAttack - previous.tempAttack },
-            { key: "baseMagic", delta: nextSnapshot.baseMagic - previous.baseMagic },
-            { key: "tempMagic", delta: nextSnapshot.tempMagic - previous.tempMagic }
-          ];
+        handleReplayEventParticle(event, spawnBurst, lastActivationRef);
 
-          for (const diff of statusDiffs) {
-            if (diff.delta !== 0) {
-              spawnFloatingText("red", formatSignedValue(diff.delta), getStatusAnchor(diff.key), "status");
+        if (event.type === "CARD_ACTIVATED") {
+          playActivationTone(event.attribute);
+          activationToneCountRef.current += 1;
+        }
+
+        if (event.type === "CARD_DESTROYED") {
+          spawnDestroyOverlay(event);
+        }
+
+        if (event.type === "STATUS_CHANGED") {
+          const latestGame = gameRef.current;
+          const previous = previousStatusRef.current;
+          const nextSnapshot: StatSnapshot = {
+            baseAttack: event.baseAttack,
+            baseMagic: event.baseMagic,
+            tempAttack: event.tempAttack,
+            tempMagic: event.tempMagic,
+            scoreThisRound: latestGame?.players[0]?.scoreThisRound ?? 0,
+            totalScore: latestGame?.players[0]?.totalScore ?? 0
+          };
+
+          if (previous) {
+            const statusDiffs: Array<{ key: StatusKey; delta: number }> = [
+              { key: "baseAttack", delta: nextSnapshot.baseAttack - previous.baseAttack },
+              { key: "tempAttack", delta: nextSnapshot.tempAttack - previous.tempAttack },
+              { key: "baseMagic", delta: nextSnapshot.baseMagic - previous.baseMagic },
+              { key: "tempMagic", delta: nextSnapshot.tempMagic - previous.tempMagic }
+            ];
+
+            for (const diff of statusDiffs) {
+              if (diff.delta !== 0) {
+                spawnFloatingText("red", formatSignedValue(diff.delta), getStatusAnchor(diff.key), "status");
+              }
             }
           }
+          previousStatusRef.current = {
+            baseAttack: nextSnapshot.baseAttack,
+            baseMagic: nextSnapshot.baseMagic,
+            tempAttack: nextSnapshot.tempAttack,
+            tempMagic: nextSnapshot.tempMagic,
+            scoreThisRound: latestGame?.players[0]?.scoreThisRound ?? nextSnapshot.scoreThisRound,
+            totalScore: latestGame?.players[0]?.totalScore ?? nextSnapshot.totalScore
+          };
         }
-        previousStatusRef.current = {
-          baseAttack: nextSnapshot.baseAttack,
-          baseMagic: nextSnapshot.baseMagic,
-          tempAttack: nextSnapshot.tempAttack,
-          tempMagic: nextSnapshot.tempMagic,
-          scoreThisRound: game.players[0]?.scoreThisRound ?? nextSnapshot.scoreThisRound,
-          totalScore: game.players[0]?.totalScore ?? nextSnapshot.totalScore
-        };
-      }
 
-      if (event.type === "DAMAGE_DEALT") {
-        spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
-        spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
-      }
+        if (event.type === "DAMAGE_DEALT") {
+          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
+          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
+        }
 
-      if (event.type === "FINAL_ATTACK") {
-        spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
-        spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
-      }
-    }
+        if (event.type === "FINAL_ATTACK") {
+          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
+          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
+        }
+
+        const delay = event.type === "CARD_DESTROYED" ? 430 : event.type === "CARD_ACTIVATED" ? 90 : 0;
+        replayStepTimeoutRef.current = window.setTimeout(step, delay);
+      };
+
+      step();
+    };
+
+    replayQueueRef.current.push(...newEvents);
+    processReplayQueue();
 
     for (const entry of newLogs) {
       if (entry.code !== "CARD_EFFECT_APPLIED") {
@@ -2272,6 +2354,14 @@ export function App() {
     () => buildConnectedFieldOverlays(connectedFieldGroups, fieldRowRef.current, fieldCardRefs.current),
     [connectedFieldGroups, connectionOverlayVersion]
   );
+  const destroySpacerIndexes = useMemo(
+    () =>
+      cardMotionOverlays
+        .filter((overlay) => overlay.motion === "destroy")
+        .map((overlay) => overlay.fieldIndex)
+        .sort((a, b) => a - b),
+    [cardMotionOverlays]
+  );
 
   useLayoutEffect(() => {
     if (inputStep === "placement") {
@@ -2501,6 +2591,9 @@ export function App() {
       instanceId,
       source: "field"
     });
+    window.requestAnimationFrame(() => {
+      setCollapsedDragOriginId(instanceId);
+    });
     const currentIndex = previewFieldOrder.findIndex((entry) => entry === instanceId);
     window.requestAnimationFrame(() => {
       setPlacementPreviewIndex(currentIndex >= 0 ? currentIndex : previewFieldOrder.length);
@@ -2591,6 +2684,7 @@ export function App() {
     }
     setPreviewFieldOrder((current) => current.filter((entry) => entry !== draggedCard?.instanceId));
     setDraggedCard(null);
+    setCollapsedDragOriginId(null);
     setPlacementPreviewIndex(null);
     setError(null);
   };
@@ -2605,12 +2699,14 @@ export function App() {
     const card = handCard ?? fieldCard ?? null;
     if (!card) {
       setDraggedCard(null);
+      setCollapsedDragOriginId(null);
       return;
     }
 
     if (draggedCard.source === "hand" && restrictedTypes.includes(card.type)) {
       setError(`${card.name} cannot be placed by the selected role.`);
       setDraggedCard(null);
+      setCollapsedDragOriginId(null);
       return;
     }
 
@@ -2632,6 +2728,7 @@ export function App() {
     });
 
     setDraggedCard(null);
+    setCollapsedDragOriginId(null);
     setPlacementPreviewIndex(null);
     setError(null);
   };
@@ -3990,7 +4087,7 @@ export function App() {
                           className={`card-chip ${inputStep === "placement" ? "is-placement-draggable" : ""} ${
                             draggedCard?.instanceId === card.instanceId && draggedCard.source === "field" ? "is-dragging" : ""
                           } ${
-                            draggedCard?.instanceId === card.instanceId && draggedCard.source === "field" ? "is-drag-origin-empty" : ""
+                            collapsedDragOriginId === card.instanceId && draggedCard?.source === "field" ? "is-drag-origin-empty" : ""
                           }`}
                           data-attribute={resolveVisualAttribute(card.attribute)}
                           ref={(element) => setFieldCardRef(card.instanceId, element)}
@@ -4007,6 +4104,7 @@ export function App() {
                           onDragStart={(event) => handleFieldDragStart(card.instanceId, event)}
                           onDragEnd={() => {
                             setDraggedCard(null);
+                            setCollapsedDragOriginId(null);
                             setPlacementPreviewIndex(null);
                             stopPlacementAutoScroll();
                           }}
@@ -4116,6 +4214,20 @@ export function App() {
                       );
                     }
 
+                    const renderedFieldCards = [...player.field.map((card) => renderFieldCard(card))];
+                    destroySpacerIndexes.forEach((fieldIndex, spacerIndex) => {
+                      const insertIndex = Math.max(0, Math.min(fieldIndex, renderedFieldCards.length));
+                      renderedFieldCards.splice(
+                        insertIndex,
+                        0,
+                        <div
+                          key={`destroy_spacer_${fieldIndex}_${spacerIndex}`}
+                          className="card-chip destroy-motion-spacer"
+                          aria-hidden="true"
+                        />
+                      );
+                    });
+
                     return [
                       connectedFieldOverlays.length > 0 ? (
                         <div key="connection-layer" className="field-connection-layer" aria-hidden="true">
@@ -4150,7 +4262,7 @@ export function App() {
                           ))}
                         </div>
                       ) : null,
-                      ...player.field.map((card) => renderFieldCard(card))
+                      ...renderedFieldCards
                     ];
                   })()
                 ) : null}
@@ -4189,6 +4301,7 @@ export function App() {
                       onDragStart={(event) => handleHandDragStart(card.instanceId, event)}
                       onDragEnd={() => {
                         setDraggedCard(null);
+                        setCollapsedDragOriginId(null);
                         setPlacementPreviewIndex(null);
                         stopPlacementAutoScroll();
                       }}
@@ -4568,6 +4681,23 @@ export function App() {
             }}
           >
             {entry.text}
+          </div>
+        ))}
+        {cardMotionOverlays.map((overlay) => (
+          <div
+            key={overlay.id}
+            className={`card-motion-overlay motion-${overlay.motion}`}
+            data-attribute={resolveVisualAttribute(overlay.attribute)}
+            style={{
+              left: `${overlay.x}px`,
+              top: `${overlay.y}px`,
+              width: `${overlay.width}px`,
+              height: `${overlay.height}px`
+            }}
+          >
+            <div className="card-motion-overlay-shell">
+              <div className="card-motion-overlay-title">{overlay.name}</div>
+            </div>
           </div>
         ))}
         {particleBursts.map((burst) => (

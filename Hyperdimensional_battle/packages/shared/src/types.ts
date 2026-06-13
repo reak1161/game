@@ -221,7 +221,14 @@ export type ReplayEvent =
   | { type: "CARD_ACTIVATED"; playerId: string; instanceId: string; attribute: Attribute; chainCount: number }
   | { type: "STATUS_CHANGED"; playerId: string; baseAttack: number; baseMagic: number; tempAttack: number; tempMagic: number }
   | { type: "CARD_CREATED"; playerId: string; instanceId: string; definitionId: string; fieldIndex: number }
-  | { type: "CARD_DESTROYED"; playerId: string; instanceId: string }
+  | {
+      type: "CARD_DESTROYED";
+      playerId: string;
+      instanceId: string;
+      attribute: Attribute;
+      name: string;
+      fieldIndex: number;
+    }
   | { type: "CARD_INVALIDATED"; playerId: string; instanceId: string }
   | { type: "ENCHANT_APPLIED"; playerId: string; instanceId: string; enchantId: string }
   | { type: "DAMAGE_DEALT"; playerId: string; amount: number; source: string }
