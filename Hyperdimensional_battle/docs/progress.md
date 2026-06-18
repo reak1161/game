@@ -1,5 +1,42 @@
 # progress
 
+## 2026-06-16
+- 新カード追加
+  - 『錬金術』 / 『流体力学』 / 『丘の上の風車』 / 『立ち込める煙』 / 『赤い炎』 / 『蒼き炎』を追加
+  - `packages/shared/data/cards/dark_renkinjutsu.json`
+  - `packages/shared/data/cards/water_ryutai_rikigaku.json`
+  - `packages/shared/data/cards/wind_oka_no_ue_no_fuusha.json`
+  - `packages/shared/data/cards/wind_tachikomeru_kemuri.json`
+  - `packages/shared/data/cards/fire_akai_honoo.json`
+  - `packages/shared/data/cards/fire_aoki_honoo.json`
+
+- engineに新効果を追加
+  - 特殊確率数値を通常の確率補正と分離して扱う `special_chance_percent`
+  - 自分の場のカード枚数ぶん内包処理を繰り返す `repeat_embedded_operation_per_ally_field_card_count`
+  - 現在ラウンド数を参照して自身の数値を変化させる `scale_self_numeric_value_by_current_round`
+  - 復活時の付与先カードに反応する `when_host_card_revived`
+  - `packages/shared/src/types.ts`
+  - `packages/engine/src/index.ts`
+
+- データ登録を更新
+  - 新カード6枚を `packages/shared/src/data.ts` に登録
+
+## 2026-06-15
+- 新カード2枚を追加
+  - 「パンデミック」
+  - 「ゾンビ」
+  - `packages/shared/data/cards/dark_pandemic.json`
+  - `packages/shared/data/cards/enchant_zombie.json`
+
+- engineに新効果を追加
+  - ホストカードの距離指定つきランダムエンチャント付与
+  - 復活予約の重複防止
+  - `packages/shared/src/types.ts`
+  - `packages/engine/src/index.ts`
+
+- 公開パッチノートを更新
+  - `docs/patch_notes_public.md`
+
 ## 2026-06-11
 - 新カード8枚を追加
   - 「ネクロマンサー」 / 「ネクロ」 / 「闇のギャンブル」

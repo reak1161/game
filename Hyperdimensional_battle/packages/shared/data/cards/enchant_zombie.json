@@ -1,0 +1,74 @@
+{
+  "id": "enchant_zombie",
+  "name": "ゾンビ",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "enchant"
+  ],
+  "text": "設置：このカードの数値×0.5\nこのカードが破壊されたとき、そのラウンドの終わりに同じ位置に復活する\n発動：{{30%}}の確率で「このカードの距離2以内にあるランダムなカード1枚にエンチャント『ゾンビ』を付与する」",
+  "effects": [
+    {
+      "id": "enchant_zombie_placed",
+      "timing": "enchant",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "scale_self_numeric_value",
+          "value": 0.5
+        }
+      ]
+    },
+    {
+      "id": "enchant_zombie_revive",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_destroyed"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "schedule_host_revive_at_round_end",
+          "position": "same_slot"
+        }
+      ]
+    },
+    {
+      "id": "enchant_zombie_activate",
+      "timing": "enchant",
+      "trigger": {
+        "kind": "when_host_card_activates"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "chance_percent",
+          "value": 30,
+          "operations": [
+            {
+              "kind": "apply_enchant_to_random_card_within_distance_of_host",
+              "enchantDefinitionId": "enchant_zombie",
+              "distance": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_zombie_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "probability",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "enchant",
+    "probability",
+    "revive"
+  ]
+}

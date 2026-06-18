@@ -1,0 +1,30 @@
+{
+  "id": "dark_pandemic",
+  "name": "パンデミック",
+  "type": "ability",
+  "attribute": "dark",
+  "timings": [
+    "placed"
+  ],
+  "text": "設置：このカードにエンチャント『ゾンビ』を付与する",
+  "effects": [
+    {
+      "id": "dark_pandemic_placed",
+      "timing": "placed",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "apply_enchant",
+          "target": "self",
+          "enchantDefinitionId": "enchant_zombie"
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "dark",
+    "ability",
+    "enchant"
+  ]
+}

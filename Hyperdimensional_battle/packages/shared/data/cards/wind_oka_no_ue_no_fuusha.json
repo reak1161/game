@@ -1,0 +1,66 @@
+{
+  "id": "wind_oka_no_ue_no_fuusha",
+  "name": "丘の上の風車",
+  "type": "spell",
+  "attribute": "wind",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置：自分の場の風属性のカードが発動したとき、このカードの数値{{×1.1}}\n発動：一時魔法{{+20}}、その後ダメージを与える。",
+  "effects": [
+    {
+      "id": "wind_oka_no_ue_no_fuusha_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "after_card_activates",
+        "attribute": "wind"
+      },
+      "condition": {
+        "kind": "source_owner_is_self_and_not_host"
+      },
+      "operations": [
+        {
+          "kind": "scale_self_numeric_value",
+          "value": 1.1
+        }
+      ]
+    },
+    {
+      "id": "wind_oka_no_ue_no_fuusha_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_magic",
+          "value": 20
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_oka_no_ue_no_fuusha_placed",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "wind_oka_no_ue_no_fuusha_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "spell",
+    "numeric"
+  ]
+}

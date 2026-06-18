@@ -1,0 +1,42 @@
+{
+  "id": "fire_aoki_honoo",
+  "name": "蒼き炎",
+  "type": "spell",
+  "attribute": "fire",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動：基礎魔法{{×3}}、その後ダメージを与える",
+  "deckEligible": false,
+  "effects": [
+    {
+      "id": "fire_aoki_honoo_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_base_magic",
+          "value": 3
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_aoki_honoo_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "fire",
+    "spell",
+    "transform"
+  ]
+}

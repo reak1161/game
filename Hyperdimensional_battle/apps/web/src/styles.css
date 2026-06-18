@@ -2315,6 +2315,38 @@ button.card-text-reference-chip {
   transform: translate(-50%, -50%);
 }
 
+.card-motion-overlay[data-attribute="none"] {
+  --card-background-image: var(--card-bg-none);
+}
+
+.card-motion-overlay[data-attribute="fire"] {
+  --card-background-image: var(--card-bg-fire);
+}
+
+.card-motion-overlay[data-attribute="ice"] {
+  --card-background-image: var(--card-bg-ice);
+}
+
+.card-motion-overlay[data-attribute="thunder"] {
+  --card-background-image: var(--card-bg-thunder);
+}
+
+.card-motion-overlay[data-attribute="water"] {
+  --card-background-image: var(--card-bg-water);
+}
+
+.card-motion-overlay[data-attribute="wind"] {
+  --card-background-image: var(--card-bg-wind);
+}
+
+.card-motion-overlay[data-attribute="earth"] {
+  --card-background-image: var(--card-bg-earth);
+}
+
+.card-motion-overlay[data-attribute="dark"] {
+  --card-background-image: var(--card-bg-dark);
+}
+
 .card-motion-overlay-shell {
   width: 100%;
   height: 100%;
@@ -2340,6 +2372,50 @@ button.card-text-reference-chip {
 
 .card-motion-overlay.motion-destroy .card-motion-overlay-shell {
   animation: card-destroy-motion 430ms ease-in forwards;
+}
+
+.card-motion-overlay-fragment-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.card-motion-overlay-fragment {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--card-accent, #94a3b8) 22%, transparent),
+    0 12px 20px rgba(15, 23, 42, 0.2);
+  transform-origin: center;
+  animation: card-destroy-fragment 430ms ease-in forwards;
+}
+
+.card-motion-overlay-fragment-face {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(226, 232, 240, 0.4)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 58%),
+    var(--card-background-image);
+  background-position:
+    center,
+    center,
+    var(--fragment-background-position);
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    100% 100%,
+    var(--fragment-background-size);
+}
+
+.card-motion-overlay.motion-revive .card-motion-overlay-shell {
+  border-color: rgba(191, 219, 254, 0.98);
+  box-shadow:
+    0 0 0 2px rgba(125, 211, 252, 0.34),
+    0 0 22px rgba(191, 219, 254, 0.34),
+    0 18px 30px rgba(15, 23, 42, 0.22);
+  animation: card-revive-motion 380ms ease-out forwards;
 }
 
 .destroy-motion-spacer {
@@ -2509,6 +2585,49 @@ button.card-text-reference-chip {
     opacity: 0;
     transform: scale(0.62) rotate(6deg);
     filter: saturate(0.7) brightness(1.35) blur(2px);
+  }
+}
+
+@keyframes card-destroy-fragment {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    filter: saturate(1) brightness(1);
+  }
+  10% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+    transform:
+      translate(calc(var(--fragment-translate-x) * 0.45), calc(var(--fragment-translate-y) * 0.45))
+      rotate(calc(var(--fragment-rotate) * 0.55))
+      scale(1.03);
+    filter: saturate(1.12) brightness(1.06);
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(var(--fragment-translate-x), var(--fragment-translate-y))
+      rotate(var(--fragment-rotate))
+      scale(0.84);
+    filter: saturate(0.85) brightness(1.22) blur(1.4px);
+  }
+}
+
+@keyframes card-revive-motion {
+  0% {
+    opacity: 0;
+    transform: scale(1.22);
+    filter: saturate(1.15) brightness(1.35) blur(3px);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+    filter: saturate(1) brightness(1);
   }
 }
 

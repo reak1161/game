@@ -126,7 +126,7 @@ type CardMotionOverlay = {
   name: string;
   attribute: Attribute;
   fieldIndex: number;
-  motion: "destroy";
+  motion: "destroy" | "revive";
 };
 type StatSnapshot = {
   baseAttack: number;
@@ -202,6 +202,20 @@ type StatusKey = (typeof STATUS_KEYS)[number];
 const ATTRIBUTE_ORDER: Attribute[] = ["none", "fire", "water", "ice", "wind", "thunder", "earth", "dark"];
 const ACTIVATION_TONE_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 const SOLO_RANKING_STORAGE_KEY = "hyperdimensional_battle_solo_rankings";
+const DESTROY_MOTION_FRAGMENTS = [
+  { left: 0, top: 0, width: 34, height: 24, tx: -28, ty: -34, rotate: -18 },
+  { left: 34, top: 0, width: 32, height: 22, tx: 6, ty: -42, rotate: 12 },
+  { left: 66, top: 0, width: 34, height: 25, tx: 30, ty: -28, rotate: 20 },
+  { left: 0, top: 24, width: 30, height: 28, tx: -36, ty: -4, rotate: -22 },
+  { left: 30, top: 22, width: 38, height: 30, tx: 2, ty: -10, rotate: 10 },
+  { left: 68, top: 25, width: 32, height: 27, tx: 38, ty: 2, rotate: 24 },
+  { left: 0, top: 52, width: 28, height: 24, tx: -32, ty: 24, rotate: -16 },
+  { left: 28, top: 52, width: 40, height: 24, tx: -4, ty: 36, rotate: -8 },
+  { left: 68, top: 52, width: 32, height: 24, tx: 32, ty: 26, rotate: 18 },
+  { left: 0, top: 76, width: 34, height: 24, tx: -18, ty: 48, rotate: -10 },
+  { left: 34, top: 76, width: 32, height: 24, tx: 6, ty: 56, rotate: 8 },
+  { left: 66, top: 76, width: 34, height: 24, tx: 24, ty: 44, rotate: 14 }
+] as const;
 
 function renderUtilityIcon(kind: UtilityIconKind) {
   switch (kind) {
@@ -2009,17 +2023,25 @@ export function App() {
       };
     };
 
-    const spawnDestroyOverlay = (event: Extract<ReplayEvent, { type: "CARD_DESTROYED" }>) => {
+    const spawnCardMotionOverlay = (
+      event: Extract<ReplayEvent, { type: "CARD_DESTROYED" | "CARD_REVIVED" }>,
+      motion: "destroy" | "revive"
+    ) => {
       const rowRect = fieldRowRef.current?.getBoundingClientRect();
       if (!rowRect) {
         return;
       }
-      const overlayId = `destroy_${event.instanceId}_${Date.now()}`;
+      const fieldElement = fieldCardRefs.current.get(event.instanceId);
+      const fieldRect = fieldElement?.getBoundingClientRect();
+      const overlayId = `${motion}_${event.instanceId}_${Date.now()}`;
       const cardWidth = 116;
       const cardHeight = 174;
       const cardGap = 2;
-      const left = rowRect.left + cardWidth / 2 + event.fieldIndex * (cardWidth + cardGap) - fieldRowRef.current!.scrollLeft;
-      const top = rowRect.top + 10 + cardHeight / 2;
+      const left =
+        fieldRect?.left !== undefined
+          ? fieldRect.left + fieldRect.width / 2
+          : rowRect.left + cardWidth / 2 + event.fieldIndex * (cardWidth + cardGap) - fieldRowRef.current!.scrollLeft;
+      const top = fieldRect?.top !== undefined ? fieldRect.top + fieldRect.height / 2 : rowRect.top + 10 + cardHeight / 2;
       setCardMotionOverlays((current) => [
         ...current,
         {
@@ -2031,13 +2053,13 @@ export function App() {
           name: event.name,
           attribute: event.attribute,
           fieldIndex: event.fieldIndex,
-          motion: "destroy"
+          motion
         }
       ]);
       const timeoutId = window.setTimeout(() => {
         setCardMotionOverlays((current) => current.filter((entry) => entry.id !== overlayId));
         floatingTimeoutIdsRef.current = floatingTimeoutIdsRef.current.filter((entry) => entry !== timeoutId);
-      }, 430);
+      }, motion === "destroy" ? 430 : 380);
       floatingTimeoutIdsRef.current.push(timeoutId);
     };
 
@@ -2054,6 +2076,24 @@ export function App() {
           return;
         }
 
+        if (event.type === "CARD_DESTROYED") {
+          const destroyEvents: Array<Extract<ReplayEvent, { type: "CARD_DESTROYED" }>> = [event];
+          while (replayQueueRef.current[0]?.type === "CARD_DESTROYED") {
+            const nextDestroyEvent = replayQueueRef.current.shift();
+            if (nextDestroyEvent?.type === "CARD_DESTROYED") {
+              destroyEvents.push(nextDestroyEvent);
+            }
+          }
+
+          for (const destroyEvent of destroyEvents) {
+            handleReplayEventParticle(destroyEvent, spawnBurst, lastActivationRef);
+            spawnCardMotionOverlay(destroyEvent, "destroy");
+          }
+
+          replayStepTimeoutRef.current = window.setTimeout(step, 430);
+          return;
+        }
+
         handleReplayEventParticle(event, spawnBurst, lastActivationRef);
 
         if (event.type === "CARD_ACTIVATED") {
@@ -2061,8 +2101,8 @@ export function App() {
           activationToneCountRef.current += 1;
         }
 
-        if (event.type === "CARD_DESTROYED") {
-          spawnDestroyOverlay(event);
+        if (event.type === "CARD_REVIVED") {
+          spawnCardMotionOverlay(event, "revive");
         }
 
         if (event.type === "STATUS_CHANGED") {
@@ -2111,7 +2151,12 @@ export function App() {
           spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
         }
 
-        const delay = event.type === "CARD_DESTROYED" ? 430 : event.type === "CARD_ACTIVATED" ? 90 : 0;
+        const delay =
+          event.type === "CARD_REVIVED"
+            ? 380
+            : event.type === "CARD_ACTIVATED"
+              ? 90
+              : 0;
         replayStepTimeoutRef.current = window.setTimeout(step, delay);
       };
 
@@ -4695,9 +4740,41 @@ export function App() {
               height: `${overlay.height}px`
             }}
           >
-            <div className="card-motion-overlay-shell">
-              <div className="card-motion-overlay-title">{overlay.name}</div>
-            </div>
+            {overlay.motion === "destroy" ? (
+              <div className="card-motion-overlay-fragment-layer">
+                {DESTROY_MOTION_FRAGMENTS.map((fragment, index) => {
+                  const backgroundSizeX = 100 / (fragment.width / 100);
+                  const backgroundSizeY = 100 / (fragment.height / 100);
+                  const backgroundPositionX = fragment.left === 0 ? 0 : (fragment.left / (100 - fragment.width)) * 100;
+                  const backgroundPositionY = fragment.top === 0 ? 0 : (fragment.top / (100 - fragment.height)) * 100;
+                  return (
+                    <div
+                      key={`${overlay.id}_fragment_${index}`}
+                      className="card-motion-overlay-fragment"
+                      style={
+                        {
+                          left: `${fragment.left}%`,
+                          top: `${fragment.top}%`,
+                          width: `${fragment.width}%`,
+                          height: `${fragment.height}%`,
+                          "--fragment-background-size": `${backgroundSizeX}% ${backgroundSizeY}%`,
+                          "--fragment-background-position": `${backgroundPositionX}% ${backgroundPositionY}%`,
+                          "--fragment-translate-x": `${fragment.tx}px`,
+                          "--fragment-translate-y": `${fragment.ty}px`,
+                          "--fragment-rotate": `${fragment.rotate}deg`
+                        } as CSSProperties
+                      }
+                    >
+                      <div className="card-motion-overlay-fragment-face" />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="card-motion-overlay-shell">
+                <div className="card-motion-overlay-title">{overlay.name}</div>
+              </div>
+            )}
           </div>
         ))}
         {particleBursts.map((burst) => (

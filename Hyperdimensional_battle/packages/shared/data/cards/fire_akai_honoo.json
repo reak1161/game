@@ -1,0 +1,56 @@
+{
+  "id": "fire_akai_honoo",
+  "name": "赤い炎",
+  "type": "spell",
+  "attribute": "fire",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置：復活時『蒼き炎』に変化する\n発動：一時魔法{{×2}}、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "fire_akai_honoo_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "when_host_card_revived"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "transform_self_to_definition",
+          "definitionId": "fire_aoki_honoo"
+        }
+      ]
+    },
+    {
+      "id": "fire_akai_honoo_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 2
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_akai_honoo_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "fire",
+    "spell",
+    "transform"
+  ]
+}

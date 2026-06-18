@@ -13,6 +13,7 @@ export type TriggerDefinition =
   | { kind: "after_damage_dealt" }
   | { kind: "when_host_card_activates" }
   | { kind: "when_host_card_additionally_activates" }
+  | { kind: "when_host_card_revived" }
   | { kind: "before_host_damage_calculation" }
   | { kind: "when_host_card_destroyed" }
   | { kind: "when_ally_field_card_destroyed" }
@@ -44,6 +45,7 @@ export type SealConditionDefinition = {
 
 export type OperationDefinition =
   | { kind: "chance_percent"; value: number; operations: OperationDefinition[] }
+  | { kind: "special_chance_percent"; value: number; operations: OperationDefinition[] }
   | { kind: "add_base_attack"; value: number }
   | { kind: "add_base_magic"; value: number }
   | { kind: "add_base_both"; value: number }
@@ -88,6 +90,7 @@ export type OperationDefinition =
   | { kind: "apply_enchant"; target: PlacementTarget; enchantDefinitionId: string }
   | { kind: "apply_enchant_to_all_ally_field_cards"; enchantDefinitionId: string }
   | { kind: "apply_enchant_to_adjacent_cards"; enchantDefinitionId: string }
+  | { kind: "apply_enchant_to_random_card_within_distance_of_host"; enchantDefinitionId: string; distance: number }
   | { kind: "create_token"; tokenDefinitionId: string; position: "right_of_self" | "chosen_positions"; count: number }
   | { kind: "create_token_random_count_random_positions"; tokenDefinitionId: string; minCount: number; maxCount: number }
   | { kind: "merge_adjacent_same_definition_cards"; definitionId: string; mergeRule: "multiply_numeric_counters" }
@@ -101,10 +104,12 @@ export type OperationDefinition =
   | { kind: "register_future_specific_attribute_chain_multiplier"; attribute: Attribute; value: number; scope: "after_this_card" }
   | { kind: "remove_self_enchant" }
   | { kind: "repeat_embedded_operation"; count: number; operations: OperationDefinition[] }
+  | { kind: "repeat_embedded_operation_per_ally_field_card_count"; operations: OperationDefinition[] }
   | { kind: "repeat_previous_round_last_effect_as_self" }
   | { kind: "schedule_add_base_both_at_next_round_start"; value: number }
   | { kind: "schedule_host_revive_at_round_end"; position: "same_slot" }
   | { kind: "schedule_source_card_revive_at_round_end"; position: "same_slot" }
+  | { kind: "scale_self_numeric_value_by_current_round" }
   | { kind: "set_activating_card_attribute_to_previous_attribute" }
   | { kind: "transform_self_to_definition"; definitionId: string }
   | {
@@ -221,6 +226,14 @@ export type ReplayEvent =
   | { type: "CARD_ACTIVATED"; playerId: string; instanceId: string; attribute: Attribute; chainCount: number }
   | { type: "STATUS_CHANGED"; playerId: string; baseAttack: number; baseMagic: number; tempAttack: number; tempMagic: number }
   | { type: "CARD_CREATED"; playerId: string; instanceId: string; definitionId: string; fieldIndex: number }
+  | {
+      type: "CARD_REVIVED";
+      playerId: string;
+      instanceId: string;
+      attribute: Attribute;
+      name: string;
+      fieldIndex: number;
+    }
   | {
       type: "CARD_DESTROYED";
       playerId: string;

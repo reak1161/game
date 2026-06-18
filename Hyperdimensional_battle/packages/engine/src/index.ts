@@ -84,6 +84,7 @@ type TriggerEvent =
   | { kind: "before_card_activates" | "after_card_activates"; sourceCard: CardInstance; activationTask: ActivationTask }
   | { kind: "before_damage_dealt"; sourceCard: CardInstance; activationTask: ActivationTask; pendingDamage: number }
   | { kind: "after_damage_dealt"; sourceCard: CardInstance; activationTask: ActivationTask; damageAmount: number }
+  | { kind: "when_host_card_revived"; hostCard: CardInstance }
   | { kind: "when_ally_field_card_destroyed"; destroyedCard: CardInstance; sourceCard: CardInstance | null; activationTask: ActivationTask | null }
   | { kind: "on_enter_field"; enteredCard: CardInstance }
   | { kind: "on_field_state_check"; subjectCard: CardInstance }
@@ -116,6 +117,21 @@ const ROUND_EVENT_LIMIT = 5000;
 
 function createId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function scheduleRoundEndRevive(state: LocalGameState, card: CardInstance, fieldIndex: number) {
+  const existingIndex = state.scheduledRoundEndRevives.findIndex((entry) => entry.card.instanceId === card.instanceId);
+  if (existingIndex >= 0) {
+    state.scheduledRoundEndRevives[existingIndex] = {
+      card: structuredClone(card),
+      fieldIndex
+    };
+    return;
+  }
+  state.scheduledRoundEndRevives.push({
+    card: structuredClone(card),
+    fieldIndex
+  });
 }
 
 export function getTokenPlacementSelectionKey(effectId: string, tokenDefinitionId: string) {
@@ -974,6 +990,8 @@ function shouldRunTriggeredEffect(
       return (listenerCard.fieldIndex ?? Number.MAX_SAFE_INTEGER) <= (event.enteredCard.fieldIndex ?? -1);
     case "on_field_state_check":
       return listenerCard.instanceId === event.subjectCard.instanceId;
+    case "when_host_card_revived":
+      return listenerCard.instanceId === event.hostCard.instanceId;
     case "at_next_round_start":
     case "at_round_end":
       return true;
@@ -2053,6 +2071,13 @@ function resolveOperation(
         }
       }
       break;
+    case "special_chance_percent":
+      if (rollChancePercent(state, context, effectId, operation.value)) {
+        for (const nestedOperation of operation.operations) {
+          event = resolveOperation(nestedOperation, context, effectId, event);
+        }
+      }
+      break;
     case "add_base_attack":
       player.baseAttack += scaledValue!;
       player.tempAttack += scaledValue!;
@@ -2245,6 +2270,16 @@ function resolveOperation(
           level: "info",
           code: "CARD_COUNTER_UPDATED",
           message: `${resolvingCard.name}: カード数値を ×${formatLogNumber(operation.value)} にしました。`
+        });
+      }
+      break;
+    }
+    case "scale_self_numeric_value_by_current_round": {
+      if (scaleCardNumericValue(cardsById, resolvingCard, state.round)) {
+        addLog(state, {
+          level: "info",
+          code: "CARD_COUNTER_UPDATED",
+          message: `${resolvingCard.name}: カード数値を ×${formatLogNumber(state.round)} にしました。`
         });
       }
       break;
@@ -2480,6 +2515,28 @@ function resolveOperation(
       }
       break;
     }
+    case "apply_enchant_to_random_card_within_distance_of_host": {
+      const hostIndex = resolvingCard.fieldIndex ?? player.field.findIndex((card) => card.instanceId === resolvingCard.instanceId);
+      if (hostIndex < 0) {
+        break;
+      }
+      const candidates = player.field.filter((card) => {
+        const cardIndex = card.fieldIndex ?? player.field.findIndex((entry) => entry.instanceId === card.instanceId);
+        return cardIndex >= 0 && Math.abs(cardIndex - hostIndex) <= operation.distance;
+      });
+      if (candidates.length === 0) {
+        break;
+      }
+      const random = createRng(
+        `${state.rngSeed}:random_enchant_distance:${state.round}:${effectId}:${state.pendingResolution?.activationCount ?? 0}:${state.chanceRollCount}`
+      );
+      state.chanceRollCount += 1;
+      const target = candidates[Math.floor(random() * candidates.length)];
+      if (target) {
+        applyEnchantmentToCard(state, cardsById, resolvingCard, target, operation.enchantDefinitionId);
+      }
+      break;
+    }
     case "create_token":
       createTokenCards(
         state,
@@ -2613,6 +2670,13 @@ function resolveOperation(
         }
       }
       break;
+    case "repeat_embedded_operation_per_ally_field_card_count":
+      for (let repeatIndex = 0; repeatIndex < player.field.length; repeatIndex += 1) {
+        for (const embeddedOperation of operation.operations) {
+          event = resolveOperation(embeddedOperation, context, effectId, event);
+        }
+      }
+      break;
     case "repeat_previous_round_last_effect_as_self": {
       const previousDefinition = getReferencedPreviousRoundEffectDefinition(player, cardsById);
       if (!previousDefinition) {
@@ -2646,10 +2710,11 @@ function resolveOperation(
       });
       break;
     case "schedule_host_revive_at_round_end":
-      state.scheduledRoundEndRevives.push({
-        card: structuredClone(resolvingCard),
-        fieldIndex: typeof resolvingCard.derived?.reviveFieldIndex === "number" ? (resolvingCard.derived.reviveFieldIndex as number) : player.field.length
-      });
+      scheduleRoundEndRevive(
+        state,
+        resolvingCard,
+        typeof resolvingCard.derived?.reviveFieldIndex === "number" ? (resolvingCard.derived.reviveFieldIndex as number) : player.field.length
+      );
       addLog(state, {
         level: "info",
         code: "SCHEDULED_EFFECT",
@@ -2658,13 +2723,13 @@ function resolveOperation(
       break;
     case "schedule_source_card_revive_at_round_end":
       if (event && "sourceCard" in event && event.sourceCard) {
-        state.scheduledRoundEndRevives.push({
-          card: structuredClone(event.sourceCard),
-          fieldIndex:
-            typeof event.sourceCard.derived?.reviveFieldIndex === "number"
-              ? (event.sourceCard.derived.reviveFieldIndex as number)
-              : player.field.length
-        });
+        scheduleRoundEndRevive(
+          state,
+          event.sourceCard,
+          typeof event.sourceCard.derived?.reviveFieldIndex === "number"
+            ? (event.sourceCard.derived.reviveFieldIndex as number)
+            : player.field.length
+        );
         addLog(state, {
           level: "info",
           code: "SCHEDULED_EFFECT",
@@ -2752,6 +2817,7 @@ function resolveOperation(
   const after = snapshotPlayerStats(player);
   const operationLabelMap: Record<OperationDefinition["kind"], string> = {
     chance_percent: "確率効果",
+    special_chance_percent: "特殊確率効果",
     add_base_attack: "基礎攻撃変化",
     add_base_magic: "基礎魔法変化",
     add_base_both: "基礎ステータス変化",
@@ -2779,6 +2845,7 @@ function resolveOperation(
     multiply_base_attack_per_connected_enchanted_count: "連結エンチャント参照の基礎攻撃変化",
     multiply_base_both_and_add_reduction_to_self_numeric: "基礎ステータス減衰変化",
     scale_self_numeric_value: "カード数値倍率変化",
+    scale_self_numeric_value_by_current_round: "ラウンド参照のカード数値倍率変化",
     set_self_numeric_value: "カード数値設定",
     scale_target_probability_values: "確率数値変化",
     deal_damage_from_temp_attack: "攻撃ダメージ",
@@ -2799,6 +2866,7 @@ function resolveOperation(
     apply_enchant: "付与",
     apply_enchant_to_all_ally_field_cards: "全体付与",
     apply_enchant_to_adjacent_cards: "両隣付与",
+    apply_enchant_to_random_card_within_distance_of_host: "距離付与",
     create_token: "生成",
     create_token_random_count_random_positions: "ランダム生成",
     merge_adjacent_same_definition_cards: "融合",
@@ -2812,6 +2880,7 @@ function resolveOperation(
     register_future_specific_attribute_chain_multiplier: "属性連続予約",
     remove_self_enchant: "エンチャント除去",
     repeat_embedded_operation: "複数回発動",
+    repeat_embedded_operation_per_ally_field_card_count: "場枚数参照の複数回発動",
     repeat_previous_round_last_effect_as_self: "前ラウンド効果再現",
     schedule_add_base_both_at_next_round_start: "次ラウンド予約",
     schedule_host_revive_at_round_end: "復活予約",
@@ -3354,10 +3423,11 @@ function applyRoundEndEffects(state: LocalGameState, player: PlayerState, cardsB
     player.field.splice(insertIndex, 0, revivedCard);
     assignFieldIndexes(player);
     addReplay(state, {
-      type: "CARD_CREATED",
+      type: "CARD_REVIVED",
       playerId: player.playerId,
       instanceId: revivedCard.instanceId,
-      definitionId: revivedCard.definitionId,
+      attribute: revivedCard.attribute,
+      name: revivedCard.name,
       fieldIndex: revivedCard.fieldIndex ?? insertIndex
     });
     addLog(state, {
@@ -3365,6 +3435,7 @@ function applyRoundEndEffects(state: LocalGameState, player: PlayerState, cardsB
       code: "CARD_REVIVED",
       message: `${revivedCard.name} がラウンド終了時に復活しました。`
     });
+    dispatchPlacedTrigger(state, player, cardsById, { kind: "when_host_card_revived", hostCard: revivedCard });
   }
   syncPersistentPlacedAuras(state, player, cardsById);
   applyRoundBuffRoundEndEffects(state, player);

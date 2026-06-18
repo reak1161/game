@@ -1,0 +1,55 @@
+{
+  "id": "wind_tachikomeru_kemuri",
+  "name": "立ち込める煙",
+  "type": "attack",
+  "attribute": "wind",
+  "timings": [
+    "placed",
+    "activate"
+  ],
+  "text": "設置：ラウンドの終わりに、このカードの数値×現在のラウンド数\n発動：基礎攻撃{{+20}}、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "wind_tachikomeru_kemuri_placed",
+      "timing": "placed",
+      "trigger": {
+        "kind": "at_round_end"
+      },
+      "condition": null,
+      "operations": [
+        {
+          "kind": "scale_self_numeric_value_by_current_round"
+        }
+      ]
+    },
+    {
+      "id": "wind_tachikomeru_kemuri_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "add_base_attack",
+          "value": 20
+        },
+        {
+          "kind": "deal_damage_from_temp_attack"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_tachikomeru_kemuri_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "attack",
+    "round_end"
+  ]
+}

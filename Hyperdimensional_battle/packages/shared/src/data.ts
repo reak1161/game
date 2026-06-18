@@ -13,6 +13,7 @@ import enchantReikyakuHannou from "../data/cards/enchant_reikyaku_hannou.json";
 import enchantTenshiNoHashigo from "../data/cards/enchant_tenshi_no_hashigo.json";
 import enchantToushou from "../data/cards/enchant_toushou.json";
 import enchantYureruTamashii from "../data/cards/enchant_yureru_tamashii.json";
+import enchantZombie from "../data/cards/enchant_zombie.json";
 import darkAkumaSasayaki from "../data/cards/dark_akuma_sasayaki.json";
 import darkDarkHole from "../data/cards/dark_dark_hole.json";
 import darkDoppelganger from "../data/cards/dark_doppelganger.json";
@@ -21,11 +22,15 @@ import darkHaiyoruKage from "../data/cards/dark_haiyoru_kage.json";
 import darkKagefumi from "../data/cards/dark_kagefumi.json";
 import darkNecro from "../data/cards/dark_necro.json";
 import darkNecromancer from "../data/cards/dark_necromancer.json";
+import darkPandemic from "../data/cards/dark_pandemic.json";
 import darkPoltergeist from "../data/cards/dark_poltergeist.json";
+import darkRenkinjutsu from "../data/cards/dark_renkinjutsu.json";
 import darkRequiem from "../data/cards/dark_requiem.json";
 import darkShadowStep from "../data/cards/dark_shadow_step.json";
 import darkShinenBlade from "../data/cards/dark_shinen_blade.json";
 import darkYamiNoGamble from "../data/cards/dark_yami_no_gamble.json";
+import fireAokiHonoo from "../data/cards/fire_aoki_honoo.json";
+import fireAkaiHonoo from "../data/cards/fire_akai_honoo.json";
 import fireBending from "../data/cards/fire_bending.json";
 import fireBurnout from "../data/cards/fire_burnout.json";
 import fireEruption from "../data/cards/fire_eruption.json";
@@ -79,6 +84,7 @@ import waterDropout from "../data/cards/water_dropout.json";
 import waterHydropump from "../data/cards/water_hydropump.json";
 import waterMarineVeil from "../data/cards/water_marine_veil.json";
 import waterOverflow from "../data/cards/water_overflow.json";
+import waterRyutaiRikigaku from "../data/cards/water_ryutai_rikigaku.json";
 import waterSlime from "../data/cards/water_slime.json";
 import waterTakiShugyo from "../data/cards/water_taki_shugyo.json";
 import windCharge from "../data/cards/wind_charge.json";
@@ -86,9 +92,11 @@ import windAirSlash from "../data/cards/wind_air_slash.json";
 import windAmakakeruTsubasa from "../data/cards/wind_amakakeru_tsubasa.json";
 import windKamaitachi from "../data/cards/wind_kamaitachi.json";
 import windKazematoi from "../data/cards/wind_kazematoi.json";
+import windOkaNoUeNoFuusha from "../data/cards/wind_oka_no_ue_no_fuusha.json";
 import windRewind from "../data/cards/wind_rewind.json";
 import windSukimakaze from "../data/cards/wind_sukimakaze.json";
 import windSummerFurin from "../data/cards/wind_summer_furin.json";
+import windTachikomeruKemuri from "../data/cards/wind_tachikomeru_kemuri.json";
 import windTsumujikaze from "../data/cards/wind_tsumujikaze.json";
 import roleBalance from "../data/roles/role_balance.json";
 import roleBlaze from "../data/roles/role_blaze.json";
@@ -112,6 +120,7 @@ const rawCards = [
   enchantTenshiNoHashigo,
   enchantToushou,
   enchantYureruTamashii,
+  enchantZombie,
   darkAkumaSasayaki,
   darkDarkHole,
   darkDoppelganger,
@@ -120,11 +129,15 @@ const rawCards = [
   darkKagefumi,
   darkNecro,
   darkNecromancer,
+  darkPandemic,
   darkPoltergeist,
+  darkRenkinjutsu,
   darkRequiem,
   darkShadowStep,
   darkShinenBlade,
   darkYamiNoGamble,
+  fireAokiHonoo,
+  fireAkaiHonoo,
   fireBending,
   fireBurnout,
   fireEruption,
@@ -178,6 +191,7 @@ const rawCards = [
   waterHydropump,
   waterMarineVeil,
   waterOverflow,
+  waterRyutaiRikigaku,
   waterSlime,
   waterTakiShugyo,
   windCharge,
@@ -185,9 +199,11 @@ const rawCards = [
   windAmakakeruTsubasa,
   windKamaitachi,
   windKazematoi,
+  windOkaNoUeNoFuusha,
   windRewind,
   windSukimakaze,
   windSummerFurin,
+  windTachikomeruKemuri,
   windTsumujikaze
 ] as CardDefinition[];
 

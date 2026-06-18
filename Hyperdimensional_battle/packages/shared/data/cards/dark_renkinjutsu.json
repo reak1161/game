@@ -1,0 +1,71 @@
+{
+  "id": "dark_renkinjutsu",
+  "name": "錬金術",
+  "type": "spell",
+  "attribute": "dark",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動：自分の場のカード1枚につき、特殊：{{1%}}の確率で、「基礎魔法{{×2}}、その後ダメージを与える、そして再発動」",
+  "effects": [
+    {
+      "id": "dark_renkinjutsu_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "repeat_embedded_operation_per_ally_field_card_count",
+          "operations": [
+            {
+              "kind": "special_chance_percent",
+              "value": 1,
+              "operations": [
+                {
+                  "kind": "multiply_temp_magic",
+                  "value": 2
+                },
+                {
+                  "kind": "deal_damage_from_temp_magic"
+                },
+                {
+                  "kind": "queue_additional_activation_for_self"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_renkinjutsu_activate",
+      "operationIndex": 0,
+      "operationPath": [
+        0,
+        0
+      ],
+      "occurrence": 0,
+      "writtenValueKind": "special",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_renkinjutsu_activate",
+      "operationIndex": 0,
+      "operationPath": [
+        0,
+        0,
+        0
+      ],
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "dark",
+    "spell",
+    "special"
+  ]
+}

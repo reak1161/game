@@ -1,0 +1,40 @@
+{
+  "id": "water_ryutai_rikigaku",
+  "name": "流体力学",
+  "type": "spell",
+  "attribute": "water",
+  "timings": [
+    "activate"
+  ],
+  "text": "発動：一時魔法{{×3}}、その後ダメージを与える",
+  "effects": [
+    {
+      "id": "water_ryutai_rikigaku_activate",
+      "timing": "activate",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "multiply_temp_magic",
+          "value": 3
+        },
+        {
+          "kind": "deal_damage_from_temp_magic"
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "water_ryutai_rikigaku_activate",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "water",
+    "spell"
+  ]
+}
