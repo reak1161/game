@@ -1,0 +1,31 @@
+{
+  "id": "wind_kyojin_no_haniki",
+  "name": "巨人の鼻息",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費：このカードの距離2以内にあるカードを右端に移動させる\n移動したカードを発動可能状態にする",
+  "effects": [
+    {
+      "id": "wind_kyojin_no_haniki_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "move_cards_within_distance_to_right_end_and_queue_activation",
+          "distance": 2
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "wind",
+    "ability",
+    "consume",
+    "move"
+  ],
+  "consumeBehavior": "discard"
+}

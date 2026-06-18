@@ -805,6 +805,7 @@ function resetRoundStats(player: PlayerState, role: RoleDefinition) {
   player.roundDestroyedCardCount = 0;
   player.currentRoundLastEffectDefinitionId = null;
   player.roundPlacementLimit = 5;
+  player.scheduledRoundEndFieldNumericMultipliers = [];
   player.oncePerRound.mulliganUsed = false;
 
   for (const effect of role.passiveEffects) {
@@ -1059,7 +1060,11 @@ function queueActivationByFieldOrder(
     return;
   }
 
-  if (state.pendingResolution.queue.some((task) => task.instanceId === card.instanceId)) {
+  if (
+    state.pendingResolution.queue.some(
+      (task, index) => index >= state.pendingResolution!.cursor && task.instanceId === card.instanceId
+    )
+  ) {
     return;
   }
 
@@ -1092,6 +1097,23 @@ function queueActivationByFieldOrder(
     instanceId: card.instanceId,
     skippedReactiveEffectIds,
     isAdditional: false
+  });
+}
+
+function removeFutureBaseActivationTasks(state: LocalGameState, instanceIds: string[]) {
+  if (!state.pendingResolution || instanceIds.length === 0) {
+    return;
+  }
+
+  const targetIdSet = new Set(instanceIds);
+  state.pendingResolution.queue = state.pendingResolution.queue.filter((task, index) => {
+    if (index < state.pendingResolution!.cursor) {
+      return true;
+    }
+    if (task.isAdditional) {
+      return true;
+    }
+    return !targetIdSet.has(task.instanceId);
   });
 }
 
@@ -1132,6 +1154,41 @@ function queuePlacedRoundStartAdditionalActivations(
       }
     }
   }
+}
+
+function moveCardsWithinDistanceToRightEndAndQueueActivation(
+  state: LocalGameState,
+  player: PlayerState,
+  sourceCard: CardInstance,
+  distance: number
+) {
+  const sourceIndex = sourceCard.fieldIndex ?? player.field.findIndex((card) => card.instanceId === sourceCard.instanceId);
+  if (sourceIndex < 0) {
+    return [];
+  }
+
+  const movedCards = player.field.filter((card) => {
+    if (card.instanceId === sourceCard.instanceId) {
+      return false;
+    }
+    const cardIndex = card.fieldIndex ?? player.field.findIndex((entry) => entry.instanceId === card.instanceId);
+    return cardIndex >= 0 && Math.abs(cardIndex - sourceIndex) <= distance;
+  });
+  if (movedCards.length === 0) {
+    return [];
+  }
+
+  const movedIdSet = new Set(movedCards.map((card) => card.instanceId));
+  const remainingCards = player.field.filter((card) => !movedIdSet.has(card.instanceId));
+  player.field = [...remainingCards, ...movedCards];
+  assignFieldIndexes(player);
+
+  removeFutureBaseActivationTasks(state, movedCards.map((card) => card.instanceId));
+  for (const movedCard of movedCards) {
+    queueActivationByFieldOrder(state, player, movedCard);
+  }
+
+  return movedCards;
 }
 
 function runCardEffects(
@@ -2537,6 +2594,18 @@ function resolveOperation(
       }
       break;
     }
+    case "move_cards_within_distance_to_right_end_and_queue_activation": {
+      const movedCards = moveCardsWithinDistanceToRightEndAndQueueActivation(state, player, resolvingCard, operation.distance);
+      if (movedCards.length > 0) {
+        syncPersistentPlacedAuras(state, player, cardsById, { suppressLogs: true });
+        addLog(state, {
+          level: "info",
+          code: "CARD_MOVED",
+          message: `${resolvingCard.name}: ${movedCards.length} 枚を右端へ移動し、発動可能状態にしました。`
+        });
+      }
+      break;
+    }
     case "create_token":
       createTokenCards(
         state,
@@ -2737,6 +2806,14 @@ function resolveOperation(
         });
       }
       break;
+    case "schedule_round_end_numeric_multiplier_for_all_ally_field_cards":
+      player.scheduledRoundEndFieldNumericMultipliers.push(scaledValue!);
+      addLog(state, {
+        level: "info",
+        code: "SCHEDULED_EFFECT",
+        message: `${resolvingCard.name}: ラウンド終了時の場全体数値倍率 ×${formatLogNumber(scaledValue!)} を予約しました。`
+      });
+      break;
     case "set_activating_card_attribute_to_previous_attribute": {
       const previousAttribute = state.pendingResolution?.lastResolvedAttribute;
       if (previousAttribute) {
@@ -2867,6 +2944,7 @@ function resolveOperation(
     apply_enchant_to_all_ally_field_cards: "全体付与",
     apply_enchant_to_adjacent_cards: "両隣付与",
     apply_enchant_to_random_card_within_distance_of_host: "距離付与",
+    move_cards_within_distance_to_right_end_and_queue_activation: "右端移動",
     create_token: "生成",
     create_token_random_count_random_positions: "ランダム生成",
     merge_adjacent_same_definition_cards: "融合",
@@ -2892,7 +2970,8 @@ function resolveOperation(
     multiply_final_attack: "最終攻撃補正",
     set_final_attack_to_zero: "最終攻撃無効化",
     gamble_total_score_double_or_zero: "合計得点ギャンブル",
-    set_round_placement_limit: "配置上限変化"
+    set_round_placement_limit: "配置上限変化",
+    schedule_round_end_numeric_multiplier_for_all_ally_field_cards: "ラウンド終了時の場全体数値倍率予約"
   };
 
   addStatDeltaLog(state, resolvingCard, operationLabelMap[operation.kind], before, after, {
@@ -3402,8 +3481,9 @@ function applyRoundEndEffects(state: LocalGameState, player: PlayerState, cardsB
   const hasRoundBuffRoundEndEffects =
     getEffectiveRoundBuffCount(player, "round_buff_tailwind_rush") > 0 &&
     player.field.some((card) => card.attribute === "wind");
+  const hasScheduledFieldNumericMultipliers = player.scheduledRoundEndFieldNumericMultipliers.length > 0;
   const hasScheduledRevives = state.scheduledRoundEndRevives.length > 0;
-  if (hasPlacedRoundEndEffects || hasRoundBuffRoundEndEffects || hasScheduledRevives) {
+  if (hasPlacedRoundEndEffects || hasRoundBuffRoundEndEffects || hasScheduledFieldNumericMultipliers || hasScheduledRevives) {
     addLog(state, {
       level: "info",
       code: "ROUND_END_EFFECTS_TRIGGERED",
@@ -3411,6 +3491,27 @@ function applyRoundEndEffects(state: LocalGameState, player: PlayerState, cardsB
     });
   }
   dispatchPlacedTrigger(state, player, cardsById, { kind: "at_round_end" });
+
+  if (player.scheduledRoundEndFieldNumericMultipliers.length > 0) {
+    const combinedMultiplier = player.scheduledRoundEndFieldNumericMultipliers.reduce(
+      (product, multiplier) => floorValue(product * multiplier),
+      1
+    );
+    let affectedCount = 0;
+    for (const card of player.field) {
+      if (scaleCardNumericValue(cardsById, card, combinedMultiplier)) {
+        affectedCount += 1;
+      }
+    }
+    player.scheduledRoundEndFieldNumericMultipliers = [];
+    if (affectedCount > 0) {
+      addLog(state, {
+        level: "info",
+        code: "SCHEDULED_EFFECT_APPLIED",
+        message: `予約効果で、場の ${affectedCount} 枚の数値を ×${formatLogNumber(combinedMultiplier)} にしました。`
+      });
+    }
+  }
 
   const revives = [...state.scheduledRoundEndRevives].sort((left, right) => left.fieldIndex - right.fieldIndex);
   state.scheduledRoundEndRevives = [];
@@ -3634,6 +3735,7 @@ export function createLocalGame({ roleId, cards, roles, roundBuffs = [], seed: p
         roundPlacementLimit: 5,
         nextRoundDrawBonus: 0,
         scheduledNextRoundBaseBothBonus: 0,
+        scheduledRoundEndFieldNumericMultipliers: [],
         oncePerRound: {
           mulliganUsed: false
         }

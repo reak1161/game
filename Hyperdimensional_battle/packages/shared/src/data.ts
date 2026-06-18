@@ -90,8 +90,10 @@ import waterTakiShugyo from "../data/cards/water_taki_shugyo.json";
 import windCharge from "../data/cards/wind_charge.json";
 import windAirSlash from "../data/cards/wind_air_slash.json";
 import windAmakakeruTsubasa from "../data/cards/wind_amakakeru_tsubasa.json";
+import windDaichiNoIbuki from "../data/cards/wind_daichi_no_ibuki.json";
 import windKamaitachi from "../data/cards/wind_kamaitachi.json";
 import windKazematoi from "../data/cards/wind_kazematoi.json";
+import windKyojinNoHaniki from "../data/cards/wind_kyojin_no_haniki.json";
 import windOkaNoUeNoFuusha from "../data/cards/wind_oka_no_ue_no_fuusha.json";
 import windRewind from "../data/cards/wind_rewind.json";
 import windSukimakaze from "../data/cards/wind_sukimakaze.json";
@@ -197,8 +199,10 @@ const rawCards = [
   windCharge,
   windAirSlash,
   windAmakakeruTsubasa,
+  windDaichiNoIbuki,
   windKamaitachi,
   windKazematoi,
+  windKyojinNoHaniki,
   windOkaNoUeNoFuusha,
   windRewind,
   windSukimakaze,

@@ -1,0 +1,40 @@
+{
+  "id": "wind_daichi_no_ibuki",
+  "name": "大地の息吹",
+  "type": "ability",
+  "attribute": "wind",
+  "timings": [
+    "consume"
+  ],
+  "text": "消費：自分の場のカードはラウンドの終わりに数値{{×1.5}}",
+  "effects": [
+    {
+      "id": "wind_daichi_no_ibuki_consume",
+      "timing": "consume",
+      "trigger": null,
+      "condition": null,
+      "operations": [
+        {
+          "kind": "schedule_round_end_numeric_multiplier_for_all_ally_field_cards",
+          "value": 1.5
+        }
+      ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "wind_daichi_no_ibuki_consume",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    }
+  ],
+  "tags": [
+    "wind",
+    "ability",
+    "consume",
+    "growth"
+  ],
+  "consumeBehavior": "discard"
+}

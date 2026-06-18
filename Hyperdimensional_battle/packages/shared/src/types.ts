@@ -91,6 +91,7 @@ export type OperationDefinition =
   | { kind: "apply_enchant_to_all_ally_field_cards"; enchantDefinitionId: string }
   | { kind: "apply_enchant_to_adjacent_cards"; enchantDefinitionId: string }
   | { kind: "apply_enchant_to_random_card_within_distance_of_host"; enchantDefinitionId: string; distance: number }
+  | { kind: "move_cards_within_distance_to_right_end_and_queue_activation"; distance: number }
   | { kind: "create_token"; tokenDefinitionId: string; position: "right_of_self" | "chosen_positions"; count: number }
   | { kind: "create_token_random_count_random_positions"; tokenDefinitionId: string; minCount: number; maxCount: number }
   | { kind: "merge_adjacent_same_definition_cards"; definitionId: string; mergeRule: "multiply_numeric_counters" }
@@ -126,7 +127,8 @@ export type OperationDefinition =
   | { kind: "deal_damage_from_ally_field_definition_count_multiplier"; definitionId: string; value: number }
   | { kind: "set_round_placement_limit"; value: number }
   | { kind: "add_base_magic_per_last_removed_enchant_count"; value: number }
-  | { kind: "destroy_each_ally_field_card_with_chance"; value: number };
+  | { kind: "destroy_each_ally_field_card_with_chance"; value: number }
+  | { kind: "schedule_round_end_numeric_multiplier_for_all_ally_field_cards"; value: number };
 
 export type EffectDefinition = {
   id: string;
@@ -276,6 +278,7 @@ export type PlayerState = {
   roundPlacementLimit: number;
   nextRoundDrawBonus: number;
   scheduledNextRoundBaseBothBonus: number;
+  scheduledRoundEndFieldNumericMultipliers: number[];
   oncePerRound: {
     mulliganUsed: boolean;
   };

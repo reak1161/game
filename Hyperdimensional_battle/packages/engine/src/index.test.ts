@@ -1613,6 +1613,84 @@ describe("engine", () => {
     expect(game.log.some((entry) => entry.code === "ROUND_END_EFFECTS_TRIGGERED")).toBe(true);
   });
 
+  it("kyojin no haniki moves nearby cards to the right end and makes already resolved cards activatable again", () => {
+    let game = createGame();
+    ensureCardsInHand(game, ["none_hybrid", "none_kintore", "wind_kyojin_no_haniki"]);
+    const hybrid = game.players[0].hand.find((entry) => entry.definitionId === "none_hybrid");
+    const kintore = game.players[0].hand.find((entry) => entry.definitionId === "none_kintore");
+    const haniki = game.players[0].hand.find((entry) => entry.definitionId === "wind_kyojin_no_haniki");
+    expect(hybrid).toBeDefined();
+    expect(kintore).toBeDefined();
+    expect(haniki).toBeDefined();
+
+    game = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [
+        {
+          handInstanceId: hybrid!.instanceId,
+          order: 0,
+          targetSelections: {}
+        },
+        {
+          handInstanceId: kintore!.instanceId,
+          order: 1,
+          targetSelections: {}
+        },
+        {
+          handInstanceId: haniki!.instanceId,
+          order: 2,
+          targetSelections: {}
+        }
+      ]
+    });
+
+    expect(game.players[0].baseAttack).toBe(140);
+    expect(game.players[0].baseMagic).toBe(80);
+    expect(game.players[0].discard.some((entry) => entry.definitionId === "wind_kyojin_no_haniki")).toBe(true);
+    expect(game.log.some((entry) => entry.code === "CARD_MOVED")).toBe(true);
+  });
+
+  it("daichi no ibuki schedules a round-end multiplier for cards remaining on the field", () => {
+    let game = createGame();
+    ensureCardsInHand(game, ["none_hybrid", "none_kintore", "wind_daichi_no_ibuki"]);
+    const hybrid = game.players[0].hand.find((entry) => entry.definitionId === "none_hybrid");
+    const kintore = game.players[0].hand.find((entry) => entry.definitionId === "none_kintore");
+    const ibuki = game.players[0].hand.find((entry) => entry.definitionId === "wind_daichi_no_ibuki");
+    expect(hybrid).toBeDefined();
+    expect(kintore).toBeDefined();
+    expect(ibuki).toBeDefined();
+
+    game = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [
+        {
+          handInstanceId: hybrid!.instanceId,
+          order: 0,
+          targetSelections: {}
+        },
+        {
+          handInstanceId: kintore!.instanceId,
+          order: 1,
+          targetSelections: {}
+        },
+        {
+          handInstanceId: ibuki!.instanceId,
+          order: 2,
+          targetSelections: {}
+        }
+      ]
+    });
+
+    const fieldHybrid = game.players[0].field.find((entry) => entry.instanceId === hybrid!.instanceId);
+    const fieldKintore = game.players[0].field.find((entry) => entry.instanceId === kintore!.instanceId);
+    expect(fieldHybrid?.counters?.merge_numeric ?? 0).toBe(7.5);
+    expect(fieldKintore?.counters?.merge_numeric ?? 0).toBe(15);
+    expect(game.players[0].scheduledRoundEndFieldNumericMultipliers).toHaveLength(0);
+    expect(game.log.some((entry) => entry.code === "SCHEDULED_EFFECT_APPLIED")).toBe(true);
+  });
+
   it("invalidated cards still trigger their round-end effects during the normal round-end flow", () => {
     let game = createGame();
     ensureCardsInHand(game, ["fire_kagerou", "wind_kamaitachi", "wind_air_slash"]);
