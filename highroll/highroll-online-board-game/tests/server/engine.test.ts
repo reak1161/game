@@ -209,6 +209,31 @@ describe('GameEngine', () => {
             expect(swiftState.statTokens.bra).toBeGreaterThanOrEqual(1);
         });
 
+        it('applies copied role abilities for duplicate (swiftwind passive triggers)', () => {
+            const engine = new GameEngine(matchId, [], { catalog });
+            const dup = engine.addPlayer('Dup');
+            const swift = engine.addPlayer('Swift');
+            const target = engine.addPlayer('Target');
+            engine.setPlayerRole(dup.id, 'duplicate');
+            engine.setPlayerRole(swift.id, 'swiftwind');
+            engine.setPlayerRole(target.id, 'anger');
+            engine.assignSharedDeck('test-deck', Array(10).fill('jab'));
+            engine.markPlayerReady(dup.id, true);
+            engine.markPlayerReady(swift.id, true);
+            engine.markPlayerReady(target.id, true);
+            engine.start();
+
+            engine.roleAction(dup.id, 'duplicate_copy', { targetId: swift.id });
+
+            const internal = engine as unknown as { state: GameState };
+            internal.state.board.playerStates[dup.id].statTokens.spe = 1;
+
+            engine.roleAttack(dup.id, target.id);
+
+            const dupState = engine.getState().board.playerStates[dup.id];
+            expect(dupState.statTokens.spe).toBe(2);
+        });
+
         it('lets swiftwind spend speed tokens to reduce incoming damage', () => {
             const engine = new GameEngine(matchId, [], { catalog });
             const swift = engine.addPlayer('Swift');

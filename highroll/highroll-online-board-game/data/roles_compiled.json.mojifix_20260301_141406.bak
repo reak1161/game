@@ -1,0 +1,685 @@
+{
+  "roles": [
+    {
+      "id": "swiftwind",
+      "name": "疾風",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 2,
+        "spe": 13,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "swiftwind_gain_spe_on_attack",
+          "trigger": "afterRoleAttack",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "spe",
+                "value": 1
+              }
+            }
+          ],
+          "text": "攻撃後 Speトークン+1"
+        },
+        {
+          "id": "swiftwind_gain_bra_on_spe_threshold",
+          "trigger": "onStatTotalChanged",
+          "condition": {
+            "stat": "spe",
+            "threshold": {
+              "from": 15,
+              "step": 5
+            },
+            "direction": "up"
+          },
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "bra",
+                "value": 1
+              }
+            }
+          ],
+          "text": "Spe合計が15以上で5刻みを跨ぐたびBraトークン+1"
+        },
+        {
+          "id": "swiftwind_spend_spe_reduce_damage",
+          "trigger": "beforeDamageTaken",
+          "playerChoice": {
+            "spendStatToken": {
+              "stat": "spe",
+              "min": 0,
+              "max": "any"
+            }
+          },
+          "actions": [
+            {
+              "reduceIncomingDamageBy": "spent"
+            }
+          ],
+          "text": "被ダメージ時、追加Speトークンを自動で消費して同量だけ被ダメ軽減"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "anger",
+      "name": "憤怒",
+      "params": {
+        "hp": 20,
+        "atk": 11,
+        "def": 0,
+        "spe": 5,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "anger_gain_atk_on_damage",
+          "trigger": "afterDamageTaken",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "atk",
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "HPが2減るごとにAtkトークン+1（受けたダメージ/2を切り捨て）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "monster",
+      "name": "怪物",
+      "params": {
+        "hp": 10,
+        "atk": 10,
+        "def": 20,
+        "spe": 10,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "monster_final_duel_curse",
+          "trigger": "onAlivePlayersChanged",
+          "condition": {
+            "alivePlayers": 2
+          },
+          "actions": [
+            {
+              "setMaxHp": 1
+            },
+            {
+              "setHp": {
+                "min": 1
+              }
+            }
+          ],
+          "text": "残り2人になった瞬間、最大HP=1（現在HPは1に調整）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "bomb",
+      "name": "爆弾",
+      "params": {
+        "hp": 20,
+        "atk": 8,
+        "def": 3,
+        "spe": 8,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "bomb_self_blowback",
+          "trigger": "afterDealingDamage",
+          "condition": {
+            "sources": [
+              "role",
+              "card"
+            ]
+          },
+          "actions": [
+            {
+              "selfDamage": {
+                "value": {
+                  "ratioOf": "damageDealt",
+                  "ratio": 0.25,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "与えたダメージの1/4を自傷（切り捨て）"
+        },
+        {
+          "id": "bomb_thorns",
+          "trigger": "afterDamageTaken",
+          "source": "attacker",
+          "condition": {
+            "sources": [
+              "role",
+              "card"
+            ]
+          },
+          "actions": [
+            {
+              "dealDamageToSource": {
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "受けたダメージの1/2を相手に反射（切り捨て）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "murderer",
+      "name": "殺人",
+      "params": {
+        "hp": 20,
+        "atk": 6,
+        "def": 2,
+        "spe": 8,
+        "bra": 2
+      },
+      "abilities": [
+        {
+          "id": "murderer_gain_on_kill",
+          "trigger": "onKill",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "atk",
+                "value": 1
+              }
+            },
+            {
+              "addStatToken": {
+                "stat": "spe",
+                "value": 1
+              }
+            },
+            {
+              "addStatToken": {
+                "stat": "bra",
+                "value": 1
+              }
+            }
+          ],
+          "text": "殺害するたびにAtk+1 / Spe+1 / Bra+1（トークン）"
+        }
+      ],
+      "tags": [
+        "basic",
+        "synergy:bloodied_sword"
+      ]
+    },
+    {
+      "id": "discharge",
+      "name": "放電",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 4,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "ターンの終わりに余ったBraを蓄電トークンとして蓄積する。自分のターン中に放電すると、(蓄電トークン^2)の感電トークンを自分以外の全員に付与する。感電トークン5つにつき、そのプレイヤーはそのターンBraを1使えない。使えなかったBra1につき、感電トークンを5つ捨てる。自分は感電トークンによるBra減衰が起こらない。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "doctor",
+      "name": "医師",
+      "params": {
+        "hp": 20,
+        "atk": 4,
+        "def": 3,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "Braを1消費して治療/麻酔/手術/整形のいずれかを実行できる支援ロール。",
+      "tags": [
+        "advanced",
+        "support"
+      ]
+    },
+    {
+      "id": "flame",
+      "name": "火炎",
+      "params": {
+        "hp": 20,
+        "atk": 3,
+        "def": 5,
+        "spe": 7,
+        "bra": 2
+      },
+      "text": "Braを消費して炎上を付与。炎上はターン終了時に炎上値だけダメージを与え、減少。火炎自身は炎上ダメージの代わりに回復する。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "resonate",
+      "name": "反響",
+      "params": {
+        "hp": 20,
+        "atk": 6,
+        "def": 3,
+        "spe": 6,
+        "bra": 1
+      },
+      "text": "すべての攻撃が連続攻撃になる。最初のダメージは通常のロール攻撃ダメージ（Atk-Def、最小1）で、その後は与えるダメージが1未満になるまで『与えるダメージを2/3にし、ダメージを与える』を繰り返す。誰かにダメージを与えるたび、自分は固定1ダメージを受ける。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "efficiency",
+      "name": "効率",
+      "params": {
+        "hp": 12,
+        "atk": 2,
+        "def": 1,
+        "spe": 3,
+        "bra": 2
+      },
+      "text": "全てのアイテム効果が2倍になる。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "greed",
+      "name": "貪欲",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 5,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "追加トークンを獲得した時、代わりに獲得するはずだったトークン数だけHPを回復する。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "postpone",
+      "name": "延期",
+      "params": {
+        "hp": 20,
+        "atk": 4,
+        "def": 3,
+        "spe": 10,
+        "bra": 2
+      },
+      "text": "最初の行動後、残りのBraで全員の行動後に行動ができる。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "jester",
+      "name": "道化",
+      "params": {
+        "hp": 12,
+        "atk": 2,
+        "def": 2,
+        "spe": 2,
+        "bra": 3
+      },
+      "text": "Braを1消費してランダムな効果を得る。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "suppress",
+      "name": "抑制",
+      "params": {
+        "hp": 20,
+        "atk": 3,
+        "def": 3,
+        "spe": 3,
+        "bra": 2
+      },
+      "text": "Braを1消費して対象を選ぶ。そのプレイヤーは次のラウンド終了まで固有能力を失う。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "barrage",
+      "name": "連撃",
+      "params": {
+        "hp": 20,
+        "atk": 3,
+        "def": 3,
+        "spe": 8,
+        "bra": 2
+      },
+      "text": "1回目のロール攻撃後、Braを1消費して追加攻撃ができる。ターン中にその相手へ初めて攻撃した場合、Braを1獲得する。攻撃する度、このターンのAtkが+1される。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "tsunami",
+      "name": "ããã",
+      "params": {
+        "hp": 30,
+        "atk": 4,
+        "def": 2,
+        "spe": 6,
+        "bra": 2
+      },
+      "text": "ã¢ã«ãã£ã¡ããã ã¼ã³ã¿ã¤ã³ã¦ã²ã­",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã¢ã«ãã£ã¡ãããããã­ã¼ã³ã¿ã¤ãã³ãã¤5ãã¡ã¼ã¸ã"
+    },
+    {
+      "id": "earthquake",
+      "name": "ã¸ã·ã³",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 4,
+        "bra": 2
+      },
+      "text": "ã¢ã«ãã£ã¡ããã ã¼ã³ã¿ã¤ã³ãã¤ãã¡ã¼ã¸",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã¢ã«ãã£ã¡ããã§ææ­å¨æ¨ã¦å¾ããã­å¨ä½ã¸æ»æã"
+    },
+    {
+      "id": "meteor",
+      "name": "ã¡ããª",
+      "params": {
+        "hp": 30,
+        "atk": 5,
+        "def": 2,
+        "spe": 2,
+        "bra": 2
+      },
+      "text": "ã¢ã«ãã£ã¡ããã ã¿ã³ã¿ã¤ã³ãã¤10ãã¡ã¼ã¸",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã¢ã«ãã£ã¡ããã§å¯¾è±¡1äººã¸å¼·åæ»æã"
+    },
+    {
+      "id": "tornado",
+      "name": "ãã«ãã¼ã",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 7,
+        "bra": 2
+      },
+      "text": "ã¢ã«ãã£ã¡ããã ã¬ã³ã¾ã¯ããã",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã¢ã«ãã£ã¡ããã§å¯¾è±¡ã«é£ç¶ãã¡ã¼ã¸ã"
+    },
+    {
+      "id": "balance",
+      "name": "ãã©ã³ã¹",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 3,
+        "bra": 1
+      },
+      "text": "Bra1ã§ ã¹ãã¼ã¿ã¹å¹³åå",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "Bra1æ¶è²»ã§å¯¾è±¡ã¨Atk/Def/Speãå¹³ååã"
+    },
+    {
+      "id": "flash",
+      "name": "ã¤ãã»ã³",
+      "params": {
+        "hp": 30,
+        "atk": 0,
+        "def": 3,
+        "spe": 8,
+        "bra": 1
+      },
+      "text": "ã­ã¼ã«æ»æã§ SpeãAtkæ±ã",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ããã·ãã§Speåç§ãBra1ã§æ¬¡ã¿ã¼ã³Speå¼·åã"
+    },
+    {
+      "id": "info",
+      "name": "ã¸ã§ã¦ãã¦",
+      "params": {
+        "hp": 30,
+        "atk": 2,
+        "def": 2,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "ãã­ã¼å¶å¾¡ + è¿½å ãã¡ã¼ã¸",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "å¼ãç´ãã¨æ»æå¾è¿½å ãã¡ã¼ã¸ãæã¤ã"
+    },
+    {
+      "id": "discard",
+      "name": "ãã¤ã­",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 6,
+        "bra": 2
+      },
+      "text": "Bra1ã§å±±æ­å»æ£3æ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "å±±æ­ãè½ã¨ãã¦æ»æåãä¼¸ã°ãã"
+    },
+    {
+      "id": "recycle",
+      "name": "ã«ã¤ã·ã¥ã¦",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 6,
+        "bra": 2
+      },
+      "text": "Bra1ã§æ¨ã¦æ­åå",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "æ¨ã¦æ­ãã1æãææ­ã«æ»ãã"
+    },
+    {
+      "id": "gaze",
+      "name": "ã®ã§ã¦ã·",
+      "params": {
+        "hp": 30,
+        "atk": 4,
+        "def": 3,
+        "spe": 6,
+        "bra": 1
+      },
+      "text": "Bra1ã§ãã¼ã¯ä»ä¸",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ãã¼ã¯æ°ã«å¿ãã¦è¿½å åºå®ãã¡ã¼ã¸ã"
+    },
+    {
+      "id": "silence_role",
+      "name": "ãã³ã¢ã¯",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 4,
+        "spe": 3,
+        "bra": 1
+      },
+      "text": "Bra1ã§ã¹ãã«å°å°",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "æ²é»ä»ä¸ä¸­ã¯åªæã«ã¼ããä½¿ç¨ã§ããªãã"
+    },
+    {
+      "id": "superchain",
+      "name": "ãã§ã¦ã¬ã³",
+      "params": {
+        "hp": 30,
+        "atk": 4,
+        "def": 2,
+        "spe": 5,
+        "bra": 1
+      },
+      "text": "ãã«ããããåã­ã¼ã«æ»æ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã­ã¼ã«æ»ææãAtk1è¨ç®ã®ããããAtkåè¡ãã"
+    },
+    {
+      "id": "shadowbind",
+      "name": "ã«ã²ãã¤",
+      "params": {
+        "hp": 30,
+        "atk": 2,
+        "def": 2,
+        "spe": 6,
+        "bra": 1
+      },
+      "text": "Bra1ã§æå¤§HPä½ä¸",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "å¯¾è±¡ã®æå¤§HPã2ä¸ããã"
+    },
+    {
+      "id": "pierce",
+      "name": "ã«ã³ãã¦",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 2,
+        "spe": 4,
+        "bra": 1
+      },
+      "text": "ã­ã¼ã«æ»æã§Defç¡è¦",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã­ã¼ã«æ»ææãç¸æDefãç¡è¦ãã¦è¨ç®ã"
+    },
+    {
+      "id": "pursuit",
+      "name": "ãã¤ãã¦",
+      "params": {
+        "hp": 30,
+        "atk": 5,
+        "def": 2,
+        "spe": 5,
+        "bra": 1
+      },
+      "text": "ä»èæ»æã¸ã®è¿½æ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ä»ãã¬ã¤ã¤ã¼ã®ã­ã¼ã«æ»æã«åå¿ãã¦è¿½æããã"
+    },
+    {
+      "id": "invincible",
+      "name": "ã ãã­",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 0,
+        "spe": 4,
+        "bra": 1
+      },
+      "text": "ã ãã­ã¹ã¿ãã¯ã§è¢«ãã¡ã¼ã¸ç¡å¹",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ã²ã¼ã éå§æã«ã ãã­ã¹ã¿ãã¯ãç²å¾ã"
+    },
+    {
+      "id": "mine",
+      "name": "ã¸ã©ã¤",
+      "params": {
+        "hp": 30,
+        "atk": 5,
+        "def": 3,
+        "spe": 5,
+        "bra": 1
+      },
+      "text": "è¢«å¼¾æã«ã¦ã³ã¿ã¼å",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "è¢«å¼¾ããªãã¿ã¼ã³ã§çºåçä¸æãçºåæã¯ãªã»ããã"
+    },
+    {
+      "id": "secret",
+      "name": "ããã",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 3,
+        "bra": 1
+      },
+      "text": "ã¹ãã¼ã¿ã¹ã¨è¡åæå ±ãç§å¿",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ä»ãã¬ã¤ã¤ã¼ããèªåã®æå ±ãé ãã­ã¼ã«ã"
+    }
+  ],
+  "ability_conventions": {
+    "statTokensPersist": true,
+    "halfRound": "floor",
+    "speInterruptOrder": "recomputeForUnactedOnChange"
+  }
+}

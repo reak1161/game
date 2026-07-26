@@ -5,6 +5,7 @@ import rolesCompiledRaw from "../../data/roles_compiled.json" with { type: "json
 import cardsRaw from "../../data/cards.json" with { type: "json" };
 import deckDefaultRaw from "../../data/decklist.default_60.json" with { type: "json" };
 import deckExpandedRaw from "../../data/decklist.expanded_mixed_90.json" with { type: "json" };
+import deckLastOneRaw from "../../data/decklist.last_one_60.json" with { type: "json" };
 
 type RolesFile = { roles: Role[] };
 type CardsFile = { cards: CardDefinition[] };
@@ -46,6 +47,7 @@ const shuffle = <T>(items: T[]): T[] => {
 const DECKS: Record<string, DeckList> = {
   default_60: deckDefaultRaw as DeckList,
   expanded_mixed_90: deckExpandedRaw as DeckList,
+  last_one_60: deckLastOneRaw as DeckList,
 };
 
 export const getRolesCatalog = (): Role[] => {
@@ -85,4 +87,3 @@ export const getDeckList = (deckId: string): DeckList => {
   }
   return list;
 };
-

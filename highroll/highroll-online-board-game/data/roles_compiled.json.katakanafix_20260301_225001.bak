@@ -1,0 +1,685 @@
+{
+  "roles": [
+    {
+      "id": "swiftwind",
+      "name": "疾風",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 2,
+        "spe": 13,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "swiftwind_gain_spe_on_attack",
+          "trigger": "afterRoleAttack",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "spe",
+                "value": 1
+              }
+            }
+          ],
+          "text": "攻撃後 Speトークン+1"
+        },
+        {
+          "id": "swiftwind_gain_bra_on_spe_threshold",
+          "trigger": "onStatTotalChanged",
+          "condition": {
+            "stat": "spe",
+            "threshold": {
+              "from": 15,
+              "step": 5
+            },
+            "direction": "up"
+          },
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "bra",
+                "value": 1
+              }
+            }
+          ],
+          "text": "Spe合計が15以上で5刻みを跨ぐたびBraトークン+1"
+        },
+        {
+          "id": "swiftwind_spend_spe_reduce_damage",
+          "trigger": "beforeDamageTaken",
+          "playerChoice": {
+            "spendStatToken": {
+              "stat": "spe",
+              "min": 0,
+              "max": "any"
+            }
+          },
+          "actions": [
+            {
+              "reduceIncomingDamageBy": "spent"
+            }
+          ],
+          "text": "被ダメージ時、追加Speトークンを自動で消費して同量だけ被ダメ軽減"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "anger",
+      "name": "憤怒",
+      "params": {
+        "hp": 20,
+        "atk": 11,
+        "def": 0,
+        "spe": 5,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "anger_gain_atk_on_damage",
+          "trigger": "afterDamageTaken",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "atk",
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "HPが2減るごとにAtkトークン+1（受けたダメージ/2を切り捨て）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "monster",
+      "name": "怪物",
+      "params": {
+        "hp": 10,
+        "atk": 10,
+        "def": 20,
+        "spe": 10,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "monster_final_duel_curse",
+          "trigger": "onAlivePlayersChanged",
+          "condition": {
+            "alivePlayers": 2
+          },
+          "actions": [
+            {
+              "setMaxHp": 1
+            },
+            {
+              "setHp": {
+                "min": 1
+              }
+            }
+          ],
+          "text": "残り2人になった瞬間、最大HP=1（現在HPは1に調整）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "bomb",
+      "name": "爆弾",
+      "params": {
+        "hp": 20,
+        "atk": 8,
+        "def": 3,
+        "spe": 8,
+        "bra": 1
+      },
+      "abilities": [
+        {
+          "id": "bomb_self_blowback",
+          "trigger": "afterDealingDamage",
+          "condition": {
+            "sources": [
+              "role",
+              "card"
+            ]
+          },
+          "actions": [
+            {
+              "selfDamage": {
+                "value": {
+                  "ratioOf": "damageDealt",
+                  "ratio": 0.25,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "与えたダメージの1/4を自傷（切り捨て）"
+        },
+        {
+          "id": "bomb_thorns",
+          "trigger": "afterDamageTaken",
+          "source": "attacker",
+          "condition": {
+            "sources": [
+              "role",
+              "card"
+            ]
+          },
+          "actions": [
+            {
+              "dealDamageToSource": {
+                "value": {
+                  "ratioOf": "damageTaken",
+                  "ratio": 0.5,
+                  "round": "floor"
+                }
+              }
+            }
+          ],
+          "text": "受けたダメージの1/2を相手に反射（切り捨て）"
+        }
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "murderer",
+      "name": "殺人",
+      "params": {
+        "hp": 20,
+        "atk": 6,
+        "def": 2,
+        "spe": 8,
+        "bra": 2
+      },
+      "abilities": [
+        {
+          "id": "murderer_gain_on_kill",
+          "trigger": "onKill",
+          "actions": [
+            {
+              "addStatToken": {
+                "stat": "atk",
+                "value": 1
+              }
+            },
+            {
+              "addStatToken": {
+                "stat": "spe",
+                "value": 1
+              }
+            },
+            {
+              "addStatToken": {
+                "stat": "bra",
+                "value": 1
+              }
+            }
+          ],
+          "text": "殺害するたびにAtk+1 / Spe+1 / Bra+1（トークン）"
+        }
+      ],
+      "tags": [
+        "basic",
+        "synergy:bloodied_sword"
+      ]
+    },
+    {
+      "id": "discharge",
+      "name": "放電",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 4,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "ターンの終わりに余ったBraを蓄電トークンとして蓄積する。自分のターン中に放電すると、(蓄電トークン^2)の感電トークンを自分以外の全員に付与する。感電トークン5つにつき、そのプレイヤーはそのターンBraを1使えない。使えなかったBra1につき、感電トークンを5つ捨てる。自分は感電トークンによるBra減衰が起こらない。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "doctor",
+      "name": "医師",
+      "params": {
+        "hp": 20,
+        "atk": 4,
+        "def": 3,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "Braを1消費して治療/麻酔/手術/整形のいずれかを実行できる支援ロール。",
+      "tags": [
+        "advanced",
+        "support"
+      ]
+    },
+    {
+      "id": "flame",
+      "name": "火炎",
+      "params": {
+        "hp": 20,
+        "atk": 3,
+        "def": 5,
+        "spe": 7,
+        "bra": 2
+      },
+      "text": "Braを消費して炎上を付与。炎上はターン終了時に炎上値だけダメージを与え、減少。火炎自身は炎上ダメージの代わりに回復する。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "resonate",
+      "name": "反響",
+      "params": {
+        "hp": 20,
+        "atk": 6,
+        "def": 3,
+        "spe": 6,
+        "bra": 1
+      },
+      "text": "すべての攻撃が連続攻撃になる。最初のダメージは通常のロール攻撃ダメージ（Atk-Def、最小1）で、その後は与えるダメージが1未満になるまで『与えるダメージを2/3にし、ダメージを与える』を繰り返す。誰かにダメージを与えるたび、自分は固定1ダメージを受ける。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "efficiency",
+      "name": "効率",
+      "params": {
+        "hp": 12,
+        "atk": 2,
+        "def": 1,
+        "spe": 3,
+        "bra": 2
+      },
+      "text": "全てのアイテム効果が2倍になる。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "greed",
+      "name": "貪欲",
+      "params": {
+        "hp": 20,
+        "atk": 5,
+        "def": 5,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "追加トークンを獲得した時、代わりに獲得するはずだったトークン数だけHPを回復する。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "postpone",
+      "name": "延期",
+      "params": {
+        "hp": 20,
+        "atk": 4,
+        "def": 3,
+        "spe": 10,
+        "bra": 2
+      },
+      "text": "最初の行動後、残りのBraで全員の行動後に行動ができる。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "jester",
+      "name": "道化",
+      "params": {
+        "hp": 12,
+        "atk": 2,
+        "def": 2,
+        "spe": 2,
+        "bra": 3
+      },
+      "text": "Braを1消費してランダムな効果を得る。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "suppress",
+      "name": "抑制",
+      "params": {
+        "hp": 20,
+        "atk": 3,
+        "def": 3,
+        "spe": 3,
+        "bra": 2
+      },
+      "text": "Braを1消費して対象を選ぶ。そのプレイヤーは次のラウンド終了まで固有能力を失う。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "barrage",
+      "name": "連撃",
+      "params": {
+        "hp": 20,
+        "atk": 3,
+        "def": 3,
+        "spe": 8,
+        "bra": 2
+      },
+      "text": "1回目のロール攻撃後、Braを1消費して追加攻撃ができる。ターン中にその相手へ初めて攻撃した場合、Braを1獲得する。攻撃する度、このターンのAtkが+1される。",
+      "tags": [
+        "advanced"
+      ]
+    },
+    {
+      "id": "tsunami",
+      "name": "ツナミ",
+      "params": {
+        "hp": 30,
+        "atk": 4,
+        "def": 2,
+        "spe": 6,
+        "bra": 2
+      },
+      "text": "アルティメットデ ゼンタイコウゲキ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "アルティメットデ、テキゼンタイニコテイ5ダメージ。"
+    },
+    {
+      "id": "earthquake",
+      "name": "ジシン",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 4,
+        "bra": 2
+      },
+      "text": "アルティメットデ ゼンタイコテイダメージ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "アルティメットで手札全捨て後、テキ全体へ攻撃。"
+    },
+    {
+      "id": "meteor",
+      "name": "メテオ",
+      "params": {
+        "hp": 30,
+        "atk": 5,
+        "def": 2,
+        "spe": 2,
+        "bra": 2
+      },
+      "text": "アルティメットデ タンタイコテイ10ダメージ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "アルティメットで対象1人へ強力攻撃。"
+    },
+    {
+      "id": "tornado",
+      "name": "トルネード",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 7,
+        "bra": 2
+      },
+      "text": "アルティメットデ レンゾクヒット",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "アルティメットで対象に連続ダメージ。"
+    },
+    {
+      "id": "balance",
+      "name": "バランス",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 3,
+        "bra": 1
+      },
+      "text": "Bra1で ステータス平均化",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "Bra1消費で対象とAtk/Def/Speを平均化。"
+    },
+    {
+      "id": "flash",
+      "name": "イッセン",
+      "params": {
+        "hp": 30,
+        "atk": 0,
+        "def": 3,
+        "spe": 8,
+        "bra": 1
+      },
+      "text": "ロール攻撃で SpeをAtk扱い",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "パッシブでSpe参照。Bra1で次ターンSpe強化。"
+    },
+    {
+      "id": "info",
+      "name": "ジョウホウ",
+      "params": {
+        "hp": 30,
+        "atk": 2,
+        "def": 2,
+        "spe": 5,
+        "bra": 2
+      },
+      "text": "ドロー制御 + 追加ダメージ",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "引き直しと攻撃後追加ダメージを持つ。"
+    },
+    {
+      "id": "discard",
+      "name": "ハイキ",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 6,
+        "bra": 2
+      },
+      "text": "Bra1で山札廃棄3枚",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "山札を落として攻撃力を伸ばす。"
+    },
+    {
+      "id": "recycle",
+      "name": "カイシュウ",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 6,
+        "bra": 2
+      },
+      "text": "Bra1で捨て札回収",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "捨て札から1枚を手札に戻す。"
+    },
+    {
+      "id": "gaze",
+      "name": "ギョウシ",
+      "params": {
+        "hp": 30,
+        "atk": 4,
+        "def": 3,
+        "spe": 6,
+        "bra": 1
+      },
+      "text": "Bra1でマーク付与",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "マーク数に応じて追加固定ダメージ。"
+    },
+    {
+      "id": "silence_role",
+      "name": "チンモク",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 4,
+        "spe": 3,
+        "bra": 1
+      },
+      "text": "Bra1でスペル封印",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "沈黙付与中は呪文カードを使用できない。"
+    },
+    {
+      "id": "superchain",
+      "name": "チョウレン",
+      "params": {
+        "hp": 30,
+        "atk": 4,
+        "def": 2,
+        "spe": 5,
+        "bra": 1
+      },
+      "text": "マルチヒット型ロール攻撃",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ロール攻撃時、Atk1計算のヒットをAtk回行う。"
+    },
+    {
+      "id": "shadowbind",
+      "name": "カゲヌイ",
+      "params": {
+        "hp": 30,
+        "atk": 2,
+        "def": 2,
+        "spe": 6,
+        "bra": 1
+      },
+      "text": "Bra1で最大HP低下",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "対象の最大HPを2下げる。"
+    },
+    {
+      "id": "pierce",
+      "name": "カンツウ",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 2,
+        "spe": 4,
+        "bra": 1
+      },
+      "text": "ロール攻撃でDef無視",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ロール攻撃時、相手Defを無視して計算。"
+    },
+    {
+      "id": "pursuit",
+      "name": "ツイトウ",
+      "params": {
+        "hp": 30,
+        "atk": 5,
+        "def": 2,
+        "spe": 5,
+        "bra": 1
+      },
+      "text": "他者攻撃への追撃",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "他プレイヤーのロール攻撃に反応して追撃する。"
+    },
+    {
+      "id": "invincible",
+      "name": "ムテキ",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 0,
+        "spe": 4,
+        "bra": 1
+      },
+      "text": "ムテキスタックで被ダメージ無効",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "ゲーム開始時にムテキスタックを獲得。"
+    },
+    {
+      "id": "mine",
+      "name": "ジライ",
+      "params": {
+        "hp": 30,
+        "atk": 5,
+        "def": 3,
+        "spe": 5,
+        "bra": 1
+      },
+      "text": "被弾時カウンター型",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "被弾しないターンで発動率上昇。発動時はリセット。"
+    },
+    {
+      "id": "secret",
+      "name": "ヒミツ",
+      "params": {
+        "hp": 30,
+        "atk": 3,
+        "def": 3,
+        "spe": 3,
+        "bra": 1
+      },
+      "text": "ステータスと行動情報を秘匿",
+      "tags": [
+        "v0_7_0"
+      ],
+      "detailText": "他プレイヤーから自分の情報を隠すロール。"
+    }
+  ],
+  "ability_conventions": {
+    "statTokensPersist": true,
+    "halfRound": "floor",
+    "speInterruptOrder": "recomputeForUnactedOnChange"
+  }
+}

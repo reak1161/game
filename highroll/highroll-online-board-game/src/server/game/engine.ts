@@ -1,11 +1,16 @@
 import {
     addPlayerToState,
+    clearPlayerRole,
     createInitialGameState,
     createPlayer,
+    removePlayerFromState,
     setMatchStatus,
+    setMatchResult,
     setPlayerReady,
     setPlayerRole,
+    setPlayerTeam,
     setSharedDeck,
+    setTeamMode,
     drawFromSharedDeck,
     playCardFromHand,
     updatePlayerScore,
@@ -31,6 +36,7 @@ import type {
     CardTarget,
     CoinFlipDealDamageEffect,
     CoinFlipDealDamageEitherEffect,
+    ClearStatusesEffect,
     CombatStatKey,
     DamageSource,
     DealDamagePerSealedHandEffect,
@@ -41,6 +47,7 @@ import type {
     DrawCardsEffect,
     EffectCondition,
     FeintEffect,
+    FutureSightRoleAttackEffect,
     GameState,
     GameLogEntry,
     HealEffect,
@@ -50,6 +57,7 @@ import type {
     ModifyMaxHpInstallEffect,
     SetNextRoleAttackAtkBonusEffect,
     PendingAction,
+    PendingInfoDraw,
     PendingPrompt,
     Player,
     PlayerRuntimeState,
@@ -69,6 +77,7 @@ import type {
     StatKey,
     StatModifierMap,
     TauntUntilNextTurnStartEffect,
+    TeamColor,
 } from '../../shared/types';
 import {
     createRuntimeStateFromRole,
@@ -77,72 +86,26 @@ import {
     getEffectiveStatValue,
     mutateBaseStat,
 } from './effectUtils';
-import { getRoleActions } from '../../shared/roleActions';
+import { getRoleActionsForRoleIds } from '../../shared/roleActions';
+import {
+    type AbilityTriggerResult,
+    type DamageResolutionOptions,
+    type EngineCatalog,
+    type ForcedPromptDecision,
+    type MultiTargetDamagePlanItem,
+    type PendingSkip,
+    type PlayCardOptions,
+    type RoleAbilityContext,
+    type RoleActionOptions,
+} from './engine.types';
+import { CURSE_POOL, DEFAULT_CPU_ACTION_DELAY_MS } from './engine.constants';
+import { generateUuid } from './engine.uuid';
+export type { PlayCardOptions, RoleActionOptions } from './engine.types';
 
-type EngineCatalog = {
-    roles: Role[];
-    cards: CardDefinition[];
+type InfoDrawContext = {
+    afterComplete?: PendingInfoDraw['afterComplete'];
+    log?: PendingInfoDraw['log'];
 };
-
-const generateUuid = (): string => {
-    if (typeof globalThis !== 'undefined' && 'crypto' in globalThis) {
-        const cryptoObj = globalThis.crypto as Crypto | undefined;
-        if (cryptoObj && typeof cryptoObj.randomUUID === 'function') {
-            return cryptoObj.randomUUID();
-        }
-    }
-    return `id-${Math.random().toString(36).slice(2, 11)}`;
-};
-
-export interface PlayCardOptions {
-    targets?: string[];
-    handIndex?: number;
-    choices?: Record<string, string | number | boolean | number[] | string[] | Record<string, unknown>>;
-}
-
-export interface RoleActionOptions {
-    targetId?: string;
-    choices?: Record<string, string | number | boolean>;
-}
-
-type AbilityTriggerResult = {
-    damageReduction?: number;
-};
-
-type PendingSkip = {
-    installInstanceId: string;
-    effectIndex: number;
-};
-
-type ForcedPromptDecision = PendingSkip & {
-    decision: 'accept' | 'decline';
-};
-
-type DamageResolutionOptions = {
-    allowPrompt?: boolean;
-    skipOptional?: PendingSkip;
-    forcedPromptDecision?: ForcedPromptDecision;
-    action?: PendingAction;
-    cardId?: string;
-    abilityId?: string;
-    label?: string;
-    contactAttack?: boolean;
-    ignoreDefenseInstalls?: boolean;
-};
-
-interface RoleAbilityContext {
-    attackerId?: string;
-    targetId?: string;
-    damageSource?: DamageSource;
-    damageAmount?: number;
-    damageTaken?: number;
-    damageDealt?: number;
-    spentStatTokens?: number;
-    stat?: StatKey;
-    previousStatTotal?: number;
-    nextStatTotal?: number;
-    alivePlayers?: number;
-}
 
 export class GameEngine {
     private state: GameState;
@@ -156,24 +119,19 @@ export class GameEngine {
     private cpuTimer: ReturnType<typeof setTimeout> | null = null;
     private cpuNextAt = 0;
     // CPUの行動が速すぎると何が起きたか分からないため、最低間隔を設ける（ms）
-    private readonly cpuActionDelayMs = 1000;
+    private readonly cpuActionDelayMs: number;
+    private readonly cpuScheduleFn?: (delayMs: number) => void;
 
-    private readonly cursePool: CurseId[] = [
-        'weakness',
-        'force',
-        'decay',
-        'collapse',
-        'cost',
-        'rebuttal',
-        'enrage',
-        'resonate',
-        'silence',
-        'wear',
-    ];
+    private readonly cursePool: CurseId[] = CURSE_POOL;
 
     private transientCardEffectBonus = new Map<string, number>();
 
     private scheduleCpuStep(): void {
+        if (this.cpuScheduleFn) {
+            const delay = Math.max(0, this.cpuNextAt - Date.now());
+            this.cpuScheduleFn(delay);
+            return;
+        }
         if (this.cpuTimer) {
             return;
         }
@@ -194,6 +152,9 @@ export class GameEngine {
         if (this.state.pendingPrompt) {
             return;
         }
+        if (this.state.pendingInfoDraw) {
+            return;
+        }
         const current = this.state.currentPlayerId;
         if (!current || !this.isCpuPlayer(current)) {
             return;
@@ -202,12 +163,37 @@ export class GameEngine {
         this.cpuLoopActive = true;
         try {
             this.performCpuTurn(current);
+        } catch (error) {
+            // CPUの1手で例外が出てもループ全体を停止させない
+            try {
+                const stillCurrent = this.state.currentPlayerId === current;
+                const runtime = this.getRuntime(current);
+                if (stillCurrent && runtime && !runtime.isDefeated && this.state.status === 'inProgress') {
+                    this.endTurn(current);
+                }
+            } catch {
+                // フォールバック失敗時もCPUスケジューラは継続させる
+            }
+            this.logEvent({
+                type: 'roleAction',
+                playerId: current,
+                actionId: 'cpu_error_recovered',
+                description: `CPU行動で例外を検知し、ターンを継続可能な形に回復しました: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+                timestamp: Date.now(),
+            });
         } finally {
             this.cpuLoopActive = false;
         }
 
         this.cpuNextAt = Date.now() + this.cpuActionDelayMs;
         this.scheduleCpuStep();
+    }
+
+    // Durable Objects など、外部スケジューラ（Alarm）から1ステップ回すための入口。
+    runCpuScheduledStep(): void {
+        this.runCpuStep();
     }
 
     private previewDamageOutcome(
@@ -306,12 +292,28 @@ export class GameEngine {
         });
     }
 
+    private getRoleAbilityIds(playerId: string): string[] {
+        const player = this.getPlayer(playerId);
+        if (!player?.roleId) return [];
+        const copied = this.readRoleState(playerId).copiedRoleAbilities ?? [];
+        return [player.roleId, ...copied.map((entry) => entry.roleId)];
+    }
+
+    private hasRoleAbility(playerId: string, roleId: string): boolean {
+        const player = this.getPlayer(playerId);
+        if (player?.roleId === roleId) return true;
+        const copied = this.readRoleState(playerId).copiedRoleAbilities ?? [];
+        return copied.some((entry) => entry.roleId === roleId);
+    }
+
     constructor(
         matchId: string,
         initialPlayers: Player[] = [],
         options?: {
             catalog: EngineCatalog;
             state?: GameState;
+            cpuScheduleFn?: (delayMs: number) => void;
+            cpuActionDelayMs?: number;
         }
     ) {
         if (!options?.catalog) {
@@ -320,11 +322,19 @@ export class GameEngine {
         this.state = options.state ?? createInitialGameState(matchId, initialPlayers);
         this.roleMap = new Map(options.catalog.roles.map((role) => [role.id, role]));
         this.cardMap = new Map(options.catalog.cards.map((card) => [card.id, card]));
+        this.cpuScheduleFn = options.cpuScheduleFn;
+        this.cpuActionDelayMs = options.cpuActionDelayMs ?? DEFAULT_CPU_ACTION_DELAY_MS;
     }
 
     private assertNoPendingPrompt(): void {
         if (this.state.pendingPrompt) {
             throw new Error('割り込み確認中です。対応が完了するまでお待ちください。');
+        }
+    }
+
+    private assertNoPendingInfoDraw(): void {
+        if (this.state.pendingInfoDraw) {
+            throw new Error('情報がカードを選択中です。選択が完了するまでお待ちください。');
         }
     }
 
@@ -340,6 +350,78 @@ export class GameEngine {
             const accepted = this.decideCpuPromptAcceptance(prompt.targetId, prompt);
             this.resolvePendingPrompt(prompt.targetId, accepted);
         }
+    }
+
+    private drawCardsWithInfoChoice(playerId: string, count: number, context: InfoDrawContext = {}): boolean {
+        const drawCount = Math.max(0, Math.floor(count));
+        if (drawCount <= 0) {
+            return false;
+        }
+        if (!this.hasRoleAbility(playerId, 'info') || this.isRoleSuppressed(playerId)) {
+            const before = (this.state.hands[playerId] ?? []).length;
+            this.state = drawFromSharedDeck(this.state, playerId, drawCount);
+            this.syncHandStatTokens(playerId);
+            const drawn = Math.max(0, (this.state.hands[playerId] ?? []).length - before);
+            if (drawn > 0 && context.log) {
+                this.logInfoDrawCardEffect(context.log, drawn);
+            }
+            return false;
+        }
+        return this.startInfoDrawSelection(playerId, drawCount, 1, context);
+    }
+
+    private startInfoDrawSelection(playerId: string, drawTotal: number, drawIndex: number, context: InfoDrawContext): boolean {
+        let deck = [...this.state.sharedDeck];
+        let discard = [...this.state.sharedDiscard];
+        if (deck.length === 0 && discard.length > 0) {
+            deck = discard;
+            discard = [];
+        }
+
+        const options = deck.splice(0, 2);
+        if (options.length === 0) {
+            this.state = {
+                ...this.state,
+                sharedDeck: deck,
+                sharedDiscard: discard,
+                pendingInfoDraw: undefined,
+                updatedAt: Date.now(),
+            };
+            return false;
+        }
+
+        this.state = {
+            ...this.state,
+            sharedDeck: deck,
+            sharedDiscard: discard,
+            pendingInfoDraw: {
+                id: generateUuid(),
+                playerId,
+                options,
+                drawIndex,
+                drawTotal,
+                afterComplete: context.afterComplete,
+                log: context.log,
+            },
+            updatedAt: Date.now(),
+        };
+
+        if (this.isCpuPlayer(playerId)) {
+            this.resolveInfoDraw(playerId, options[0]);
+        }
+        return true;
+    }
+
+    private logInfoDrawCardEffect(log: NonNullable<PendingInfoDraw['log']>, count: number): void {
+        this.logEvent({
+            type: 'cardEffect',
+            playerId: log.playerId,
+            cardId: log.cardId,
+            kind: 'draw',
+            targetId: log.targetId,
+            count,
+            timestamp: Date.now(),
+        });
     }
 
     registerCpuPlayer(playerId: string, level: 'easy' | 'normal' | 'hard' = 'normal'): void {
@@ -386,21 +468,61 @@ export class GameEngine {
         this.initializeRuntimeForPlayer(playerId);
     }
 
+    setPlayerTeam(playerId: string, team: TeamColor): void {
+        this.state = setPlayerTeam(this.state, playerId, team);
+    }
+
+    setTeamMode(enabled: boolean): void {
+        this.state = setTeamMode(this.state, enabled);
+    }
+
+    clearPlayerRole(playerId: string): void {
+        this.state = clearPlayerRole(this.state, playerId);
+    }
+
+    removePlayer(playerId: string): void {
+        if (this.state.status !== 'waiting') {
+            throw new Error('match_already_started');
+        }
+        this.state = removePlayerFromState(this.state, playerId);
+    }
+
     assignSharedDeck(deckId: string, cards: string[]): void {
         this.state = setSharedDeck(this.state, deckId, cards);
     }
 
     drawCards(playerId: string, count: number): void {
         this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
         if (this.state.status === 'inProgress') {
             this.assertPlayerTurn(playerId);
         }
-        this.state = drawFromSharedDeck(this.state, playerId, count);
-        this.syncHandStatTokens(playerId);
+        this.drawCardsWithInfoChoice(playerId, count);
+    }
+
+    drawCardsAsAction(playerId: string, count = 1): void {
+        this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
+        this.assertPlayerTurn(playerId);
+        this.assertPostponeAllowsAction(playerId);
+        const drawCount = Math.max(1, Math.floor(count));
+        const braCost = 1;
+        if (drawCount !== 1) {
+            throw new Error('draw_count_invalid');
+        }
+        this.assertBraAvailable(playerId, braCost);
+        this.state = consumeBra(this.state, playerId, braCost);
+        const pending = this.drawCardsWithInfoChoice(playerId, drawCount, { afterComplete: 'postponeAfterAction' });
+        if (pending) {
+            return;
+        }
+        this.handlePostponeAfterAction(playerId);
+        this.runCpuIfNeeded();
     }
 
     playCard(playerId: string, cardId: string, options?: PlayCardOptions): void {
         this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
         this.assertPlayerTurn(playerId);
         this.assertPostponeAllowsAction(playerId);
         this.assertPostponeAllowsAction(playerId);
@@ -412,8 +534,7 @@ export class GameEngine {
         if (card.playable === false) {
             throw new Error('このカードはプレイできません。');
         }
-        const roleId = this.getPlayer(playerId)?.roleId;
-        if (roleId === 'giant') {
+        if (this.hasRoleAbility(playerId, 'giant')) {
             if (card.category === 'equip') {
                 throw new Error('巨人は装備カードを使用できません。');
             }
@@ -515,6 +636,7 @@ export class GameEngine {
             this.runCpuIfNeeded();
             return;
         }
+        this.logEvent({ type: 'cardPlay', playerId, cardId, targets: options?.targets, timestamp: Date.now() });
         const decayBonus = playedCurseId === 'decay' ? -2 : 0;
         this.withTransientCardEffectBonus(playerId, decayBonus, () => {
             if (card.kind === 'install') {
@@ -536,7 +658,6 @@ export class GameEngine {
                 cardEffectBonus: 0,
             }));
         }
-        this.logEvent({ type: 'cardPlay', playerId, cardId, targets: options?.targets, timestamp: Date.now() });
         this.state = consumeBra(this.state, playerId, totalBraCost);
         this.handlePostponeAfterAction(playerId);
         if (playedCurseId === 'silence') {
@@ -572,8 +693,7 @@ export class GameEngine {
     }
 
     private applyWitchSpellPassive(playerId: string, card: CardDefinition): void {
-        const player = this.getPlayer(playerId);
-        if (player?.roleId !== 'witch') {
+        if (!this.hasRoleAbility(playerId, 'witch')) {
             return;
         }
         if (this.isRoleSuppressed(playerId)) {
@@ -655,6 +775,7 @@ export class GameEngine {
      */
     rescueBra(playerId: string): void {
         this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
         this.assertPlayerTurn(playerId);
         const runtime = this.ensureRuntimeExists(playerId);
         if (runtime.isDefeated) {
@@ -692,19 +813,30 @@ export class GameEngine {
 
     roleAttack(playerId: string, targetId: string, options?: { struggle?: boolean }): void {
         this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
         this.assertPlayerTurn(playerId);
         if (!targetId) {
             throw new Error('攻撃対象を選択してください。');
         }
-        if (playerId === targetId) {
+
+        const taunterId = this.state.players.find((player) => {
+            const runtime = this.getRuntime(player.id);
+            return runtime && !runtime.isDefeated && runtime.roleState?.tauntUntilNextTurnStart;
+        })?.id;
+        const isTauntForced = Boolean(taunterId && taunterId !== playerId);
+        if (taunterId && taunterId !== playerId) {
+            targetId = taunterId;
+        }
+
+        if (playerId === targetId && !isTauntForced) {
             throw new Error('自分自身は対象にできません。');
         }
         const isStruggle = Boolean(options?.struggle);
         const currentBra = this.state.braTokens[playerId] ?? 0;
         const player = this.getPlayer(playerId);
         const isSuppressed = this.isRoleSuppressed(playerId);
-        const isBarrage = player?.roleId === 'barrage' && !isSuppressed;
-        const isResonate = player?.roleId === 'resonate' && !isSuppressed;
+        const isBarrage = this.hasRoleAbility(playerId, 'barrage') && !isSuppressed;
+        const isResonate = this.hasRoleAbility(playerId, 'resonate') && !isSuppressed;
         if (!isStruggle && currentBra <= 0) {
             throw new Error('Braが足りません。');
         }
@@ -730,9 +862,46 @@ export class GameEngine {
         const nextRoleAttackAtkBonus = attackerRoleState.nextRoleAttackAtkBonus ?? 0;
         const ignoreDefenseInstalls = Boolean(attackerRoleState.nextRoleAttackIgnoreDefense);
 
-        const atk = getEffectiveStatValue(attackerRuntime, 'atk') + Math.max(0, Math.floor(nextRoleAttackAtkBonus));
-        const def = getEffectiveStatValue(defenderRuntime, 'def');
-        const damage = Math.max(1, atk - def);
+        const hasWindBlade = attackerRuntime.installs.some((install) => install.cardId === 'wind_blade');
+        if (hasWindBlade) {
+            if (player?.roleId === 'swiftwind' && !isSuppressed) {
+                this.addStatTokensToPlayer(playerId, 'spe', 2);
+            }
+
+            const updatedRuntime = this.getRuntime(playerId);
+            const speTokens = Math.max(0, updatedRuntime?.statTokens.spe ?? 0);
+            if (speTokens > 0) {
+                this.addStatTokensToPlayer(playerId, 'spe', -speTokens);
+                this.addStatTokensToPlayer(playerId, 'atk', speTokens);
+            }
+        }
+
+        const attackerRuntimeAfterEquip = this.ensureRuntimeExists(playerId);
+        const hasPlainSword = attackerRuntimeAfterEquip.installs.some((install) => install.cardId === 'plain_sword');
+        const hasFlashRole = this.hasRoleAbility(playerId, 'flash') && !isSuppressed;
+        const hasDiscardRole = this.hasRoleAbility(playerId, 'discard') && !isSuppressed;
+        const hasPierceRole = this.hasRoleAbility(playerId, 'pierce') && !isSuppressed;
+        const hasSuperchainRole = this.hasRoleAbility(playerId, 'superchain') && !isSuppressed;
+        let atkBase = hasFlashRole
+            ? getEffectiveStatValue(attackerRuntimeAfterEquip, 'spe')
+            : getEffectiveStatValue(attackerRuntimeAfterEquip, 'atk');
+        if (hasDiscardRole) {
+            atkBase += Math.floor((this.state.sharedDiscard.length * 2) / 3);
+        }
+        let atk = atkBase + Math.max(0, Math.floor(nextRoleAttackAtkBonus));
+        if (hasPlainSword) {
+            atk = Math.floor(atk * 1.2);
+        }
+
+        let damage: number;
+        if (hasSuperchainRole) {
+            // 超連: Atkを1として、Atk回ロール攻撃する（1ヒットあたり最低1ダメージ）。
+            const hits = Math.max(1, Math.floor(atk));
+            damage = hits;
+        } else {
+            const def = hasPierceRole ? 0 : getEffectiveStatValue(defenderRuntime, 'def');
+            damage = Math.max(1, atk - def);
+        }
 
         const inflicted = this.applyDamageToPlayer(playerId, targetId, damage, 'role', {
             action: {
@@ -767,7 +936,7 @@ export class GameEngine {
         }
         this.setRoleAttackUsed(attackerId, true);
         const attacker = this.getPlayer(attackerId);
-        if (attacker?.roleId === 'barrage' && !this.isRoleSuppressed(attackerId)) {
+        if (attacker && this.hasRoleAbility(attackerId, 'barrage') && !this.isRoleSuppressed(attackerId)) {
             const roleState = this.readRoleState(attackerId);
             const nextCount = (roleState.barrageAttackCount ?? 0) + 1;
             const previousTargets = roleState.barrageTargets ?? [];
@@ -794,10 +963,10 @@ export class GameEngine {
             }
         }
 
-        if (attacker?.roleId === 'giant' && !this.isRoleSuppressed(attackerId)) {
+        if (attacker && this.hasRoleAbility(attackerId, 'giant') && !this.isRoleSuppressed(attackerId)) {
             const recoil = Math.max(0, Math.floor(inflicted / 2));
             if (recoil > 0) {
-                this.applyDamageToPlayer(attackerId, attackerId, recoil, 'role', {
+                this.applyDamageToPlayer(attackerId, attackerId, recoil, 'other', {
                     allowPrompt: false,
                     label: '巨人の反動',
                 });
@@ -816,7 +985,7 @@ export class GameEngine {
             });
         }
 
-        if (attacker?.roleId === 'vampire' && !this.isRoleSuppressed(attackerId)) {
+        if (attacker && this.hasRoleAbility(attackerId, 'vampire') && !this.isRoleSuppressed(attackerId)) {
             const targetRuntime = this.getRuntime(targetId);
             if (targetRuntime && !targetRuntime.isDefeated) {
                 const hadBleed = (this.readRoleState(targetId).bleedStacks ?? 0) > 0;
@@ -840,12 +1009,35 @@ export class GameEngine {
             }
         }
 
+
+        if (attacker && this.hasRoleAbility(attackerId, 'gaze') && !this.isRoleSuppressed(attackerId)) {
+            const marks = this.readRoleState(targetId).gazeMarks ?? 0;
+            const bonus = Math.max(0, Math.floor(2 ** (1 + marks)));
+            if (bonus > 0) {
+                this.applyDamageToPlayer(attackerId, targetId, bonus, 'ability', { abilityId: 'gaze_bonus', label: 'gaze' });
+            }
+        }
+
+        if (attacker && this.hasRoleAbility(attackerId, 'info') && !this.isRoleSuppressed(attackerId)) {
+            const handCount = this.state.hands[attackerId]?.length ?? 0;
+            const bonus = Math.max(0, Math.floor(handCount * 1.5));
+            if (bonus > 0) {
+                const targetRuntime = this.getRuntime(targetId);
+                if (targetRuntime && !targetRuntime.isDefeated) {
+                    const def = getEffectiveStatValue(targetRuntime, 'def');
+                    this.applyDamageToPlayer(attackerId, targetId, Math.max(1, bonus - def), 'ability', {
+                        abilityId: 'info_after_attack',
+                        label: 'info_followup',
+                    });
+                }
+            }
+        }
         let selfInflicted: number | undefined;
         if (isStruggle) {
             const attackerRuntime = this.getRuntime(attackerId);
             if (attackerRuntime) {
                 const selfDamage = Math.max(1, Math.floor(attackerRuntime.maxHp / 4));
-                const applied = this.applyDamageToPlayer(attackerId, attackerId, selfDamage, 'role', {
+                const applied = this.applyDamageToPlayer(attackerId, attackerId, selfDamage, 'other', {
                     allowPrompt: false,
                     label: '悪あがき（自傷）',
                 });
@@ -868,6 +1060,7 @@ export class GameEngine {
         });
         this.applyDefenderAfterRoleAttackInstallEffects(attackerId, targetId);
         this.applyAttackerAfterRoleAttackInstallEffects(attackerId, targetId, inflicted);
+        this.triggerPursuitFollowUp(attackerId, targetId);
         this.handlePostponeAfterAction(attackerId);
 
         if (isStruggle) {
@@ -876,6 +1069,60 @@ export class GameEngine {
                 this.endTurn(attackerId);
             }
         }
+    }
+
+    private triggerPursuitFollowUp(attackerId: string, targetId: string): void {
+        const targetRuntime = this.getRuntime(targetId);
+        if (!targetRuntime || targetRuntime.isDefeated) {
+            return;
+        }
+        this.state.players.forEach((player) => {
+            const pursuerId = player.id;
+            if (pursuerId === attackerId || pursuerId === targetId) {
+                return;
+            }
+            const pursuerRuntime = this.getRuntime(pursuerId);
+            if (!pursuerRuntime || pursuerRuntime.isDefeated) {
+                return;
+            }
+            if (!this.hasRoleAbility(pursuerId, 'pursuit') || this.isRoleSuppressed(pursuerId)) {
+                return;
+            }
+            if (this.state.teamMode && !this.isEnemyPlayer(pursuerId, targetId)) {
+                return;
+            }
+
+            const hasFlashRole = this.hasRoleAbility(pursuerId, 'flash') && !this.isRoleSuppressed(pursuerId);
+            const hasDiscardRole = this.hasRoleAbility(pursuerId, 'discard') && !this.isRoleSuppressed(pursuerId);
+            const hasPierceRole = this.hasRoleAbility(pursuerId, 'pierce') && !this.isRoleSuppressed(pursuerId);
+            const hasSuperchainRole = this.hasRoleAbility(pursuerId, 'superchain') && !this.isRoleSuppressed(pursuerId);
+            const hasPlainSword = pursuerRuntime.installs.some((install) => install.cardId === 'plain_sword');
+
+            let atk = hasFlashRole ? getEffectiveStatValue(pursuerRuntime, 'spe') : getEffectiveStatValue(pursuerRuntime, 'atk');
+            if (hasDiscardRole) {
+                atk += Math.floor((this.state.sharedDiscard.length * 2) / 3);
+            }
+            if (hasPlainSword) {
+                atk = Math.floor(atk * 1.2);
+            }
+
+            const def = hasPierceRole ? 0 : getEffectiveStatValue(this.ensureRuntimeExists(targetId), 'def');
+            const damage = hasSuperchainRole ? Math.max(1, Math.floor(atk)) : Math.max(1, atk - def);
+            const dealt = this.applyDamageToPlayer(pursuerId, targetId, damage, 'ability', {
+                abilityId: 'pursuit_followup',
+                label: '追討',
+            });
+            if (typeof dealt === 'number' && dealt > 0) {
+                this.logEvent({
+                    type: 'roleAction',
+                    playerId: pursuerId,
+                    actionId: 'pursuit_followup',
+                    targetId,
+                    description: `追討: ${dealt}ダメージ`,
+                    timestamp: Date.now(),
+                });
+            }
+        });
     }
 
     private applyDefenderAfterRoleAttackInstallEffects(attackerId: string, targetId: string): void {
@@ -947,6 +1194,27 @@ export class GameEngine {
             }
             const card = this.cardMap.get(install.cardId);
             if (!card) continue;
+            if (install.cardId === 'glitch_blade') {
+                const currentRound = Number.isFinite(this.state.round) ? this.state.round : 1;
+                this.updateRoleState(targetId, (prev) => ({
+                    ...prev,
+                    suppressedUntilRound: currentRound + 1,
+                }));
+                this.logEvent({
+                    type: 'roleAction',
+                    playerId: attackerId,
+                    actionId: 'equip_glitch_blade_suppress',
+                    targetId,
+                    description: `${card.name ?? install.cardId}: ${this.getPlayer(targetId)?.name ?? '対象'}に抑制を付与`,
+                    timestamp: Date.now(),
+                });
+                if (this.hasRoleAbility(attackerId, 'suppress') && !this.isRoleSuppressed(attackerId) && this.isRoleSuppressed(targetId)) {
+                    this.applyDamageToPlayer(attackerId, targetId, 3, 'card', {
+                        cardId: install.cardId,
+                        label: `${card.name ?? install.cardId}: 抑制追撃`,
+                    });
+                }
+            }
             for (const effect of card.effects) {
                 if (effect.trigger !== 'afterRoleAttack') {
                     continue;
@@ -971,7 +1239,7 @@ export class GameEngine {
                 }
                 const selfDamage = Math.max(0, Math.floor(effect.selfDamage ?? 0));
                 if (selfDamage > 0) {
-                    this.applyDamageToPlayer(attackerId, attackerId, selfDamage, 'card', {
+                    this.applyDamageToPlayer(attackerId, attackerId, selfDamage, 'other', {
                         cardId: install.cardId,
                         label: `${card.name ?? install.cardId}: 反動`,
                     });
@@ -1043,12 +1311,12 @@ export class GameEngine {
 
         let selfInflicted: number | undefined;
         if (hits > 0) {
-            const applied = this.applyDamageToPlayer(playerId, playerId, hits, 'role', { allowPrompt: false, label: '反響（反動）' });
+            const applied = this.applyDamageToPlayer(playerId, playerId, hits, 'other', { allowPrompt: false, label: '反響（反動）' });
             selfInflicted = applied ?? 0;
         }
         if (isStruggle) {
             const selfDamage = Math.max(1, Math.floor(attackerRuntime.maxHp / 4));
-            const applied = this.applyDamageToPlayer(playerId, playerId, selfDamage, 'role', { allowPrompt: false, label: '悪あがき（自傷）' });
+            const applied = this.applyDamageToPlayer(playerId, playerId, selfDamage, 'other', { allowPrompt: false, label: '悪あがき（自傷）' });
             selfInflicted = (selfInflicted ?? 0) + (applied ?? 0);
         }
 
@@ -1072,6 +1340,11 @@ export class GameEngine {
 
     private finalizePendingAction(action: PendingAction | undefined, dealt: number): void {
         if (!action) {
+            return;
+        }
+        if (action.type === 'multiTargetDamage') {
+            const opts = action.options ?? {};
+            this.applyMultiTargetDamagePlan(action.attackerId, action.source, action.plan, opts);
             return;
         }
         if (action.type === 'roleAttack') {
@@ -1099,9 +1372,44 @@ export class GameEngine {
         });
     }
 
+    private applyMultiTargetDamagePlan(
+        attackerId: string,
+        source: DamageSource,
+        plan: MultiTargetDamagePlanItem[],
+        options: Omit<DamageResolutionOptions, 'action' | 'skipOptional' | 'forcedPromptDecision'>
+    ): void {
+        for (let index = 0; index < plan.length; index += 1) {
+            const current = plan[index];
+            const rest = plan.slice(index + 1);
+            const action: PendingAction | undefined =
+                rest.length > 0
+                    ? {
+                          type: 'multiTargetDamage',
+                          attackerId,
+                          source,
+                          plan: rest,
+                          options: {
+                              allowPrompt: options.allowPrompt,
+                              cardId: options.cardId,
+                              abilityId: options.abilityId,
+                              label: options.label,
+                              contactAttack: options.contactAttack,
+                              ignoreDefenseInstalls: options.ignoreDefenseInstalls,
+                          },
+                      }
+                    : undefined;
+            const applied = this.applyDamageToPlayer(attackerId, current.targetId, current.amount, source, {
+                ...options,
+                action,
+            });
+            if (applied === null) {
+                return;
+            }
+        }
+    }
+
     private getResonateDecayRatio(attackerId: string): { numerator: number; denominator: number } {
-        const player = this.getPlayer(attackerId);
-        if (player?.roleId !== 'resonate') {
+        if (!this.hasRoleAbility(attackerId, 'resonate')) {
             return { numerator: 2, denominator: 3 };
         }
         const runtime = this.getRuntime(attackerId);
@@ -1111,6 +1419,7 @@ export class GameEngine {
 
     roleAction(playerId: string, actionId: string, options?: RoleActionOptions): void {
         this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
         this.assertPlayerTurn(playerId);
         this.assertPostponeAllowsAction(playerId);
         if (!actionId) {
@@ -1132,6 +1441,61 @@ export class GameEngine {
 
         if (pending.type !== 'beforeDamageTaken') {
             throw new Error('未知の割り込み種別です。');
+        }
+
+        // Role-based optional defense (Invincible)
+        if (pending.installInstanceId === 'role:invincible') {
+            if (accepted) {
+                const runtime = this.getRuntime(pending.targetId);
+                const stacks = runtime?.roleState?.invincibleStacks ?? 0;
+                if (stacks > 0) {
+                    this.updateRoleState(pending.targetId, (prev) => ({
+                        ...prev,
+                        invincibleStacks: stacks - 1 > 0 ? stacks - 1 : undefined,
+                    }));
+                }
+                this.logDamageResolved({
+                    attackerId: pending.attackerId ?? pending.targetId,
+                    targetId: pending.targetId,
+                    source: pending.source,
+                    label: '無敵',
+                    attempted: pending.amount,
+                    totalAfterReductions: 0,
+                    tempAbsorbed: 0,
+                    hpDamage: 0,
+                    prevented: true,
+                    breakdown: pending.preview?.ifAccepted.breakdown ?? ['無敵: ダメージを無効化'],
+                    abilityId: 'invincible',
+                });
+                if (pending.contactAttack && pending.attackerId && pending.attackerId !== pending.targetId) {
+                    this.applyDefenderAfterRoleAttackInstallEffects(pending.attackerId, pending.targetId);
+                }
+                this.finalizePendingAction(pending.action, 0);
+                this.runCpuIfNeeded();
+                return;
+            }
+
+            const applied = this.applyDamageToPlayer(
+                pending.attackerId ?? pending.targetId,
+                pending.targetId,
+                pending.amount,
+                pending.source,
+                {
+                    forcedPromptDecision: {
+                        installInstanceId: pending.installInstanceId,
+                        effectIndex: pending.effectIndex,
+                        decision: 'decline',
+                    },
+                    action: pending.action,
+                    contactAttack: pending.contactAttack,
+                }
+            );
+            if (applied === null) {
+                return;
+            }
+            this.finalizePendingAction(pending.action, applied);
+            this.runCpuIfNeeded();
+            return;
         }
 
         const card = this.cardMap.get(pending.cardId);
@@ -1197,6 +1561,54 @@ export class GameEngine {
         this.runCpuIfNeeded();
     }
 
+    resolveInfoDraw(playerId: string, cardId: string): void {
+        const pending = this.state.pendingInfoDraw;
+        if (!pending) {
+            throw new Error('情報のカード選択は発生していません。');
+        }
+        if (pending.playerId !== playerId) {
+            throw new Error('情報のカード選択は対象プレイヤーのみ実行できます。');
+        }
+
+        const selectedIndex = pending.options.indexOf(cardId);
+        if (selectedIndex < 0) {
+            throw new Error('選択できないカードです。');
+        }
+
+        const selected = pending.options[selectedIndex];
+        const returned = pending.options.filter((_, index) => index !== selectedIndex);
+        const hand = this.state.hands[playerId] ?? [];
+
+        this.state = {
+            ...this.state,
+            pendingInfoDraw: undefined,
+            sharedDeck: [...returned, ...this.state.sharedDeck],
+            hands: {
+                ...this.state.hands,
+                [playerId]: [...hand, selected],
+            },
+            updatedAt: Date.now(),
+        };
+        this.syncHandStatTokens(playerId);
+
+        if (pending.log) {
+            this.logInfoDrawCardEffect(pending.log, 1);
+        }
+
+        if (pending.drawIndex < pending.drawTotal) {
+            this.startInfoDrawSelection(playerId, pending.drawTotal, pending.drawIndex + 1, {
+                afterComplete: pending.afterComplete,
+                log: pending.log,
+            });
+            return;
+        }
+
+        if (pending.afterComplete === 'postponeAfterAction') {
+            this.handlePostponeAfterAction(playerId);
+            this.runCpuIfNeeded();
+        }
+    }
+
     private performRoleAction(playerId: string, actionId: string, options?: RoleActionOptions): void {
         const player = this.getPlayer(playerId);
         if (!player?.roleId) {
@@ -1209,7 +1621,7 @@ export class GameEngine {
         if (this.isRoleSuppressed(playerId)) {
             throw new Error('固有能力が抑制されています。');
         }
-        const availableActions = getRoleActions(player.roleId);
+        const availableActions = getRoleActionsForRoleIds(this.getRoleAbilityIds(playerId));
         const definition = availableActions.find((action) => action.id === actionId);
         if (!definition) {
             throw new Error('このロールでは使用できないアクションです。');
@@ -1236,22 +1648,22 @@ export class GameEngine {
                 actionLabel = this.executeBombAction(playerId, actionId, targetId) ?? actionLabel;
                 break;
             case 'discharge':
-                this.executeDischargeAction(playerId, actionId);
+                actionLabel = this.executeDischargeAction(playerId, actionId) ?? actionLabel;
                 break;
             case 'doctor':
-                this.executeDoctorAction(playerId, actionId, targetId, options?.choices);
+                actionLabel = this.executeDoctorAction(playerId, actionId, targetId, options?.choices) ?? actionLabel;
                 break;
             case 'flame':
-                this.executeFlameAction(playerId, actionId, targetId);
+                actionLabel = this.executeFlameAction(playerId, actionId, targetId) ?? actionLabel;
                 break;
             case 'jester':
                 actionLabel = this.executeJesterAction(playerId, actionId) ?? actionLabel;
                 break;
             case 'suppress':
-                this.executeSuppressAction(playerId, actionId, targetId);
+                actionLabel = this.executeSuppressAction(playerId, actionId, targetId) ?? actionLabel;
                 break;
             case 'shed':
-                this.executeShedAction(playerId, actionId);
+                actionLabel = this.executeShedAction(playerId, actionId) ?? actionLabel;
                 break;
             case 'seal':
                 actionLabel = this.executeSealAction(playerId, actionId, targetId) ?? actionLabel;
@@ -1262,6 +1674,81 @@ export class GameEngine {
             case 'vampire':
                 actionLabel = this.executeVampireAction(playerId, actionId, options?.choices) ?? actionLabel;
                 break;
+            case 'tsunami':
+            case 'earthquake':
+            case 'meteor':
+            case 'tornado':
+            case 'balance':
+            case 'flash':
+            case 'discard':
+            case 'recycle':
+            case 'gaze':
+            case 'silence_role':
+            case 'shadowbind':
+                actionLabel = this.executeV070RoleAction(playerId, actionId, targetId, options?.choices) ?? actionLabel;
+                break;
+            case 'duplicate':
+                if (actionId === 'duplicate_copy') {
+                    actionLabel = this.executeDuplicateAction(playerId, actionId, targetId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('bomb_')) {
+                    actionLabel = this.executeBombAction(playerId, actionId, targetId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('discharge_')) {
+                    actionLabel = this.executeDischargeAction(playerId, actionId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('doctor_')) {
+                    actionLabel = this.executeDoctorAction(playerId, actionId, targetId, options?.choices) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('flame_')) {
+                    actionLabel = this.executeFlameAction(playerId, actionId, targetId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('jester_')) {
+                    actionLabel = this.executeJesterAction(playerId, actionId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('suppress_')) {
+                    actionLabel = this.executeSuppressAction(playerId, actionId, targetId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('shed_')) {
+                    actionLabel = this.executeShedAction(playerId, actionId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('seal_')) {
+                    actionLabel = this.executeSealAction(playerId, actionId, targetId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('witch_')) {
+                    actionLabel = this.executeWitchAction(playerId, actionId, targetId) ?? actionLabel;
+                    break;
+                }
+                if (actionId.startsWith('vampire_')) {
+                    actionLabel = this.executeVampireAction(playerId, actionId, options?.choices) ?? actionLabel;
+                    break;
+                }
+                if (
+                    actionId.startsWith('tsunami_') ||
+                    actionId.startsWith('earthquake_') ||
+                    actionId.startsWith('meteor_') ||
+                    actionId.startsWith('tornado_') ||
+                    actionId.startsWith('balance_') ||
+                    actionId.startsWith('flash_') ||
+                    actionId.startsWith('discard_') ||
+                    actionId.startsWith('recycle_') ||
+                    actionId.startsWith('gaze_') ||
+                    actionId.startsWith('silence_') ||
+                    actionId.startsWith('shadowbind_')
+                ) {
+                    actionLabel = this.executeV070RoleAction(playerId, actionId, targetId, options?.choices) ?? actionLabel;
+                    break;
+                }
+                throw new Error('未対応の複製アクションです。');
             default:
                 throw new Error('このロールは専用アクションを持っていません。');
         }
@@ -1279,12 +1766,218 @@ export class GameEngine {
         this.handlePostponeAfterAction(playerId);
     }
 
-    private executeBombAction(playerId: string, actionId: string, targetId?: string): string | null {
-        if (actionId !== 'bomb_timed_bomb') {
+    private executeV070RoleAction(
+        playerId: string,
+        actionId: string,
+        targetId?: string,
+        choices?: Record<string, string | number | boolean>
+    ): string | null {
+        const runtime = this.getRuntime(playerId);
+        if (!runtime || runtime.isDefeated) {
+            return null;
+        }
+
+        const ensureUltimateAvailable = (): void => {
+            if (this.readRoleState(playerId).ultimateUsed) {
+                throw new Error('ultimate_already_used');
+            }
+        };
+        const consumeUltimate = (): void => {
+            this.updateRoleState(playerId, (prev) => ({ ...prev, ultimateUsed: true }));
+        };
+
+        const aliveOthers = this.getAliveOpponents(playerId);
+
+        switch (actionId) {
+            case 'tsunami_ultimate': {
+                ensureUltimateAvailable();
+                const need = aliveOthers.length;
+                const hand = this.state.hands[playerId] ?? [];
+                if (hand.length < need) throw new Error('not_enough_hand_cards');
+                for (let i = 0; i < need; i += 1) this.discardHandCardToSharedDiscard(playerId, 0);
+                aliveOthers.forEach((id) => {
+                    this.applyDamageToPlayer(playerId, id, 5, 'ability', { abilityId: actionId, label: 'tsunami' });
+                    this.applyWaterlogged(id, 3);
+                });
+                consumeUltimate();
+                return `アルティメット: 大津波（手札${need}枚消費 / 敵全体に固定5ダメージ + 水びたし3）`;
+            }
+            case 'earthquake_ultimate': {
+                ensureUltimateAvailable();
+                const hand = [...(this.state.hands[playerId] ?? [])];
+                for (let i = hand.length - 1; i >= 0; i -= 1) this.discardHandCardToSharedDiscard(playerId, i);
+                const bonus = hand.length;
+                aliveOthers.forEach((id) => {
+                    this.applyDamageToPlayer(playerId, id, 3 + bonus, 'ability', { abilityId: actionId, label: 'earthquake' });
+                    this.updateRoleState(id, (prev) => ({ ...prev, dizzyTurns: (prev.dizzyTurns ?? 0) + 1 }));
+                });
+                consumeUltimate();
+                return `アルティメット: 大地震（手札${bonus}枚消費 / 敵全体に固定${3 + bonus}ダメージ + めまい1）`;
+            }
+            case 'meteor_ultimate': {
+                ensureUltimateAvailable();
+                if (!targetId || targetId === playerId) throw new Error('target_required');
+                const hand = this.state.hands[playerId] ?? [];
+                if (hand.length < 3) throw new Error('not_enough_hand_cards');
+                for (let i = 0; i < 3; i += 1) this.discardHandCardToSharedDiscard(playerId, 0);
+                this.applyDamageToPlayer(playerId, targetId, 10, 'ability', { abilityId: actionId, label: 'meteor' });
+                consumeUltimate();
+                return 'アルティメット: 隕石落下（手札3枚消費 / 対象に固定10ダメージ）';
+            }
+            case 'tornado_ultimate': {
+                ensureUltimateAvailable();
+                if (!targetId || targetId === playerId) throw new Error('target_required');
+                const hand = [...(this.state.hands[playerId] ?? [])];
+                for (let i = hand.length - 1; i >= 0; i -= 1) this.discardHandCardToSharedDiscard(playerId, i);
+                this.applyDamageToPlayer(playerId, targetId, 3, 'ability', { abilityId: actionId, label: 'tornado' });
+                this.applyDamageToPlayer(playerId, targetId, 3, 'ability', { abilityId: actionId, label: 'tornado' });
+                const drop = Math.min(hand.length, (this.state.hands[targetId] ?? []).length);
+                for (let i = 0; i < drop; i += 1) {
+                    const cur = this.state.hands[targetId] ?? [];
+                    if (cur.length <= 0) break;
+                    const idx = Math.floor(Math.random() * cur.length);
+                    this.discardHandCardToSharedDiscard(targetId, idx);
+                }
+                consumeUltimate();
+                return `アルティメット: 超竜巻（手札${hand.length}枚消費 / 固定3ダメージ×2 + 手札破壊${drop}枚）`;
+            }
+            case 'balance_average': {
+                if (!targetId || targetId === playerId) throw new Error('target_required');
+                const statRaw = String(choices?.stat ?? '');
+                if (!['atk', 'def', 'spe'].includes(statRaw)) throw new Error('invalid_stat_selection');
+                const stat = statRaw as 'atk' | 'def' | 'spe';
+                const selfRuntime = this.getRuntime(playerId);
+                const targetRuntime = this.getRuntime(targetId);
+                if (!selfRuntime || !targetRuntime) return null;
+                const selfVal = getEffectiveStatValue(selfRuntime, stat);
+                const targetVal = getEffectiveStatValue(targetRuntime, stat);
+                const avg = Math.floor((selfVal + targetVal) / 2);
+                this.addStatTokensToPlayer(playerId, stat, avg - selfVal);
+                this.addStatTokensToPlayer(targetId, stat, avg - targetVal);
+                return `均衡: ${stat.toUpperCase()}を平均化`;
+            }
+            case 'flash_gain_spe':
+                this.updateRoleState(playerId, (prev) => ({ ...prev, flashPendingSpe: (prev.flashPendingSpe ?? 0) + 4 }));
+                return '一閃: 次の自分ターン中、追加Spe+4';
+            case 'discard_mill3': {
+                let milled = 0;
+                for (let i = 0; i < 3; i += 1) {
+                    const deck = this.state.sharedDeck;
+                    if (deck.length === 0) break;
+                    const [top, ...rest] = deck;
+                    if (!top) break;
+                    this.state = { ...this.state, sharedDeck: rest, sharedDiscard: [...this.state.sharedDiscard, top], updatedAt: Date.now() };
+                    milled += 1;
+                }
+                return `廃棄: 山札の上から${milled}枚を捨て札へ送った`;
+            }
+            case 'recycle_pick': {
+                const discard = this.state.sharedDiscard;
+                if (discard.length === 0) throw new Error('discard_empty');
+                const picked = discard[discard.length - 1];
+                const pickedName = this.cardMap.get(picked)?.name ?? picked;
+                this.state = {
+                    ...this.state,
+                    sharedDiscard: discard.slice(0, -1),
+                    hands: { ...this.state.hands, [playerId]: [...(this.state.hands[playerId] ?? []), picked] },
+                    updatedAt: Date.now(),
+                };
+                this.syncHandStatTokens(playerId);
+                return `回収: 捨て札から「${pickedName}」を手札に加えた`;
+            }
+            case 'gaze_mark':
+                if (!targetId || targetId === playerId) throw new Error('target_required');
+                this.updateRoleState(targetId, (prev) => ({ ...prev, gazeMarks: (prev.gazeMarks ?? 0) + 1 }));
+                return '凝視: 対象に凝視を付与';
+            case 'silence_mark':
+                if (!targetId || targetId === playerId) throw new Error('target_required');
+                this.updateRoleState(targetId, (prev) => ({ ...prev, silenceTurns: (prev.silenceTurns ?? 0) + 1 }));
+                return '沈黙: 対象に沈黙を付与';
+            case 'shadowbind_reduce_max_hp':
+                if (!targetId || targetId === playerId) throw new Error('target_required');
+                this.mutatePlayerBaseStat(targetId, 'hp', (v) => Math.max(1, v - 2));
+                return '影縫: 対象の最大HPを2減少';
+            default:
+                throw new Error('unsupported_action');
+        }
+    }
+
+    private executeDuplicateAction(playerId: string, actionId: string, targetId?: string): string | null {
+        if (actionId !== 'duplicate_copy') {
             throw new Error('未対応のアクションです。');
         }
         if (!targetId) {
-            throw new Error('対象プレイヤーを指定してください。');
+            throw new Error('対象を選択してください。');
+        }
+        if (targetId === playerId) {
+            throw new Error('自分は対象にできません。');
+        }
+        const targetPlayer = this.getPlayer(targetId);
+        if (!targetPlayer?.roleId) {
+            throw new Error('対象プレイヤーにロールが設定されていません。');
+        }
+        if (targetPlayer.roleId === 'duplicate') {
+            throw new Error('［複製］の固有能力は複製できません。');
+        }
+
+        const prev = this.readRoleState(playerId).copiedRoleAbilities ?? [];
+        if (prev.some((entry) => entry.fromPlayerId === targetId)) {
+            throw new Error('同じプレイヤーから2回目の複製はできません。');
+        }
+
+        const next = [
+            ...prev,
+            { roleId: targetPlayer.roleId, fromPlayerId: targetId, copiedAt: Date.now() },
+        ];
+        const removed = next.length > 3 ? next.slice(0, next.length - 3) : [];
+        const trimmed = next.length > 3 ? next.slice(next.length - 3) : next;
+
+        this.updateRoleState(playerId, (prevState) => ({
+            ...prevState,
+            copiedRoleAbilities: trimmed,
+        }));
+
+        removed.forEach((entry) => this.cleanupCopiedRoleAbilityState(playerId, entry.roleId));
+
+        const roleName = this.roleMap.get(targetPlayer.roleId)?.name ?? targetPlayer.roleId;
+        return `複製: ［${roleName}］`;
+    }
+
+    private cleanupCopiedRoleAbilityState(playerId: string, roleId: string): void {
+        if (this.hasRoleAbility(playerId, roleId)) {
+            return;
+        }
+        if (roleId === 'vampire') {
+            this.updateRoleState(playerId, (prev) => ({
+                ...prev,
+                bloodPatternHand: undefined,
+            }));
+            this.syncHandStatTokens(playerId);
+        }
+        if (roleId === 'barrage') {
+            this.updateRoleState(playerId, (prev) => ({
+                ...prev,
+                barrageAttackCount: undefined,
+                barrageTargets: undefined,
+            }));
+        }
+        if (roleId === 'postpone') {
+            this.updateRoleState(playerId, (prev) => ({
+                ...prev,
+                postponePhase: undefined,
+                postponeBra: undefined,
+                postponeDeferredDamage: undefined,
+                postponeDeferredAttackerId: undefined,
+            }));
+        }
+    }
+
+    private executeBombAction(playerId: string, actionId: string, targetId?: string): string | null {
+        if (actionId !== 'bomb_timed_bomb') {
+            throw new Error('未知のアクションです。');
+        }
+        if (!targetId) {
+            throw new Error('対象を選択してください。');
         }
         if (targetId === playerId) {
             throw new Error('自分には設置できません。');
@@ -1350,7 +2043,7 @@ export class GameEngine {
         return `血の紋様: ${cardName}`;
     }
 
-    private executeDischargeAction(playerId: string, actionId: string): void {
+    private executeDischargeAction(playerId: string, actionId: string): string | null {
         if (actionId !== 'discharge_release') {
             throw new Error('未知のアクションです。');
         }
@@ -1377,6 +2070,7 @@ export class GameEngine {
                 shockTokens: (prev.shockTokens ?? 0) + shockAmount,
             }));
         });
+        return `放電: 感電+${shockAmount}`;
     }
 
     private executeDoctorAction(
@@ -1384,7 +2078,7 @@ export class GameEngine {
         actionId: string,
         targetId: string | undefined,
         choices?: Record<string, string | number | boolean>
-    ): void {
+    ): string | null {
         if (!targetId) {
             throw new Error('対象を選択してください。');
         }
@@ -1393,16 +2087,17 @@ export class GameEngine {
         if (!runtime || runtime.isDefeated) {
             throw new Error('対象が無効です。');
         }
+        const targetName = this.getPlayer(resolvedTarget)?.name ?? '対象';
         switch (actionId) {
             case 'doctor_heal':
                 this.applyHealToPlayer(resolvedTarget, 3);
-                break;
+                return `医師: ${targetName}のHP+3`;
             case 'doctor_anesthesia':
                 this.updateRoleState(resolvedTarget, (prev) => ({
                     ...prev,
                     pendingBraPenalty: (prev.pendingBraPenalty ?? 0) + 1,
                 }));
-                break;
+                return `医師: ${targetName}に次ターンBra-1を付与`;
             case 'doctor_surgery':
                 if (runtime.roleState?.surgeryPhase) {
                     throw new Error('このプレイヤーは既に手術中です。');
@@ -1412,11 +2107,11 @@ export class GameEngine {
                     surgeryPhase: 'immobilize',
                     scheduledHealAmount: 15,
                 }));
-                break;
+                return `医師: ${targetName}を2ターン行動不能 / 次回HP+15`;
             case 'doctor_reshape': {
                 const statDown = String(choices?.statDown ?? '');
                 const statUp = String(choices?.statUp ?? '');
-                const allowedStats: StatKey[] = ['hp', 'atk', 'def', 'spe'];
+                const allowedStats: StatKey[] = ['atk', 'def', 'spe'];
                 if (!allowedStats.includes(statDown as StatKey) || !allowedStats.includes(statUp as StatKey)) {
                     throw new Error('ステータスの選択が不正です。');
                 }
@@ -1429,7 +2124,8 @@ export class GameEngine {
                     Math.max(downKey === 'hp' ? 1 : 0, current - 1)
                 );
                 this.mutatePlayerBaseStat(resolvedTarget, upKey, (current) => current + 1);
-                break;
+                const statLabel = (v: StatKey) => (v === 'atk' ? 'Atk' : v === 'def' ? 'Def' : v === 'spe' ? 'Spe' : v);
+                return `医師: ${targetName}の${statLabel(downKey)}-1 / ${statLabel(upKey)}+1`;
             }
             default:
                 throw new Error('未知のアクションです。');
@@ -1440,7 +2136,7 @@ export class GameEngine {
         this.resolveResonateRoleAttack(playerId, targetId, isStruggle);
     }
 
-    private executeFlameAction(playerId: string, actionId: string, targetId?: string): void {
+    private executeFlameAction(playerId: string, actionId: string, targetId?: string): string | null {
         if (actionId !== 'flame_apply_burn') {
             throw new Error('未知のアクションです。');
         }
@@ -1455,6 +2151,8 @@ export class GameEngine {
             ...prev,
             burnStacks: (prev.burnStacks ?? 0) + 1,
         }));
+        const burn = this.readRoleState(targetId).burnStacks ?? 0;
+        return `火炎: ${this.getPlayer(targetId)?.name ?? '対象'}に火炎+1（合計${burn}）`;
     }
 
     private executeJesterAction(playerId: string, actionId: string): string | undefined {
@@ -1530,7 +2228,7 @@ export class GameEngine {
                 }
             })
         ) {
-            return '道化: ランダム3ダメージ';
+            return '道化: ランダム1人に3ダメージ';
         }
         if (applyEffect(5, () => this.applyHealToPlayer(playerId, 8))) {
             return '道化: HP+8';
@@ -1555,7 +2253,7 @@ export class GameEngine {
                 this.addStatTokensToPlayer(playerId, 'spe', 5);
             })
         ) {
-            return '道化: 大強化(最大HP+10/HP+10/Atk+5/Def+5/Spe+5)';
+            return '道化: 最大HP+10 / HP+10 / Atk+5 / Def+5 / Spe+5';
         }
         if (
             applyEffect(3, () => {
@@ -1565,7 +2263,7 @@ export class GameEngine {
                 }));
             })
         ) {
-            return '道化: 火炎2';
+            return '道化: 火炎+2';
         }
         if (
             applyEffect(3, () => {
@@ -1620,7 +2318,7 @@ export class GameEngine {
         return '道化: 次のアイテム+2';
     }
 
-    private executeSuppressAction(playerId: string, actionId: string, targetId?: string): void {
+    private executeSuppressAction(playerId: string, actionId: string, targetId?: string): string | null {
         if (actionId !== 'suppress_lock') {
             throw new Error('未知のアクションです。');
         }
@@ -1636,20 +2334,21 @@ export class GameEngine {
             ...prev,
             suppressedUntilRound: currentRound + 1,
         }));
+        return `抑制: ${this.getPlayer(targetId)?.name ?? '対象'}をR${currentRound + 1}終了まで抑制`;
     }
 
-    private executeShedAction(playerId: string, actionId: string): void {
+    private executeShedAction(playerId: string, actionId: string): string | null {
         if (actionId !== 'shed_molt') {
             throw new Error('未知のアクションです。');
         }
         const runtime = this.getRuntime(playerId);
         if (!runtime || runtime.isDefeated) {
-            return;
+            return null;
         }
         const currentDef = Math.max(0, getEffectiveStatValue(runtime, 'def'));
         const gain = Math.floor(currentDef / 2);
 
-        // Def を 0 にする（恒久分はトークンで相殺、ターンブースト分はリセット）
+        // Defを0にする（恒久分はトークンで相殺、ターンブースト分はリセット）
         const basePlusTokens = runtime.baseStats.def + runtime.statTokens.def;
         if (basePlusTokens !== 0) {
             this.addStatTokensToPlayer(playerId, 'def', -basePlusTokens);
@@ -1673,6 +2372,7 @@ export class GameEngine {
             this.addStatTokensToPlayer(playerId, 'atk', gain);
             this.addStatTokensToPlayer(playerId, 'spe', gain);
         }
+        return `脱皮: Defを0にして Atk+${gain} / Spe+${gain}`;
     }
 
     private executeSealAction(playerId: string, actionId: string, targetId?: string): string | null {
@@ -1825,12 +2525,13 @@ export class GameEngine {
         this.runCpuIfNeeded();
     }
 
-    end(winnerId?: string): void {
-        this.state = setMatchStatus(this.state, 'finished', winnerId);
+    end(winnerId?: string, winnerTeam?: TeamColor): void {
+        this.state = setMatchResult(this.state, 'finished', { winnerId, winnerTeam });
     }
 
     endTurn(playerId: string): void {
         this.assertNoPendingPrompt();
+        this.assertNoPendingInfoDraw();
         this.assertPlayerTurn(playerId);
         this.applyCollapseCurseAtTurnEnd(playerId);
         const cleanedQueue = (this.state.deferredTurns ?? []).filter((entry) => {
@@ -1849,21 +2550,29 @@ export class GameEngine {
         const postponePhase = runtime?.roleState?.postponePhase;
         const isDeferredTurn = postponePhase === 'deferred';
         const roleId = this.getPlayer(playerId)?.roleId;
+        const hasPostponeAbility = this.hasRoleAbility(playerId, 'postpone');
         const shouldSplitTurn =
             (postponePhase === 'acted' || postponePhase === 'idle') &&
             !isDeferredTurn &&
             !this.state.deferredTurnActive &&
-            (roleId === 'postpone' || (this.state.braTokens[playerId] ?? 0) > 0);
+            (hasPostponeAbility || (this.state.braTokens[playerId] ?? 0) > 0);
 
         if (!shouldSplitTurn) {
             this.handleRoleEndTurnEffects(playerId);
         } else {
             const remainingBra = this.state.braTokens[playerId] ?? 0;
-            this.enqueueDeferredTurn(playerId, remainingBra, roleId === 'postpone');
+            this.enqueueDeferredTurn(playerId, remainingBra, hasPostponeAbility);
             this.updateRoleState(playerId, (prev) => ({
                 ...prev,
                 postponePhase: 'queued',
                 postponeBra: remainingBra,
+            }));
+        }
+
+        if (this.hasRoleAbility(playerId, 'mine') && !this.isRoleSuppressed(playerId)) {
+            this.updateRoleState(playerId, (prev) => ({
+                ...prev,
+                safeSinceLastTurn: true,
             }));
         }
 
@@ -2039,10 +2748,21 @@ export class GameEngine {
             return;
         }
 
-        if (this.cpuNextAt === 0) {
-            this.cpuNextAt = Date.now();
+        const now = Date.now();
+        // CPU手番に入った直後は、WSだと即時反映されて「早すぎる」印象になりやすいので、最低待ち時間を入れる。
+        if (this.cpuNextAt === 0 || this.cpuNextAt <= now) {
+            this.cpuNextAt = now + this.cpuActionDelayMs;
         }
         this.scheduleCpuStep();
+    }
+
+    /**
+     * Workers/Durable Objects のようにプロセスが一時停止/再生成されうる環境では、
+     * メモリ上のタイマーが失われて CPU が止まることがある。
+     * その復帰用に、現在の状態を見て CPU の実行を（必要なら）再スケジュールする。
+     */
+    kickCpuScheduling(): void {
+        this.runCpuIfNeeded();
     }
 
     private performCpuTurn(playerId: string): void {
@@ -2084,8 +2804,7 @@ export class GameEngine {
             .filter((entry) => !sealedIndexSet.has(entry.idx))
             .filter((entry) => forcedPlayableIndices.length === 0 || forcedPlayableIndices.includes(entry.idx))
             .filter((entry) => {
-                const roleId = this.getPlayer(playerId)?.roleId;
-                if (roleId !== 'giant') return true;
+                if (!this.hasRoleAbility(playerId, 'giant')) return true;
                 return entry.card.category !== 'equip' && entry.card.category !== 'defense';
             });
 
@@ -2293,6 +3012,31 @@ export class GameEngine {
         return this.state.players.find((player) => player.id === id);
     }
 
+    private isEnemyPlayer(actorId: string, targetId: string): boolean {
+        if (actorId === targetId) {
+            return false;
+        }
+        if (!this.state.teamMode) {
+            return true;
+        }
+        const actorTeam = this.getPlayer(actorId)?.team;
+        const targetTeam = this.getPlayer(targetId)?.team;
+        if (!actorTeam || !targetTeam) {
+            return true;
+        }
+        return actorTeam !== targetTeam;
+    }
+
+    private getAliveOpponents(actorId: string): string[] {
+        return this.state.players
+            .map((player) => player.id)
+            .filter((id) => this.isEnemyPlayer(actorId, id))
+            .filter((id) => {
+                const runtime = this.getRuntime(id);
+                return runtime && !runtime.isDefeated;
+            });
+    }
+
     private initializeRuntimeForPlayer(playerId: string): void {
         const player = this.getPlayer(playerId);
         if (!player || !player.roleId) {
@@ -2431,7 +3175,19 @@ export class GameEngine {
             const runtime = this.state.board.playerStates[player.id];
             return runtime && !runtime.isDefeated;
         });
-        if (alive.length === 1) {
+        if (this.state.teamMode) {
+            if (alive.length > 0) {
+                const teams = alive.map((player) => player.team);
+                if (teams.some((team) => !team)) {
+                    return;
+                }
+                const uniqueTeams = new Set(teams as TeamColor[]);
+                if (uniqueTeams.size === 1) {
+                    this.end(alive[0].id, teams[0] as TeamColor);
+                    return;
+                }
+            }
+        } else if (alive.length === 1) {
             this.end(alive[0].id);
             return;
         }
@@ -2439,11 +3195,11 @@ export class GameEngine {
             const context = this.lastDefeatContext;
             if (context) {
                 if (!context.selfInflicted) {
-                    this.end(context.targetId);
+                    this.end(context.targetId, this.getPlayer(context.targetId)?.team);
                     return;
                 }
                 if (this.lastNonSelfDefeatTargetId) {
-                    this.end(this.lastNonSelfDefeatTargetId);
+                    this.end(this.lastNonSelfDefeatTargetId, this.getPlayer(this.lastNonSelfDefeatTargetId)?.team);
                     return;
                 }
             }
@@ -2501,6 +3257,9 @@ export class GameEngine {
             case 'sealHand':
                 this.applySealHandEffect(playerId, card, effect, options);
                 break;
+            case 'clearStatuses':
+                this.applyClearStatusesEffect(playerId, card, effect, options);
+                break;
             case 'dealDamagePerSealedHand':
                 this.applyDealDamagePerSealedHandEffect(playerId, card, effect);
                 break;
@@ -2509,6 +3268,9 @@ export class GameEngine {
                 break;
             case 'heal':
                 this.applyHealEffect(playerId, card, effect, options);
+                break;
+            case 'futureSightRoleAttack':
+                this.applyFutureSightRoleAttackEffect(playerId, card, effect, options);
                 break;
             case 'modifyMaxHpInstall':
                 this.applyModifyMaxHpInstallEffect(playerId, card, effect);
@@ -2583,6 +3345,13 @@ export class GameEngine {
                 : 0;
         const adjustedBase = baseValue * multiplier + bonus;
         const targets = this.resolveTargets(effect.target, playerId, options?.targets);
+        const kindLabel =
+            effect.defApplied && !effect.ignoreDef ? '通常ダメージ' : effect.fixed || effect.ignoreDef ? '固定ダメージ' : 'ダメージ';
+        const contactPrefix = effect.contact ? '接触' : '';
+        const label = `${contactPrefix}${kindLabel}: ${card.name ?? card.id}`;
+        const plan: MultiTargetDamagePlanItem[] = [];
+        const ignoreDefAmountRaw = Math.max(0, Math.floor(effect.ignoreDefAmount ?? 0));
+
         targets.forEach((targetId) => {
             if (!this.isEffectConditionSatisfied(effect.condition, playerId, targetId)) {
                 return;
@@ -2593,21 +3362,24 @@ export class GameEngine {
             }
             let damage = adjustedBase;
             if (effect.defApplied && !effect.ignoreDef) {
-                damage -= getEffectiveStatValue(targetRuntime, 'def');
+                const def = getEffectiveStatValue(targetRuntime, 'def');
+                const reducedDef = Math.max(0, def - ignoreDefAmountRaw);
+                damage -= reducedDef;
             }
             // カードによる攻撃は防御で軽減されても最低1ダメージ通す
             if (damage <= 0 && adjustedBase <= 0) {
                 return;
             }
-            const kindLabel =
-                effect.defApplied && !effect.ignoreDef ? '通常ダメージ' : effect.fixed || effect.ignoreDef ? '固定ダメージ' : 'ダメージ';
-            const contactPrefix = effect.contact ? '接触' : '';
-            const label = `${contactPrefix}${kindLabel}: ${card.name ?? card.id}`;
-            this.applyDamageToPlayer(playerId, targetId, Math.max(1, damage), 'card', {
-                cardId: card.id,
-                label,
-                contactAttack: Boolean(effect.contact),
-            });
+
+            plan.push({ targetId, amount: Math.max(1, damage) });
+        });
+        if (plan.length === 0) {
+            return;
+        }
+        this.applyMultiTargetDamagePlan(playerId, 'card', plan, {
+            cardId: card.id,
+            label,
+            contactAttack: Boolean(effect.contact),
         });
     }
 
@@ -2624,11 +3396,16 @@ export class GameEngine {
             return;
         }
         const label = `通常ダメージ: ${card.name ?? card.id}`;
+        const plan: MultiTargetDamagePlanItem[] = [];
         alive.forEach(({ runtime }) => {
             const def = getEffectiveStatValue(runtime, 'def');
             const damage = Math.max(1, base - def);
-            this.applyDamageToPlayer(playerId, runtime.playerId, damage, 'card', { cardId: card.id, label });
+            plan.push({ targetId: runtime.playerId, amount: damage });
         });
+        if (plan.length === 0) {
+            return;
+        }
+        this.applyMultiTargetDamagePlan(playerId, 'card', plan, { cardId: card.id, label });
     }
 
     private applyFeintEffect(playerId: string, _effect: FeintEffect): void {
@@ -2718,14 +3495,19 @@ export class GameEngine {
             return;
         }
         const label = `通常ダメージ: ${card.name ?? card.id}`;
+        const plan: MultiTargetDamagePlanItem[] = [];
         this.state.players.forEach((p) => {
             if (p.id === playerId) return;
             const targetRuntime = this.getRuntime(p.id);
             if (!targetRuntime || targetRuntime.isDefeated) return;
             const def = getEffectiveStatValue(targetRuntime, 'def');
             const damage = Math.max(1, baseDamage - def);
-            this.applyDamageToPlayer(playerId, p.id, damage, 'card', { cardId: card.id, label });
+            plan.push({ targetId: p.id, amount: damage });
         });
+        if (plan.length === 0) {
+            return;
+        }
+        this.applyMultiTargetDamagePlan(playerId, 'card', plan, { cardId: card.id, label });
     }
 
     private applySelfInstallEffect(playerId: string, card: CardDefinition): void {
@@ -2741,24 +3523,14 @@ export class GameEngine {
             return;
         }
         const targets = this.resolveTargets(effect.target ?? 'self', playerId, options?.targets);
-        targets.forEach((targetId) => {
-            const before = (this.state.hands[targetId] ?? []).length;
-            this.state = drawFromSharedDeck(this.state, targetId, count);
-            const after = (this.state.hands[targetId] ?? []).length;
-            const drawn = Math.max(0, after - before);
-            this.syncHandStatTokens(targetId);
-            if (drawn > 0) {
-                this.logEvent({
-                    type: 'cardEffect',
-                    playerId,
-                    cardId: card.id,
-                    kind: 'draw',
-                    targetId,
-                    count: drawn,
-                    timestamp: Date.now(),
-                });
+        for (const targetId of targets) {
+            const pending = this.drawCardsWithInfoChoice(targetId, count, {
+                log: { type: 'cardEffect', playerId, cardId: card.id, targetId },
+            });
+            if (pending) {
+                return;
             }
-        });
+        }
     }
 
     private applyAdjustBraEffect(playerId: string, card: CardDefinition, effect: AdjustBraEffect, options?: PlayCardOptions): void {
@@ -2976,6 +3748,128 @@ export class GameEngine {
         });
     }
 
+    private applyClearStatusesEffect(
+        playerId: string,
+        _card: CardDefinition,
+        effect: ClearStatusesEffect,
+        options?: PlayCardOptions
+    ): void {
+        const targets = this.resolveTargets(effect.target, playerId, options?.targets);
+        targets.forEach((targetId) => {
+            const runtime = this.getRuntime(targetId);
+            if (!runtime || runtime.isDefeated) {
+                return;
+            }
+
+            const current = this.readRoleState(targetId);
+
+            const stunSpePenalty = current.stunSpePenalty ?? 0;
+            if (stunSpePenalty !== 0) {
+                this.addStatTokensToPlayer(targetId, 'spe', -stunSpePenalty);
+            }
+
+            const pendingDebuff = current.pendingStatDebuff;
+            if (pendingDebuff) {
+                this.addStatTokensToPlayer(targetId, pendingDebuff.stat, -pendingDebuff.value);
+            }
+
+            const tauntBonus = current.tauntDefBonusApplied ?? 0;
+            if (tauntBonus !== 0) {
+                this.addStatTokensToPlayer(targetId, 'def', -tauntBonus);
+            }
+
+            const buffAtk = current.adrenalineBuff?.atk ?? 0;
+            const buffSpe = current.adrenalineBuff?.spe ?? 0;
+            if (buffAtk !== 0) {
+                this.addStatTokensToPlayer(targetId, 'atk', -buffAtk);
+            }
+            if (buffSpe !== 0) {
+                this.addStatTokensToPlayer(targetId, 'spe', -buffSpe);
+            }
+
+            const reboundAtk = current.adrenalineReboundApplied?.atk ?? 0;
+            const reboundSpe = current.adrenalineReboundApplied?.spe ?? 0;
+            if (reboundAtk !== 0) {
+                this.addStatTokensToPlayer(targetId, 'atk', -reboundAtk);
+            }
+            if (reboundSpe !== 0) {
+                this.addStatTokensToPlayer(targetId, 'spe', -reboundSpe);
+            }
+
+            this.updateRoleState(targetId, (prev) => ({
+                ...prev,
+                burnStacks: undefined,
+                bleedStacks: undefined,
+                shockTokens: undefined,
+                dizzyTurns: undefined,
+                pendingBraPenalty: undefined,
+                surgeryPhase: undefined,
+                scheduledHealAmount: undefined,
+                pendingStatDebuff: undefined,
+                stunUntilRound: undefined,
+                stunOriginalSpe: undefined,
+                stunSpePenalty: undefined,
+                tauntUntilNextTurnStart: undefined,
+                tauntDefBonusApplied: undefined,
+                adrenalineTurnsRemaining: undefined,
+                adrenalineBuff: undefined,
+                adrenalineRebound: undefined,
+                adrenalineReboundApplied: undefined,
+                suppressedUntilRound: undefined,
+                timedBomb: undefined,
+                futureSight: undefined,
+                postponePhase: undefined,
+                postponeBra: undefined,
+                postponeDeferredDamage: undefined,
+                postponeDeferredAttackerId: undefined,
+                nextRoleAttackAtkBonus: undefined,
+                nextRoleAttackIgnoreDefense: undefined,
+            }));
+
+            this.reconcileLightningRodAtkBonus(targetId);
+        });
+    }
+
+    private applyFutureSightRoleAttackEffect(
+        playerId: string,
+        _card: CardDefinition,
+        effect: FutureSightRoleAttackEffect,
+        options?: PlayCardOptions
+    ): void {
+        const attackerRuntime = this.getRuntime(playerId);
+        if (!attackerRuntime) {
+            return;
+        }
+        const delay = Math.max(0, Math.floor(effect.delayTurns ?? 0));
+        const atkBonus = Math.max(0, Math.floor(effect.atkBonus ?? 0));
+        if (delay <= 0) {
+            return;
+        }
+
+        const atkAtUse = getEffectiveStatValue(attackerRuntime, 'atk') + atkBonus;
+        const createdAt = Date.now();
+
+        const targets = this.resolveTargets(effect.target, playerId, options?.targets);
+        targets.forEach((targetId) => {
+            const targetRuntime = this.getRuntime(targetId);
+            if (!targetRuntime || targetRuntime.isDefeated) {
+                return;
+            }
+            this.updateRoleState(targetId, (prev) => ({
+                ...prev,
+                futureSight: [
+                    ...(prev.futureSight ?? []),
+                    {
+                        sourcePlayerId: playerId,
+                        count: delay,
+                        atkAtUse,
+                        createdAt,
+                    },
+                ],
+            }));
+        });
+    }
+
     private applyDealDamagePerSealedHandEffect(
         playerId: string,
         card: CardDefinition,
@@ -3011,8 +3905,7 @@ export class GameEngine {
         effect: Extract<CardEffect, { type: 'chooseOne' }>,
         options?: PlayCardOptions
     ): void {
-        const player = this.getPlayer(playerId);
-        if (player?.roleId === 'strong_greed') {
+        if (this.hasRoleAbility(playerId, 'strong_greed')) {
             const raw = options?.choices?.[effect.key];
             const rawSelections =
                 raw && typeof raw === 'object'
@@ -3343,10 +4236,9 @@ export class GameEngine {
             this.syncHandStatTokens(targetId);
             if (discarded.length > 0) {
                 const beforeDraw = (this.state.hands[targetId] ?? []).length;
-                this.state = drawFromSharedDeck(this.state, targetId, discarded.length);
+                const pending = this.drawCardsWithInfoChoice(targetId, discarded.length);
                 const afterDraw = (this.state.hands[targetId] ?? []).length;
-                this.syncHandStatTokens(targetId);
-                const drawn = Math.max(0, afterDraw - beforeDraw);
+                const drawn = pending ? discarded.length : Math.max(0, afterDraw - beforeDraw);
                 this.logEvent({
                     type: 'cardEffect',
                     playerId,
@@ -3663,7 +4555,7 @@ export class GameEngine {
             const runtime = this.getRuntime(player.id);
             return runtime && !runtime.isDefeated && runtime.roleState?.tauntUntilNextTurnStart;
         })?.id;
-        if (taunterId && (target === 'chosen_enemy' || target === 'chosen_player')) {
+        if (taunterId && taunterId !== actorId && (target === 'chosen_enemy' || target === 'chosen_player')) {
             return [taunterId];
         }
 
@@ -3671,7 +4563,7 @@ export class GameEngine {
             case 'all_players':
                 return Array.from(candidates);
             case 'chosen_enemy': {
-                const selection = filteredProvided.filter((id) => id !== actorId);
+                const selection = filteredProvided.filter((id) => this.isEnemyPlayer(actorId, id));
                 if (selection.length === 0) {
                     throw new Error('対象のプレイヤーを選択してください。');
                 }
@@ -3790,8 +4682,7 @@ export class GameEngine {
         }
 
         // 「延期」: ラウンド中に受けたダメージは追加ターンでまとめて受ける
-        const targetPlayer = this.getPlayer(targetId);
-        const isPostpone = targetPlayer?.roleId === 'postpone' && !this.isRoleSuppressed(targetId);
+        const isPostpone = this.hasRoleAbility(targetId, 'postpone') && !this.isRoleSuppressed(targetId);
         const isDeferredPostponeTurn = runtime.roleState?.postponePhase === 'deferred';
         if (isPostpone && !isDeferredPostponeTurn) {
             const deferredAmount = Math.max(0, resolution.amount);
@@ -3875,6 +4766,38 @@ export class GameEngine {
         }
 
         if (damageToHp > 0) {
+            if (
+                attackerId &&
+                attackerId !== targetId &&
+                (source === 'role' || source === 'card') &&
+                this.hasRoleAbility(targetId, 'mine') &&
+                !this.isRoleSuppressed(targetId)
+            ) {
+                this.updateRoleState(targetId, (prev) => ({
+                    ...prev,
+                    safeSinceLastTurn: false,
+                }));
+                const chance = this.readRoleState(targetId).mineChancePercent ?? 20;
+                const roll = Math.random() * 100;
+                if (roll < chance) {
+                    this.applyDamageToPlayer(targetId, attackerId, 5, 'ability', {
+                        abilityId: 'mine_counter',
+                        label: '地雷',
+                    });
+                    this.updateRoleState(targetId, (prev) => ({
+                        ...prev,
+                        mineChancePercent: 20,
+                    }));
+                    this.logEvent({
+                        type: 'roleAction',
+                        playerId: targetId,
+                        actionId: 'mine_counter',
+                        targetId: attackerId,
+                        description: '地雷: 反撃ダメージ5',
+                        timestamp: Date.now(),
+                    });
+                }
+            }
             this.handleAfterDamageEvents(attackerId, targetId, damageToHp, source);
         }
         if (nextHp <= 0) {
@@ -3913,10 +4836,64 @@ export class GameEngine {
         if (!runtime) {
             return { prevented: false, amount };
         }
-
-        let pendingAmount = amount;
         const breakdown: string[] = [];
         const allowPrompt = options?.allowPrompt !== false;
+
+        if (this.hasRoleAbility(targetId, 'invincible') && !this.isRoleSuppressed(targetId)) {
+            const stacks = runtime.roleState?.invincibleStacks ?? 0;
+            if (stacks > 0) {
+                const invincibleForcedDecision =
+                    options?.forcedPromptDecision &&
+                    options.forcedPromptDecision.installInstanceId === 'role:invincible' &&
+                    options.forcedPromptDecision.effectIndex === -1
+                        ? options.forcedPromptDecision.decision
+                        : undefined;
+
+                if (!invincibleForcedDecision && allowPrompt) {
+                    const declined = this.previewDamageOutcome(targetId, attackerId, amount, source);
+                    const prompt: PendingPrompt = {
+                        id: generateUuid(),
+                        type: 'beforeDamageTaken',
+                        promptLabel: '無敵',
+                        targetId,
+                        attackerId,
+                        source,
+                        amount,
+                        installInstanceId: 'role:invincible',
+                        cardId: 'role_invincible',
+                        effectIndex: -1,
+                        action: options?.action,
+                        contactAttack: options?.contactAttack,
+                        preview: {
+                            incoming: amount,
+                            source,
+                            attackerId,
+                            targetId,
+                            ifAccepted: {
+                                totalAfterReductions: 0,
+                                tempAbsorbed: 0,
+                                hpDamage: 0,
+                                breakdown: ['無敵: ダメージを無効化'],
+                            },
+                            ifDeclined: declined,
+                        },
+                    };
+                    this.setPendingPrompt(prompt);
+                    return { prevented: true, amount, pending: true, breakdown };
+                }
+
+                if (invincibleForcedDecision !== 'decline') {
+                    this.updateRoleState(targetId, (prev) => ({
+                        ...prev,
+                        invincibleStacks: stacks - 1 > 0 ? stacks - 1 : undefined,
+                    }));
+                    breakdown.push('無敵: ダメージを無効化');
+                    return { prevented: true, amount: 0, breakdown };
+                }
+            }
+        }
+
+        let pendingAmount = amount;
         if (runtime.installs.length > 0) {
             for (const install of runtime.installs) {
                 const card = this.cardMap.get(install.cardId);
@@ -4308,8 +5285,7 @@ export class GameEngine {
             return;
         }
         if (delta > 0) {
-            const player = this.getPlayer(playerId);
-            if (player?.roleId === 'greed') {
+            if (this.hasRoleAbility(playerId, 'greed')) {
                 this.applyHealToPlayer(playerId, delta);
                 return;
             }
@@ -4747,12 +5723,32 @@ export class GameEngine {
     }
 
     private getRoleAbilities(playerId: string): RoleAbility[] {
-        const player = this.getPlayer(playerId);
-        if (!player?.roleId) {
+        const roleIds = this.getRoleAbilityIds(playerId);
+        if (roleIds.length === 0) {
             return [];
         }
-        const role = this.roleMap.get(player.roleId);
-        return role?.abilities ?? [];
+        const abilities: RoleAbility[] = [];
+        for (const roleId of roleIds) {
+            const role = this.roleMap.get(roleId);
+            if (!role?.abilities?.length) {
+                continue;
+            }
+            abilities.push(...role.abilities);
+        }
+        if (abilities.length <= 1) {
+            return abilities;
+        }
+        const seen = new Set<string>();
+        return abilities.filter((ability) => {
+            if (!ability?.id) {
+                return true;
+            }
+            if (seen.has(ability.id)) {
+                return false;
+            }
+            seen.add(ability.id);
+            return true;
+        });
     }
 
     private getSpe(roleId?: string): number {
@@ -4778,8 +5774,7 @@ export class GameEngine {
         if (typeof fromState === 'number' && fromState !== 0) {
             return fromState;
         }
-        const player = this.getPlayer(playerId);
-        return player?.roleId === 'efficiency' ? 2 : 1;
+        return this.hasRoleAbility(playerId, 'efficiency') ? 2 : 1;
     }
 
     private getCardEffectBonus(playerId: string): number {
@@ -4868,8 +5863,7 @@ export class GameEngine {
             }
         }
 
-        const player = this.getPlayer(playerId);
-        if (player?.roleId !== 'postpone') {
+        if (!this.hasRoleAbility(playerId, 'postpone')) {
             return;
         }
         if (!runtime || runtime.isDefeated) {
@@ -4999,8 +5993,29 @@ export class GameEngine {
         const braToSet = deferredEntry ? deferredEntry.bra : Math.max(0, baseBra);
         this.state = setBraTokens(this.state, playerId, braToSet);
 
-        const player = this.getPlayer(playerId);
-        if (player?.roleId === 'postpone') {
+        const flashPending = this.readRoleState(playerId).flashPendingSpe ?? 0;
+        if (flashPending > 0) {
+            this.addStatTokensToPlayer(playerId, 'spe', flashPending);
+            this.updateRoleState(playerId, (prev) => ({
+                ...prev,
+                flashBonusSpe: (prev.flashBonusSpe ?? 0) + flashPending,
+                flashPendingSpe: undefined,
+            }));
+        }
+
+        if (this.hasRoleAbility(playerId, 'mine') && !this.isRoleSuppressed(playerId)) {
+            const mineState = this.readRoleState(playerId);
+            if (mineState.safeSinceLastTurn) {
+                const nextChance = Math.min(100, (mineState.mineChancePercent ?? 20) + 20);
+                this.updateRoleState(playerId, (prev) => ({
+                    ...prev,
+                    mineChancePercent: nextChance,
+                    safeSinceLastTurn: false,
+                }));
+            }
+        }
+
+        if (this.hasRoleAbility(playerId, 'postpone')) {
             if (isDeferredTurn) {
                 this.updateRoleState(playerId, (prev) => ({
                     ...prev,
@@ -5023,7 +6038,7 @@ export class GameEngine {
         }
 
         if (!isDeferredTurn) {
-            if (player?.roleId === 'barrage') {
+            if (this.hasRoleAbility(playerId, 'barrage')) {
                 this.updateRoleState(playerId, (prev) => ({
                     ...prev,
                     barrageAttackCount: undefined,
@@ -5031,8 +6046,7 @@ export class GameEngine {
                 }));
             }
             this.setRoleAttackUsed(playerId, false);
-            this.state = drawFromSharedDeck(this.state, playerId, 1);
-            this.syncHandStatTokens(playerId);
+            this.drawCardsWithInfoChoice(playerId, 1);
         }
         this.logEvent({
             type: 'turnStart',
@@ -5042,7 +6056,7 @@ export class GameEngine {
             label: isDeferredTurn ? '延長ターン開始' : undefined,
             kind: isDeferredTurn ? 'extended' : undefined,
         });
-        if (isDeferredTurn && player?.roleId === 'postpone') {
+        if (isDeferredTurn && this.hasRoleAbility(playerId, 'postpone')) {
             const stateNow = this.readRoleState(playerId);
             const pendingDamage = stateNow.postponeDeferredDamage ?? 0;
             if (pendingDamage > 0) {
@@ -5140,10 +6154,10 @@ export class GameEngine {
         const roleState = runtime.roleState ?? {};
         const updated: RoleRuntimeState = { ...roleState };
 
-        const player = this.getPlayer(playerId);
         const hasLightningRod = runtime.installs.some((install) => install.cardId === 'lightning_rod');
+        const hasWindBlade = runtime.installs.some((install) => install.cardId === 'wind_blade');
         const hasBloodArmor = runtime.installs.some((install) => install.cardId === 'blood_armor');
-        const dischargeWithRod = player?.roleId === 'discharge' && hasLightningRod && !this.isRoleSuppressed(playerId);
+        const dischargeWithRod = this.hasRoleAbility(playerId, 'discharge') && hasLightningRod && !this.isRoleSuppressed(playerId);
 
         if (dischargeWithRod) {
             let total = updated.shockTokens ?? 0;
@@ -5164,6 +6178,10 @@ export class GameEngine {
 
         if (hasLightningRod) {
             updated.shockTokens = (updated.shockTokens ?? 0) + 1;
+        }
+
+        if (hasWindBlade) {
+            this.addStatTokensToPlayer(playerId, 'spe', 1);
         }
 
         if (hasBloodArmor) {
@@ -5223,10 +6241,58 @@ export class GameEngine {
         return skipTurn;
     }
 
+    private applyWaterlogged(playerId: string, amount: number): void {
+        const add = Math.max(0, Math.floor(amount));
+        if (add <= 0) return;
+        this.addStatTokensToPlayer(playerId, 'spe', -add);
+        this.updateRoleState(playerId, (prev) => ({
+            ...prev,
+            waterloggedStacks: (prev.waterloggedStacks ?? 0) + add,
+        }));
+    }
+
     private handleRoleEndTurnEffects(playerId: string): void {
         const player = this.getPlayer(playerId);
         if (!player?.roleId) {
             return;
+        }
+
+        const roleStateStart = this.readRoleState(playerId);
+        const water = roleStateStart.waterloggedStacks ?? 0;
+        if (water > 0) {
+            if (Math.random() < Math.min(1, water * 0.1)) {
+                this.updateRoleState(playerId, (prev) => ({ ...prev, coldStacks: (prev.coldStacks ?? 0) + 1 }));
+            }
+            this.addStatTokensToPlayer(playerId, 'spe', 1);
+            this.updateRoleState(playerId, (prev) => {
+                const next = Math.max(0, (prev.waterloggedStacks ?? 0) - 1);
+                return { ...prev, waterloggedStacks: next > 0 ? next : undefined };
+            });
+        }
+
+        const cold = this.readRoleState(playerId).coldStacks ?? 0;
+        if (cold > 0) {
+            this.applyDamageToPlayer(playerId, playerId, 1, 'status', { label: 'cold' });
+            if (Math.random() < 0.2) {
+                this.updateRoleState(playerId, (prev) => {
+                    const next = Math.max(0, (prev.coldStacks ?? 0) - 1);
+                    return { ...prev, coldStacks: next > 0 ? next : undefined };
+                });
+            }
+        }
+
+        const silence = this.readRoleState(playerId).silenceTurns ?? 0;
+        if (silence > 0) {
+            this.updateRoleState(playerId, (prev) => {
+                const next = Math.max(0, (prev.silenceTurns ?? 0) - 1);
+                return { ...prev, silenceTurns: next > 0 ? next : undefined };
+            });
+        }
+
+        const flashBonus = this.readRoleState(playerId).flashBonusSpe ?? 0;
+        if (flashBonus > 0) {
+            this.addStatTokensToPlayer(playerId, 'spe', -flashBonus);
+            this.updateRoleState(playerId, (prev) => ({ ...prev, flashBonusSpe: undefined }));
         }
         const roleState = this.readRoleState(playerId);
         const timedBomb = roleState.timedBomb;
@@ -5280,7 +6346,7 @@ export class GameEngine {
             }));
         }
 
-        if (player.roleId === 'discharge' && !this.isRoleSuppressed(playerId)) {
+        if (this.hasRoleAbility(playerId, 'discharge') && !this.isRoleSuppressed(playerId)) {
             const remaining = this.state.braTokens[playerId] ?? 0;
             if (remaining > 0) {
                 this.updateRoleState(playerId, (prev) => ({
@@ -5326,10 +6392,39 @@ export class GameEngine {
             }
         }
 
+        const futureSight = roleState.futureSight ?? [];
+        if (futureSight.length > 0) {
+            const remaining: NonNullable<RoleRuntimeState['futureSight']> = [];
+            futureSight.forEach((entry) => {
+                const current = Math.max(0, Math.floor(entry.count ?? 0));
+                const next = current - 1;
+                if (next <= 0) {
+                    const currentRuntime = this.getRuntime(playerId);
+                    if (!currentRuntime || currentRuntime.isDefeated) {
+                        return;
+                    }
+                    const def = getEffectiveStatValue(currentRuntime, 'def');
+                    const atkAtUse = Math.max(0, Math.floor(entry.atkAtUse ?? 0));
+                    const damage = Math.max(1, atkAtUse - def);
+                    this.applyDamageToPlayer(entry.sourcePlayerId, playerId, damage, 'card', {
+                        cardId: 'future_sight',
+                        label: '未来予知',
+                    });
+                } else {
+                    remaining.push({ ...entry, count: next });
+                }
+            });
+
+            this.updateRoleState(playerId, (prev) => ({
+                ...prev,
+                futureSight: remaining.length > 0 ? remaining : undefined,
+            }));
+        }
+
         const runtime = this.getRuntime(playerId);
         const burn = runtime?.roleState?.burnStacks ?? 0;
         if (burn > 0) {
-            const selfFlame = player.roleId === 'flame' && !this.isRoleSuppressed(playerId);
+            const selfFlame = this.hasRoleAbility(playerId, 'flame') && !this.isRoleSuppressed(playerId);
             if (selfFlame) {
                 this.applyHealToPlayer(playerId, burn);
                 this.logEvent({

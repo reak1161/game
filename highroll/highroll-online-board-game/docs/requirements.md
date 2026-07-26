@@ -8,5 +8,8 @@
 - 小数が出る計算（割合・倍率など）は、カード/ロールに明記がない限り **切り捨て（floor）**。
   - 例: `1.5` → `1`
 
+## 運用（開発/公開）
+- ローカルのテストプレイ（`npm run dev:cf`）や、本番の固定リンク（Workers/Pages）の出し方・更新手順は `docs/online_workers_do.md` を参照。
+
 ## 仕様/設計の本体
 - `docs/requirements_design.md` を参照。

@@ -1,4 +1,4 @@
-{
+﻿{
   "cards": [
     {
       "id": "jab",
@@ -6,7 +6,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か１人を選ぶ。そのプレイヤーに接触通常３ダメージを与える。",
+      "text": "対象: 対象1人（敵）\n効果: 誰か１人を選ぶ。そのプレイヤーに接触通常３ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -29,7 +29,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "全員に固定5ダメージ。",
+      "text": "対象: 全員\n効果: 全員に固定5ダメージ。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -51,7 +51,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "自分のDefの半分（切り捨て）を通常ダメージとして与える。",
+      "text": "対象: 対象1人（敵）\n効果: 通常〈自分のDef/2〉ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -77,11 +77,15 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "2以下のダメージは受けない（このカードは捨てない）。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。2以下のダメージは受けない。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "thresholdPrevent",
+          "sources": [
+            "role",
+            "card"
+          ],
           "operator": "<=",
           "threshold": 2,
           "preventAll": true,
@@ -99,11 +103,15 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "5以上のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。5以上のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "thresholdPrevent",
+          "sources": [
+            "role",
+            "card"
+          ],
           "operator": ">=",
           "threshold": 5,
           "preventAll": true,
@@ -123,11 +131,15 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "4以下のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。4以下のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "thresholdPrevent",
+          "sources": [
+            "role",
+            "card"
+          ],
           "operator": "<=",
           "threshold": 4,
           "preventAll": true,
@@ -149,7 +161,7 @@
       "subtype": "equip",
       "cost": 1,
       "unique": false,
-      "text": "装備: 装備：Atk+3。［殺人］が装備した場合、さらにAtk+2, Spe+2。",
+      "text": "対象: 自分\n効果: 装備: 装備：Atk+3。［殺人］が装備した場合、さらにAtk+2, Spe+2。",
       "effects": [
         {
           "trigger": "onEquip",
@@ -189,7 +201,7 @@
       "subtype": "equip",
       "cost": 1,
       "unique": false,
-      "text": "装備: 攻撃時：相手の装備を1つ捨てさせる。捨てさせたらこのターンAtk+3を得て、この装備を捨てる。",
+      "text": "対象: 攻撃対象\n効果: 装備中、ロールで攻撃時に相手の装備を1つ捨てさせる。捨てさせた攻撃はAtk+3して計算する。効果発動後、この装備を捨てる。",
       "effects": [
         {
           "trigger": "afterRoleAttack",
@@ -228,13 +240,12 @@
       "subtype": "equip",
       "cost": 1,
       "unique": true,
-      "text": "装備: HPが最大の時に死亡するダメージを受けるなら、代わりにこの装備を捨て、HP1で生き残る。",
+      "text": "対象: 自分\n効果: 装備中：死亡するとき（致死ダメージを受けるとき）、代わりにこの装備を捨て、HP1で生き残る。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "cheatDeathAtFull",
           "condition": {
-            "hpEqualsMax": true,
             "fatalIfApplied": true
           },
           "sacrificeSelf": true,
@@ -254,7 +265,7 @@
       "subtype": "equip",
       "cost": 1,
       "unique": false,
-      "text": "装備: 最大HP+5。装備時、HP+5回復。",
+      "text": "対象: 自分\n効果: 装備: 最大HP+5。装備時、HP+5回復。",
       "effects": [
         {
           "trigger": "onEquip",
@@ -279,7 +290,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "手札が5枚以上のプレイヤー1人を選び、その手札をすべて捨てさせる。",
+      "text": "対象: 対象1人\n効果: 手札が5枚以上のプレイヤー1人を選び、その手札をすべて捨てさせる。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -301,7 +312,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "Spe3につきDefトークン+1を得る（切り捨て）。",
+      "text": "対象: 自分\n効果: Spe3につきDefトークン+1を得る（切り捨て）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -327,7 +338,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "Atk/Def/Speトークンを各+3。代わりにBraトークンを-1獲得（最大Braが減る）。",
+      "text": "対象: 自分\n効果: Atk/Def/Speトークンを各+3。代わりにBraトークンを-1獲得（最大Braが減る）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -369,7 +380,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "HP以外の基礎ステータス1種を選び、その基礎値の分だけ増幅する。増幅した基礎値と同じだけ現在HPを減らす。",
+      "text": "対象: 自分\n効果: HP以外の基礎ステータス1種を選び、その基礎値の分だけ増幅する。増幅した基礎値と同じだけ現在HPを減らす。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -398,7 +409,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "全員の手札を捨てる。",
+      "text": "対象: 全員\n効果: 全員の手札を捨てる。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -417,7 +428,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次のラウンドの終わりまで、Speが遅いプレイヤーから行動する。",
+      "text": "対象: 自分\n効果: 次のラウンドの終わりまで、Speが遅いプレイヤーから行動する。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -437,7 +448,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "このターンBra+1。山札から2枚引く。",
+      "text": "対象: 自分\n効果: このターンBra+1。山札から2枚引く。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -463,7 +474,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "好きなプレイヤー1人は次にダメージを受けるまで追加Atk-3。",
+      "text": "対象: 対象1人\n効果: 好きなプレイヤー1人は次にダメージを受けるまで追加Atk-3。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -484,7 +495,7 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "設置中、最大HP+2。設置時にHP+2回復。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。設置中、最大HP+2。設置時にHP+2回復。",
       "effects": [
         {
           "trigger": "onEquip",
@@ -510,7 +521,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "好きなプレイヤー1人は追加Def-2。",
+      "text": "対象: 対象1人\n効果: 好きなプレイヤー1人は追加Def-2。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -531,7 +542,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "好きなプレイヤー1人は火炎2。",
+      "text": "対象: 対象1人\n効果: 好きなプレイヤー1人は火炎2。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -551,7 +562,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次のうちどれか選ぶ。誰か1人を選ぶ。そのプレイヤーの火炎3を減らす。/誰か1人を選ぶ。そのプレイヤーに通常5ダメージを与える。",
+      "text": "対象: 対象1人\n効果: 次のうちどれか選ぶ。誰か1人を選ぶ。そのプレイヤーの火炎3を減らす。/誰か1人を選ぶ。そのプレイヤーに通常5ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -598,7 +609,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か１人を選ぶ。そのプレイヤーに火炎３を付与する。その後、そのほかのプレイヤーに火炎１を付与する。",
+      "text": "対象: 対象1人 / 全員\n効果: 誰か１人を選ぶ。そのプレイヤーに火炎３を付与する。その後、そのほかのプレイヤーに火炎１を付与する。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -624,7 +635,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "好きなプレイヤー1人は次のラウンド終了までSpeが0になる。",
+      "text": "対象: 対象1人\n効果: 好きなプレイヤー1人は次のラウンド終了までSpeが0になる。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -644,7 +655,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "HPが半分以下の時のみ使用可能。追加Atk+5。",
+      "text": "対象: 自分\n効果: HPが半分以下の時のみ使用可能。追加Atk+5。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -669,7 +680,7 @@
       "kind": "skill",
       "cost": 1,
       "playable": false,
-      "text": "このカードはプレイできない。手札にある間、追加Atk+1を得る。手札からなくなると効果は消える。",
+      "text": "対象: 自分\n効果: このカードはプレイできない。手札にある間、追加Atk+1を得る。手札からなくなると効果は消える。",
       "effects": [
         {
           "trigger": "inHand",
@@ -691,7 +702,7 @@
       "kind": "skill",
       "cost": 1,
       "playable": false,
-      "text": "このカードはプレイできない。手札にある間、追加Def-1を得る。手札からなくなると効果は消える。",
+      "text": "対象: 自分\n効果: このカードはプレイできない。手札にある間、追加Def-1を得る。手札からなくなると効果は消える。",
       "effects": [
         {
           "trigger": "inHand",
@@ -712,7 +723,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "手札を2枚捨て、捨てた枚数だけ山札から引く。",
+      "text": "対象: 自分\n効果: 手札を2枚捨て、捨てた枚数だけ山札から引く。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -733,7 +744,7 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "自分の前に設置する。次に攻撃を受けたとき、受けるダメージを2減らし、このカードを捨てる。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。次に攻撃を受けたとき、受けるダメージを2減らし、このカードを捨てる。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
@@ -758,7 +769,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か1人を選ぶ。そのプレイヤーに追加Bra+1を与える。その後50%の確率で、そのプレイヤーは10ダメージを受ける。",
+      "text": "対象: 対象1人\n効果: 誰か1人を選ぶ。そのプレイヤーに追加Bra+1を与える。その後50%の確率で、そのプレイヤーは10ダメージを受ける。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -788,7 +799,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か1人を選ぶ。50%の確率で自分が5ダメージを受けるが、残り50%の確率で相手に5ダメージを与える。",
+      "text": "対象: 対象1人（敵）\n効果: 誰か1人を選ぶ。50%の確率で自分が5ダメージを受けるが、残り50%の確率で相手に5ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -812,7 +823,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次のラウンド中、Speを無視して一番最初に行動する（トリックルーム中は一番最後）。",
+      "text": "対象: 自分\n効果: 次のラウンド中、Speを無視して一番最初に行動する（トリックルーム中は一番最後）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -830,7 +841,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次の自分のターンの終わりまで追加Spe+6、追加Atk+3を得る。次の自分のターンが終わると、追加Spe-9、追加Atk-4を得る。",
+      "text": "対象: 自分\n効果: 次の自分のターンの終わりまで追加Spe+6、追加Atk+3を得る。次の自分のターンが終わると、追加Spe-9、追加Atk-4を得る。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -858,7 +869,7 @@
       "kind": "install",
       "subtype": "equip",
       "cost": 1,
-      "text": "装備中、自分に接触攻撃（ロール攻撃）をしてきたプレイヤーに火炎1を付与する。",
+      "text": "対象: 自分\n効果: 装備中、自分に接触攻撃（ロール攻撃）をしてきたプレイヤーに火炎1を付与する。",
       "effects": [
         {
           "trigger": "afterRoleAttack",
@@ -878,7 +889,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次の自分のターンの初めまで、すべての対象を選ぶ効果は強制的に自分が対象になる。次の自分のターンの初めまで追加Def+3を得る。",
+      "text": "対象: 自分\n効果: 次の自分のターンの初めまで、すべての対象を選ぶ効果は強制的に自分が対象になる。次の自分のターンの初めまで追加Def+3を得る。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -898,7 +909,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "自分の手札をすべて封印する。その後、自分以外の全員に固定（封印状態の手札の枚数×1.5）ダメージを与える。",
+      "text": "対象: 自分 / 自分以外全員\n効果: 自分の手札をすべて封印する。その後、自分以外の全員に固定（封印状態の手札の枚数×1.5）ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -927,7 +938,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か1人を選ぶ。そのプレイヤーに通常2ダメージを与え、めまい1を与える。",
+      "text": "対象: 対象1人\n効果: 誰か1人を選ぶ。そのプレイヤーに通常2ダメージを与え、めまい1を与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -955,11 +966,15 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "自分の前に設置する。6以上のダメージを受けたとき、代わりに2ダメージを受け、自身にめまい1を付与する（捨てない）。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。6以上のダメージを受けたとき、代わりに2ダメージを受け、自身にめまい1を付与する。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "damageIntercept",
+          "sources": [
+            "role",
+            "card"
+          ],
           "min": 6,
           "replaceWith": 2,
           "sacrificeSelf": false,
@@ -978,11 +993,15 @@
       "category": "defense",
       "kind": "install",
       "cost": 1,
-      "text": "自分の前に設置する。4〜6ダメージを受けたとき、代わりにこのカードを捨ててもよい。そうしたらダメージを0にする。ただし、受けたダメージが5ダメージだった場合は捨てずに防ぐことができる。",
+      "text": "対象: 自分\n効果: 自分の前に設置する。4～6ダメージを受けたとき、代わりにこのカードを捨ててもよい。そうしたらダメージを0にする。ただし、受けたダメージが5ダメージだった場合は捨てずに防ぐことができる。",
       "effects": [
         {
           "trigger": "beforeDamageTaken",
           "type": "damageIntercept",
+          "sources": [
+            "role",
+            "card"
+          ],
           "min": 4,
           "max": 6,
           "replaceWith": 0,
@@ -1005,7 +1024,7 @@
       "kind": "install",
       "subtype": "equip",
       "cost": 1,
-      "text": "装備中、ロールで攻撃時、追加で与えたダメージの1/2の固定ダメージを追加で与え、そのとき自分は1ダメージを受ける。［反響］が装備時は代わりに、連続攻撃の減衰が3/4になる。",
+      "text": "対象: 攻撃対象\n効果: 装備中、ロールで攻撃時、追加で与えたダメージの1/2の固定ダメージを追加で与え、そのとき自分は1ダメージを受ける。［反響］が装備時は代わりに、連続攻撃の減衰が3/4になる。",
       "effects": [
         {
           "trigger": "afterRoleAttack",
@@ -1029,7 +1048,7 @@
       "kind": "install",
       "subtype": "equip",
       "cost": 1,
-      "text": "装備中、ターン開始時に感電トークンを1獲得する。ロールで攻撃時、攻撃を受けたプレイヤーに固定1ダメージを与える。［放電］が装備時、全員の感電トークンを自分に集める。自分に付与されている感電トークン5つにつき、追加Atk+1を得る。［放電］は感電トークンによるBra減衰は起こらない。",
+      "text": "対象: 攻撃対象\n効果: 装備中、ターン開始時に感電トークンを1獲得する。ロールで攻撃時、攻撃を受けたプレイヤーに固定1ダメージを与える。［放電］が装備時、全員の感電トークンを自分に集める。自分に付与されている感電トークン5つにつき、追加Atk+1を得る。",
       "effects": [
         {
           "trigger": "afterRoleAttack",
@@ -1052,7 +1071,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か１人を選ぶ。そのプレイヤーに通常３ダメージを与える。その後、そのプレイヤーに固定２ダメージを与える。",
+      "text": "対象: 対象1人（敵）\n効果: 誰か１人を選ぶ。そのプレイヤーに通常３ダメージを与える。その後、そのプレイヤーに固定２ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1081,7 +1100,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "次のうちどれか選ぶ。誰か１人を選ぶ。そのプレイヤーに通常５ダメージを与える／固定３ダメージを与える。",
+      "text": "対象: 対象1人（敵）\n効果: 次のうちどれか選ぶ。誰か１人を選ぶ。そのプレイヤーに通常５ダメージを与える／固定３ダメージを与える。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1130,7 +1149,7 @@
       "category": "attack",
       "kind": "skill",
       "cost": 1,
-      "text": "次のうちどれか選ぶ。誰か１人を選ぶ。そのプレイヤーに通常４ダメージを与える／自分の前に設置する（３以下のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい）。",
+      "text": "対象: 自分 / 対象1人（敵）\n効果: 次のうちどれか選ぶ。誰か１人を選ぶ。そのプレイヤーに通常４ダメージを与える／自分の前に設置する（３以下のダメージを受けるとき、代わりにこのカードを捨てて防いでもよい）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1186,7 +1205,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次のうちどれか選ぶ。山札から１枚引く／HP.３を獲得する／次のロール攻撃時、Atk+３。",
+      "text": "対象: 自分\n効果: 次のうちどれか選ぶ。山札から１枚引く／HP.３を獲得する／次のロール攻撃時、Atk+３。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1242,7 +1261,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "ゲーム参加者全員の（最大HP-現在HP）の合計を生存者数で割り、全員に通常ダメージとして与える（切り捨て）。",
+      "text": "対象: 自分\n効果: ゲーム参加者全員の（最大HP-現在HP）の合計を生存者数で割り、全員に通常ダメージとして与える（切り捨て）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1260,7 +1279,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "次の自分のロール攻撃で、相手の防御カードを無視して攻撃する。",
+      "text": "対象: 自分\n効果: 次の自分のロール攻撃で、相手の防御カードを無視して攻撃する。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1277,7 +1296,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "誰か１人を選ぶ。その後、自分の追加トークンをすべて０にして、通常〈失った追加トークン×1.5〉ダメージを与える（切り捨て）。",
+      "text": "対象: 対象1人（敵）\n効果: 誰か１人を選ぶ。その後、自分の追加トークンをすべて０にして、通常〈失った追加トークン×1.5〉ダメージを与える（切り捨て）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1298,7 +1317,7 @@
       "category": "spell",
       "kind": "skill",
       "cost": 1,
-      "text": "自分の手札をすべて捨てる。その後、自分以外のプレイヤー全員に通常〈捨てた手札の枚数×1.5〉ダメージを与える（切り捨て）。",
+      "text": "対象: 自分 / 自分以外全員\n効果: 自分の手札をすべて捨てる。その後、自分以外のプレイヤー全員に通常〈捨てた手札の枚数×1.5〉ダメージを与える（切り捨て）。",
       "effects": [
         {
           "trigger": "onPlay",
@@ -1320,7 +1339,7 @@
       "subtype": "equip",
       "cost": 1,
       "unique": true,
-      "text": "装備中、自分が攻撃したプレイヤーに出血２を付与する。",
+      "text": "対象: 自分\n効果: 装備中、自分が攻撃したプレイヤーに出血２を付与する。",
       "effects": [],
       "tags": [
         "equip",
@@ -1335,7 +1354,7 @@
       "subtype": "equip",
       "cost": 1,
       "unique": true,
-      "text": "装備中、追加Def.５を獲得する。装備中、ターン開始時に出血１を付与する。",
+      "text": "対象: 自分\n効果: 装備中、追加Def.５を獲得する。装備中、ターン開始時に出血１を付与する。",
       "effects": [
         {
           "trigger": "onEquip",
@@ -1358,11 +1377,183 @@
       "subtype": "equip",
       "cost": 1,
       "unique": true,
-      "text": "装備中、特殊ダメージを受けない。",
+      "text": "対象: 自分\n効果: 装備中、特殊ダメージを受けない。",
       "effects": [],
       "tags": [
         "equip",
         "special"
+      ]
+    },
+    {
+      "id": "backstab",
+      "name": "背面刺し",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "対象: 対象1人（敵）\n効果: 誰か1人を選ぶ。このカードで攻撃時、相手のDefを2無視し、通常4ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_enemy",
+          "value": 4,
+          "fixed": false,
+          "defApplied": true,
+          "ignoreDefAmount": 2
+        }
+      ],
+      "tags": [
+        "attack"
+      ]
+    },
+    {
+      "id": "future_sight",
+      "name": "未来予知",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "対象: 対象1人（敵）\n効果: 誰か1人を選ぶ。そのプレイヤーに、2ターン後にロール攻撃（使用時の自分のAtk+3として計算）と同等のダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "futureSightRoleAttack",
+          "target": "chosen_enemy",
+          "delayTurns": 2,
+          "atkBonus": 3
+        }
+      ],
+      "tags": [
+        "attack",
+        "status"
+      ]
+    },
+    {
+      "id": "speed_is_power",
+      "name": "速度は力",
+      "category": "attack",
+      "kind": "skill",
+      "cost": 1,
+      "text": "対象: 対象1人（敵）\n効果: 誰か1人を選ぶ。そのプレイヤーに通常〈自分のSpeの半分〉ダメージを与える。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "dealDamage",
+          "target": "chosen_enemy",
+          "formula": {
+            "type": "selfStatHalf",
+            "stat": "spe",
+            "round": "floor"
+          },
+          "fixed": false,
+          "defApplied": true
+        }
+      ],
+      "tags": [
+        "attack",
+        "scaling"
+      ]
+    },
+    {
+      "id": "deep_thought",
+      "name": "長考",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "対象: 自分\n効果: 山札から3枚引く。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "drawCards",
+          "count": 3
+        }
+      ],
+      "tags": [
+        "spell",
+        "draw"
+      ]
+    },
+    {
+      "id": "syringe",
+      "name": "注射器",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "対象: 対象1人\n効果: 誰か1人を選ぶ。そのプレイヤーはHPを4回復する。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "heal",
+          "target": "chosen_player",
+          "value": 4
+        }
+      ],
+      "tags": [
+        "spell",
+        "heal"
+      ]
+    },
+    {
+      "id": "panacea",
+      "name": "万能薬",
+      "category": "spell",
+      "kind": "skill",
+      "cost": 1,
+      "text": "対象: 対象1人\n効果: 誰か1人を選ぶ。そのプレイヤーは状態異常をすべて回復する。",
+      "effects": [
+        {
+          "trigger": "onPlay",
+          "type": "clearStatuses",
+          "target": "chosen_player"
+        }
+      ],
+      "tags": [
+        "spell",
+        "status"
+      ]
+    },
+    {
+      "id": "wind_blade",
+      "name": "ウインドブレイド",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "対象: 自分\n効果: 装備中、毎ターンの開始時に追加Spe+1を獲得する。ロールで攻撃時、追加Speをすべて消費してAtkに置き換える。［疾風］が装備時、ロール攻撃時に獲得する追加Speを2にし、この装備の効果発動前に獲得する。",
+      "effects": [],
+      "tags": [
+        "equip",
+        "spe"
+      ]
+    },
+    {
+      "id": "glitch_blade",
+      "name": "グリッジブレイド",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "対象: 自分\n効果: 装備中、ロールで攻撃時、攻撃した相手に抑制を付与する。［抑制］が装備時、抑制状態の相手に追加で固定3ダメージを与える。",
+      "effects": [],
+      "tags": [
+        "equip",
+        "suppress"
+      ]
+    },
+    {
+      "id": "plain_sword",
+      "name": "ただの剣",
+      "category": "equip",
+      "kind": "install",
+      "subtype": "equip",
+      "cost": 1,
+      "unique": true,
+      "text": "対象: 自分\n効果: ロールで攻撃時、Atkを+20%して計算する。",
+      "effects": [],
+      "tags": [
+        "equip",
+        "atk"
       ]
     }
   ]

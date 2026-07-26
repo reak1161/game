@@ -2,7 +2,15 @@ body {
     margin: 0;
     font-family: 'Arial', sans-serif;
     background-color: #f0f0f0;
+    background-image: url('../assets/washi-background.png');
+    background-repeat: repeat;
+    background-size: 900px auto;
+    background-attachment: fixed;
     color: #333;
+}
+
+#root {
+    min-height: 100vh;
 }
 
 h1, h2, h3, h4, h5, h6 {

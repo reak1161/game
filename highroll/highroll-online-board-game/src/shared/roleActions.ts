@@ -1,8 +1,18 @@
-﻿import type { RoleActionDefinition, StatKey } from './types';
+import type { RoleActionDefinition, StatKey } from './types';
 
 export const ROLE_ACTION_BASE_STATS: StatKey[] = ['hp', 'atk', 'def', 'spe'];
+export const ROLE_ACTION_COMBAT_STATS: StatKey[] = ['atk', 'def', 'spe'];
 
 export const ROLE_ACTIONS: Record<string, RoleActionDefinition[]> = {
+    duplicate: [
+        {
+            id: 'duplicate_copy',
+            label: '複製',
+            description: '対象の固有能力（パッシブ/アビリティ）を複製する（最大3つまで保持）。',
+            costBra: 1,
+            requiresTarget: 'any',
+        },
+    ],
     flame: [
         {
             id: 'flame_apply_burn',
@@ -53,13 +63,13 @@ export const ROLE_ACTIONS: Record<string, RoleActionDefinition[]> = {
                     key: 'statDown',
                     label: '減らすステータス',
                     type: 'stat',
-                    options: ROLE_ACTION_BASE_STATS,
+                    options: ROLE_ACTION_COMBAT_STATS,
                 },
                 {
                     key: 'statUp',
                     label: '増やすステータス',
                     type: 'stat',
-                    options: ROLE_ACTION_BASE_STATS,
+                    options: ROLE_ACTION_COMBAT_STATS,
                 },
             ],
         },
@@ -143,6 +153,40 @@ export const ROLE_ACTIONS: Record<string, RoleActionDefinition[]> = {
             requiresTarget: 'others',
         },
     ],
+    tsunami: [
+        { id: 'tsunami_ultimate', label: 'アルティメット: 大津波', description: '手札を条件分捨てて全体固定ダメージ+水びたし。', costBra: 2 },
+    ],
+    earthquake: [
+        { id: 'earthquake_ultimate', label: 'アルティメット: 大地震', description: '手札全捨てで全体固定ダメージ+めまい。', costBra: 2 },
+    ],
+    meteor: [
+        { id: 'meteor_ultimate', label: 'アルティメット: 隕石落下', description: '手札3枚を捨てて対象に固定10ダメージ。', costBra: 2, requiresTarget: 'others' },
+    ],
+    tornado: [
+        { id: 'tornado_ultimate', label: 'アルティメット: 超竜巻', description: '手札全捨てで対象に連撃+手札破壊。', costBra: 2, requiresTarget: 'others' },
+    ],
+    balance: [
+        {
+            id: 'balance_average',
+            label: '平均化',
+            description: '対象と指定ステータスを平均化する。',
+            costBra: 1,
+            requiresTarget: 'others',
+            choices: [{ key: 'stat', label: '平均化するステータス', type: 'stat', options: ROLE_ACTION_COMBAT_STATS }],
+        },
+    ],
+    flash: [{ id: 'flash_gain_spe', label: '加速', description: '次の自分ターン中のみ追加Spe+4。', costBra: 1 }],
+    discard: [{ id: 'discard_mill3', label: '廃棄', description: '山札の上から3枚を捨て札にする。', costBra: 1 }],
+    recycle: [
+        { id: 'recycle_pick', label: '回収', description: '捨て札から1枚選んで手札に加える。', costBra: 1, requiresTarget: 'self' },
+    ],
+    gaze: [{ id: 'gaze_mark', label: '凝視付与', description: '対象に凝視を1付与する。', costBra: 1, requiresTarget: 'others' }],
+    silence_role: [
+        { id: 'silence_mark', label: '沈黙付与', description: '対象に沈黙1を付与する。', costBra: 1, requiresTarget: 'others' },
+    ],
+    shadowbind: [
+        { id: 'shadowbind_reduce_max_hp', label: '影縫い', description: '対象の最大HPを2減らす。', costBra: 1, requiresTarget: 'others' },
+    ],
 };
 
 export const getRoleActions = (roleId?: string): RoleActionDefinition[] => {
@@ -150,4 +194,18 @@ export const getRoleActions = (roleId?: string): RoleActionDefinition[] => {
         return [];
     }
     return ROLE_ACTIONS[roleId] ?? [];
+};
+
+export const getRoleActionsForRoleIds = (roleIds: Array<string | undefined | null>): RoleActionDefinition[] => {
+    const uniqueRoleIds = Array.from(new Set(roleIds.filter((id): id is string => Boolean(id))));
+    const seen = new Set<string>();
+    const out: RoleActionDefinition[] = [];
+    uniqueRoleIds.forEach((roleId) => {
+        (ROLE_ACTIONS[roleId] ?? []).forEach((action) => {
+            if (seen.has(action.id)) return;
+            seen.add(action.id);
+            out.push(action);
+        });
+    });
+    return out;
 };

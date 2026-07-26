@@ -1,5 +1,7 @@
 export type GameStatus = 'waiting' | 'inProgress' | 'finished';
 
+export type TeamColor = 'red' | 'blue' | 'green' | 'yellow';
+
 export type StatKey = 'hp' | 'atk' | 'def' | 'spe' | 'bra';
 export type CombatStatKey = Exclude<StatKey, 'hp'>;
 export type ThresholdOperator = '<=' | '>=';
@@ -177,6 +179,7 @@ export interface PlayerRuntimeState {
 }
 
 export interface RoleRuntimeState {
+    ultimateUsed?: boolean;
     chargeTokens?: number;
     shockTokens?: number;
     pendingBraPenalty?: number;
@@ -228,6 +231,26 @@ export interface RoleRuntimeState {
         sourcePlayerId: string;
         count: number;
     };
+    futureSight?: Array<{
+        sourcePlayerId: string;
+        count: number;
+        atkAtUse: number;
+        createdAt: number;
+    }>;
+    copiedRoleAbilities?: Array<{
+        roleId: string;
+        fromPlayerId: string;
+        copiedAt: number;
+    }>;
+    waterloggedStacks?: number;
+    coldStacks?: number;
+    silenceTurns?: number;
+    invincibleStacks?: number;
+    gazeMarks?: number;
+    mineChancePercent?: number;
+    safeSinceLastTurn?: boolean;
+    flashBonusSpe?: number;
+    flashPendingSpe?: number;
 }
 
 export type CurseId =
@@ -253,6 +276,7 @@ export interface Player {
     isReady: boolean;
     joinedAt: number;
     roleId?: string;
+    team?: TeamColor;
 }
 
 export interface GameState {
@@ -262,6 +286,8 @@ export interface GameState {
     round: number;
     status: GameStatus;
     winnerId?: string;
+    winnerTeam?: TeamColor;
+    teamMode?: boolean;
     board: BoardState;
     createdAt: number;
     updatedAt: number;
@@ -280,6 +306,7 @@ export interface GameState {
     deferredTurns: Array<{ playerId: string; bra: number }>;
     deferredTurnActive?: boolean;
     pendingPrompt?: PendingPrompt;
+    pendingInfoDraw?: PendingInfoDraw;
     nextRoundPriority?: { playerId: string; applyOnRound: number };
 }
 
@@ -429,6 +456,7 @@ export interface DealDamageEffect extends BaseCardEffect {
     fixed?: boolean;
     defApplied?: boolean;
     ignoreDef?: boolean;
+    ignoreDefAmount?: number;
     contact?: boolean;
 }
 
@@ -512,6 +540,18 @@ export interface SealHandEffect extends BaseCardEffect {
     type: 'sealHand';
     mode: 'all';
     target?: CardTarget;
+}
+
+export interface ClearStatusesEffect extends BaseCardEffect {
+    type: 'clearStatuses';
+    target: CardTarget;
+}
+
+export interface FutureSightRoleAttackEffect extends BaseCardEffect {
+    type: 'futureSightRoleAttack';
+    target: CardTarget;
+    delayTurns: number;
+    atkBonus: number;
 }
 
 export interface DealDamagePerSealedHandEffect extends BaseCardEffect {
@@ -720,6 +760,8 @@ export type CardEffect =
     | ContactBurnOnRoleAttackEffect
     | TauntUntilNextTurnStartEffect
     | SealHandEffect
+    | ClearStatusesEffect
+    | FutureSightRoleAttackEffect
     | DealDamagePerSealedHandEffect
     | ChooseOneEffect
     | DoubleBaseStatEffect
@@ -749,11 +791,26 @@ export type PendingAction =
           nextDamage: number;
           totalDealt: number;
           hits: number;
+      }
+    | {
+          type: 'multiTargetDamage';
+          attackerId: string;
+          source: DamageSource;
+          plan: Array<{ targetId: string; amount: number }>;
+          options?: {
+              allowPrompt?: boolean;
+              cardId?: string;
+              abilityId?: string;
+              label?: string;
+              contactAttack?: boolean;
+              ignoreDefenseInstalls?: boolean;
+          };
       };
 
 export type PendingPrompt = {
     id: string;
     type: 'beforeDamageTaken';
+    promptLabel?: string;
     targetId: string;
     attackerId?: string;
     source: DamageSource;
@@ -780,6 +837,21 @@ export type PendingPrompt = {
             hpDamage: number;
             breakdown?: string[];
         };
+    };
+};
+
+export type PendingInfoDraw = {
+    id: string;
+    playerId: string;
+    options: string[];
+    drawIndex: number;
+    drawTotal: number;
+    afterComplete?: 'postponeAfterAction';
+    log?: {
+        type: 'cardEffect';
+        playerId: string;
+        cardId: string;
+        targetId: string;
     };
 };
 
@@ -833,6 +905,9 @@ export interface LobbyPlayer {
     roleId?: string;
     isReady?: boolean;
     isSpectator?: boolean;
+    isCpu?: boolean;
+    cpuLevel?: 'easy' | 'normal' | 'hard';
+    team?: TeamColor;
 }
 
 export interface LobbySummary {
@@ -853,6 +928,7 @@ export interface LobbyDetail {
     players: LobbyPlayer[];
     createdAt: number;
     showRoles: boolean;
+    teamMode: boolean;
 }
 
 export type MatchmakingStatus = 'waiting' | 'matched' | 'not_found';

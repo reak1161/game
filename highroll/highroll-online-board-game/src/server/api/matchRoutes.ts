@@ -369,6 +369,24 @@ router.post('/:id/resolvePrompt', (req: Request, res: Response) => {
     }
 });
 
+router.post('/:id/resolveInfoDraw', (req: Request, res: Response) => {
+    const engine = getEngineOr404(req.params.id, res);
+    if (!engine) return;
+
+    const { playerId, cardId } = req.body as { playerId?: string; cardId?: string };
+    if (!playerId || !cardId) {
+        res.status(400).json({ message: 'playerId and cardId are required.' });
+        return;
+    }
+
+    try {
+        engine.resolveInfoDraw(playerId, cardId);
+        res.status(200).json({ state: engine.getState() });
+    } catch (error) {
+        res.status(400).json({ message: (error as Error).message });
+    }
+});
+
 router.delete('/:id', (req: Request, res: Response) => {
     if (!matches.delete(req.params.id)) {
         res.status(404).json({ message: `Match ${req.params.id} not found.` });

@@ -1,0 +1,12 @@
+# Generated files inside the nested Highroll project
+highroll/highroll-online-board-game/node_modules/
+highroll/highroll-online-board-game/dist/
+highroll/highroll-online-board-game/.wrangler/
+highroll/highroll-online-board-game/workers/node_modules/
+highroll/highroll-online-board-game/workers/.wrangler/
+
+# Local environment files for Highroll
+highroll/highroll-online-board-game/.env
+highroll/highroll-online-board-game/.env.local
+highroll/highroll-online-board-game/.env.development
+highroll/highroll-online-board-game/.env.production

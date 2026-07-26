@@ -1,10 +1,12 @@
 import React from 'react';
 import type { Role } from '@shared/types';
+import styles from './RoleSelect.module.css';
 
 type Props = {
     roles: Role[];
     selectedId?: string | null;
     onSelect: (roleId: string) => void;
+    disabled?: boolean;
 };
 
 const StatBadge: React.FC<{ label: string; value: number }> = ({ label, value }) => (
@@ -26,15 +28,17 @@ const RoleCard: React.FC<{
     onClick: () => void;
     onHover?: (role: Role) => void;
     onHoverEnd?: () => void;
-}> = ({ role, active, onClick, onHover, onHoverEnd }) => {
+    disabled?: boolean;
+}> = ({ role, active, onClick, onHover, onHoverEnd, disabled }) => {
     const { params } = role;
     return (
         <button
-            onClick={onClick}
-            onMouseEnter={() => onHover?.(role)}
-            onMouseLeave={() => onHoverEnd?.()}
-            onFocus={() => onHover?.(role)}
-            onBlur={() => onHoverEnd?.()}
+            onClick={disabled ? undefined : onClick}
+            onMouseEnter={() => (disabled ? undefined : onHover?.(role))}
+            onMouseLeave={() => (disabled ? undefined : onHoverEnd?.())}
+            onFocus={() => (disabled ? undefined : onHover?.(role))}
+            onBlur={() => (disabled ? undefined : onHoverEnd?.())}
+            disabled={disabled}
             title={typeof role.text === 'string' ? role.text : undefined}
             style={{
                 textAlign: 'left',
@@ -43,7 +47,8 @@ const RoleCard: React.FC<{
                 borderRadius: 10,
                 border: active ? '2px solid #2563eb' : '1px solid #e5e7eb',
                 background: active ? '#eff6ff' : 'white',
-                cursor: 'pointer',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                opacity: disabled ? 0.6 : 1,
             }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -70,7 +75,7 @@ const RoleCard: React.FC<{
     );
 };
 
-const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect }) => {
+const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect, disabled }) => {
     const [query, setQuery] = React.useState('');
     const [hoveredRole, setHoveredRole] = React.useState<Role | null>(null);
     const lowerQ = query.trim().toLowerCase();
@@ -83,6 +88,7 @@ const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect }) => {
         return hay.includes(lowerQ);
     });
     const detailRole = hoveredRole ?? roles.find((role) => role.id === selectedId) ?? null;
+    const detailText = detailRole ? (detailRole as any).detailText : null;
 
     return (
         <div>
@@ -91,6 +97,7 @@ const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect }) => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="ロールを検索（名前/タグ）"
+                    disabled={disabled}
                     style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e5e7eb' }}
                 />
                 {selectedId && (
@@ -100,16 +107,7 @@ const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect }) => {
                 )}
             </div>
 
-            <div
-                style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 12,
-                    padding: 16,
-                    background: '#fff',
-                    marginBottom: 16,
-                    minHeight: 120,
-                }}
-            >
+            <div className={styles.detailPanel}>
                 {detailRole ? (
                     <>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -132,6 +130,11 @@ const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect }) => {
                                 {detailRole.text}
                             </p>
                         )}
+                        {typeof detailText === 'string' && (
+                            <div style={{ marginTop: 10, color: '#0f172a', lineHeight: 1.5, fontSize: 13, whiteSpace: 'pre-wrap' }}>
+                                {detailText}
+                            </div>
+                        )}
                     </>
                 ) : (
                     <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>
@@ -140,23 +143,20 @@ const RoleSelect: React.FC<Props> = ({ roles, selectedId, onSelect }) => {
                 )}
             </div>
 
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                    gap: 12,
-                }}
-            >
-                {filtered.map((role) => (
-                    <RoleCard
-                        key={role.id}
-                        role={role}
-                        active={role.id === selectedId}
-                        onClick={() => onSelect(role.id)}
-                        onHover={setHoveredRole}
-                        onHoverEnd={() => setHoveredRole(null)}
-                    />)
-                )}
+            <div className={styles.cardsScroll}>
+                <div className={styles.cardsGrid}>
+                    {filtered.map((role) => (
+                        <RoleCard
+                            key={role.id}
+                            role={role}
+                            active={role.id === selectedId}
+                            onClick={() => onSelect(role.id)}
+                            onHover={setHoveredRole}
+                            onHoverEnd={() => setHoveredRole(null)}
+                            disabled={disabled}
+                        />
+                    ))}
+                </div>
             </div>
         </div>
     );

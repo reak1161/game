@@ -1,0 +1,28 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Root docs/build noise
+*.log
+
+# Highroll app dependencies and build outputs
+highroll-online-board-game/node_modules/
+highroll-online-board-game/dist/
+highroll-online-board-game/.wrangler/
+highroll-online-board-game/workers/node_modules/
+highroll-online-board-game/workers/.wrangler/
+
+# Environment files
+highroll-online-board-game/.env
+highroll-online-board-game/.env.local
+highroll-online-board-game/.env.development
+highroll-online-board-game/.env.production
+highroll-online-board-game/workers/.dev.vars
+highroll-online-board-game/workers/.env
+
+# Test / cache outputs
+highroll-online-board-game/coverage/
+highroll-online-board-game/.vite/
+highroll-online-board-game/.cache/
+highroll-online-board-game/workers/.mf/

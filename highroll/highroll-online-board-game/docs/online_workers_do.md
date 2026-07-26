@@ -1,81 +1,183 @@
-# Workers + Durable Objects でオンライン化（設計メモ / 内部用）
+# Highroll Cloudflare 運用メモ
 
-目的：現状の「ローカル（WSL）で `npm run dev` + Cloudflare Tunnel」での公開を卒業し、**Cloudflare上で常時稼働**できるオンライン構成へ移行する。
+`highroll-online-board-game` の Cloudflare Workers + Durable Objects + Pages 構成の実行、確認、本番更新手順をまとめる。
 
-## 方針（B案：全部 Cloudflare）
-- フロント：Cloudflare Pages（Vite の build 出力を静的配信）
-- API 入口：Cloudflare Worker（`/api/...` を処理）
-- 状態保持・WebSocket：Durable Object（部屋/マッチごとに 1 インスタンス）
+## 構成
+- API: Cloudflare Workers + Durable Objects
+- UI: Vite でビルドして Cloudflare Pages にデプロイ
+- ローカル開発:
+  - API: `http://127.0.0.1:4000`
+  - UI: `http://localhost:5173`
+- 本番:
+  - UI: `https://highroll.reak1161.com/`
+  - API: `https://api.reak1161.com/`
 
-### 重要：socket.io は使わない
-Workers では Node の常駐サーバ（`listen`）や socket.io 前提をそのまま持ち込めないため、**標準 WebSocket（JSONメッセージ）**に置き換える。
+## 前提
+- WSL 側の Node/npm を使う
+- `which node` と `which npm` が `/home/.../.nvm/...` など WSL 側を指していること
+- Cloudflare に `wrangler login` 済みであること
 
-## 無料枠で回すための原則
-- ポーリングをやめる（APIのリクエスト数を消費しやすい）
-- WS は常時接続にして、**イベント駆動 + 差分（patch）配信**を基本にする
-- 永続化（DO storage / SQLite）は「毎フレーム」ではなく、**節目（例：ターン終了）でまとめて保存**
+確認:
 
-## 実装の入口（このリポジトリ内）
-`game/highroll/highroll-online-board-game/workers/`
-- `wrangler.toml`：Worker + DO の設定
-- `src/worker.ts`：API入口（`/api/rooms`, `/api/rooms/:id/ws`, `/api/cards`）
-- `src/roomDO.ts`：RoomDO（WS接続管理＋ state 配信）
+```sh
+which node
+which npm
+npx wrangler whoami
+```
 
-現段階は「接続できて、プレイヤー一覧が同期される」までの骨格。
+## 初回セットアップ
+リポジトリ直下:
 
-## ローカル実行（疎通確認）
-### API/WS（Workers/DO）単体
-1. `game/highroll/highroll-online-board-game/workers/` に移動
-2. `npm i`
-3. `npm run dev`（既定では `http://127.0.0.1:8787`）
-4. 別ターミナルでマッチ作成：
-   - `curl -sS -X POST http://127.0.0.1:8787/api/rooms`
-   - 返ってきた `id` を使って WebSocket に接続：
-     - `ws://127.0.0.1:8787/api/rooms/<id>/ws`
-5. WS は接続直後に `t:"state"` が返る。必要なら `{ "t": "join", "name": "Alice" }` を送って参加者を追加できる。
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+npm install
+npm --prefix workers install
+```
 
-### フロントも一緒に起動（Vite + Workers/DO）
-1. `game/highroll/highroll-online-board-game/` に移動
-2. まだなら `npm i` と `npm --prefix workers i`
-3. `npm run dev:cf`
-   - Worker（wrangler dev）を `http://127.0.0.1:4000` で起動する
-   - Vite は `http://localhost:5173`（`/api` を 4000 に proxy）
+## ローカル開発
+UI と API をまとめて起動:
 
-※フロント（React）は `/api/rooms/:id/ws` の購読（state push）に対応。開発時のみ polling にフォールバックする（production では無効）。
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+npm run dev:cf
+```
 
-## 環境変数（接続先の切替）
-- 開発：`.env.development`
-  - `VITE_API_BASE=/api`（Vite と同一オリジンの `/api` を叩く。dev:cf では proxy で `:4000` に流れる）
-- 本番：`.env.production`
-  - `VITE_API_BASE=https://highroll-api.<your>.workers.dev/api`
+必要に応じて個別起動:
 
-## KV（cards.json）
-`GET /api/cards` は KV から `cards.json` を返す。
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+npm run dev -- --port 4000
+```
 
-初回セットアップ（コマンドはメモ。実行は手動でOK）:
-- `wrangler kv:namespace create KV_CARDS`
-- 出力された `id` を `workers/wrangler.toml` の `KV_CARDS` に反映
-- `wrangler kv:key put --binding=KV_CARDS cards.json @../../cards/dev/cards.json`
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+npm run dev:client
+```
 
-※ローカルでは `KV_CARDS` が未設定だと `GET /api/cards` は `501` を返す。
+## 環境変数
+開発用:
+- `.env.development`
+  - `VITE_API_BASE=http://localhost:4000/api`
+  - もし Vite の WS proxy が不安定なら `http://127.0.0.1:4000/api` にする
 
-## デプロイ（メモ）
-- API（Workers/DO）
-  - 開発: `cd workers && wrangler deploy`
-  - 本番: `cd workers && wrangler deploy --env production`
-- フロント（Pages）
-  - `npm run build:client`
-  - Pages 側で `dist/client` を公開（または `wrangler pages deploy dist/client --project-name <name>`）
+本番用:
+- `.env.production`
+  - `VITE_API_BASE=https://api.reak1161.com/api`
 
-## 今後の移植ステップ（順番）
-1. **通信プロトコル確定**
-   - client→server：`t:"join"` / `t:"action"` / `t:"ping"`
-   - server→client：`t:"state"` / `t:"error"` / `t:"pong"`
-2. engine の移植
-   - `engine.ts` を Workers 互換にする（Node依存を排除）
-   - DO が単一の正として直列に処理（競合防止）
-3. クライアント側の差し替え
-   - `socket.io-client` を削除して `WebSocket` に変更
-   - API ベースを `/api`（同一ホスト）に統一
-4. デプロイ
-   - Pages（フロント） + Worker/DO（API/WS）
+## 本番更新の基本手順
+### API だけ変更したとき
+
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+npx wrangler deploy --env production
+```
+
+### UI だけ変更したとき
+
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+npm run build:client
+npx --yes wrangler@4.62.0 pages deploy dist/client --project-name highroll-ui --branch master --commit-dirty=true --skip-caching
+```
+
+### UI と API の両方を変更したとき
+- API を先に更新する
+- その後で UI を更新する
+
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+npx wrangler deploy --env production
+```
+
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+npm run build:client
+npx --yes wrangler@4.62.0 pages deploy dist/client --project-name highroll-ui --branch master --commit-dirty=true --skip-caching
+```
+
+## 動作確認
+最低限の確認:
+- UI が `https://highroll.reak1161.com/` で開く
+- ロビー一覧が取得できる
+- ロビー入室後に WebSocket が接続できる
+- マッチ開始後に WebSocket が接続できる
+
+## WebSocket と Origin 制限
+API 側では WebSocket 接続時に `Origin` を検証している。
+
+許可元:
+- `http://localhost:5173`
+- `http://127.0.0.1:5173`
+- `http://localhost:4173`
+- `http://127.0.0.1:4173`
+- `https://highroll.reak1161.com`
+- `*.pages.dev`
+
+本番で別のフロント URL を使う場合は、以下のどちらかを更新する。
+- `workers/src/security.ts`
+- `workers/wrangler.toml` の `ALLOWED_ORIGINS`
+
+変更後は API を再デプロイする:
+
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+npx wrangler deploy --env production
+```
+
+## よくあるエラー
+### `sh: 1: vite: not found`
+原因:
+- `node_modules` を消した
+- 依存が未インストール
+- WSL ではなく Windows 側の Node/npm を使っている
+
+対処:
+
+```sh
+cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+which node
+which npm
+npm install
+npm run build:client
+```
+
+注意:
+- `node_modules` や `package-lock.json` を消した直後は、必ず `npm install` を先に実行する
+
+### `WebSocket is closed before the connection is established`
+原因:
+- 開発中の再接続
+- React StrictMode 由来の一時的な接続作り直し
+
+対処:
+- 一度だけ出るなら無視してよい
+- 継続するならブラウザ再読込
+- ロビー一覧、ロビー入室、マッチ入室のどこで切れているか切り分ける
+
+### `403 Forbidden` で WebSocket がつながらない
+原因:
+- フロントの URL が許可オリジンに入っていない
+
+対処:
+- `workers/src/security.ts` または `workers/wrangler.toml` の `ALLOWED_ORIGINS` を更新
+- API を再デプロイ
+
+### `ws proxy socket error: write EPIPE`
+原因:
+- Vite の WS proxy が不安定
+
+対処:
+- `.env.development` を `VITE_API_BASE=http://127.0.0.1:4000/api` にして API へ直結する
+
+### `durable_objects is not inherited by environments`
+原因:
+- `workers/wrangler.toml` の `[env.production]` 側に Durable Object binding が足りない
+
+対処:
+- `[[env.production.durable_objects.bindings]]` を定義する
+
+## メモ
+- UI デプロイでは `--skip-caching` を付ける
+  - Pages 側のキャッシュ関連でハング気味になる環境があったため
+- API の `workers.dev` の表示 URL と、実際に使うカスタムドメインは別
+  - 実運用では `https://api.reak1161.com/` を使う

@@ -67,7 +67,9 @@ Ability は `trigger` + `actions` の組み合わせで、基本テンプレー�
 ## 5. テスト & ドキュメント更新
 - 新しい挙動を追加したら `tests/server/engine.test.ts` にカバレッジを用意する (蓄電 → 放電、医師の手術など)。
 - UI の説明文が増えた場合は `roles.json` および `docs/requirements_design.md` を更新する。
-- ワークフロー本文は必ず UTF-8 で保存し、文字化け防止のため PowerShell から `Set-Content -Encoding utf8` を使用すること。
+- ワークフロー本文は必ず UTF-8 で保存する。日本語を含むファイルは PowerShell の `Set-Content` / `Out-File` / `-replace` などで直接書き戻さない。
+- 日本語を含む編集は `apply_patch` を優先する。大きい機械編集が必要な場合も、UTF-8 前提の一時スクリプトを `apply_patch` で作成してから実行する。
+- 日本語ファイルを編集した後は、型チェックとは別に `rg "????"` などで文字化けが混入していないか確認する。
 
 ---
 

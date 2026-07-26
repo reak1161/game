@@ -29,6 +29,13 @@ export const createRuntimeStateFromRole = (playerId: string, role: Role): Player
     if (role.id === 'efficiency') {
         roleState.cardEffectMultiplier = 2;
     }
+    if (role.id === 'invincible') {
+        roleState.invincibleStacks = 3;
+    }
+    if (role.id === 'mine') {
+        roleState.mineChancePercent = 20;
+        roleState.safeSinceLastTurn = true;
+    }
     return {
         playerId,
         roleId: role.id,

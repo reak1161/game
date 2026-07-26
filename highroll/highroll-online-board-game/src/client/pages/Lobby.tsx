@@ -1,24 +1,17 @@
 import React from 'react';
-import type { DeckSummary, LobbySummary, MatchmakingStatus, Role } from '@shared/types';
 import { useNavigate } from 'react-router-dom';
-import { fetchDecks, fetchRoles } from '@client/api/catalog';
 import RoleSelect from '@client/components/RoleSelect';
-import { createSoloMatchVsCpu } from '@client/api/matches';
-import {
-    cancelMatchmaking,
-    createLobby,
-    enqueueMatchmaking,
-    fetchLobbies,
-    getMatchmakingStatus,
-    joinLobby,
-    setLobbyRole,
-} from '@client/api/lobbies';
-import { withApiBase } from '@client/config/api';
-import { rememberMatchPlayer, rememberLobbyPlayer } from '@client/utils/matchPlayer';
+import DeckSelectModal from '@client/components/DeckSelectModal';
+import { getRolesCatalogLocal, listDeckSummariesLocal } from '@client/catalog/localCatalog';
+import { API_BASE, wsBase } from '@client/config/env';
+import { rememberLobbyPlayer, rememberMatchPlayer } from '@client/utils/matchPlayer';
+import type { ActionPayload, ServerMsg } from '@shared/protocol';
+import type { DeckSummary, LobbySummary, MatchmakingStatus, Role } from '@shared/types';
 import patchNotesMarkdown from '../../../docs/patch_notes_public.md?raw';
 
 const NAME_REGEX = /^[0-9A-Za-z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+$/;
 const NAME_MAX_LENGTH = 8;
+
 const normalizeName = (value?: string | null): string | null => {
     const trimmed = value?.trim() ?? '';
     if (!trimmed) return null;
@@ -28,25 +21,39 @@ const normalizeName = (value?: string | null): string | null => {
 };
 
 const Lobby: React.FC = () => {
+    const navigate = useNavigate();
+
     const [roles, setRoles] = React.useState<Role[]>([]);
     const [decks, setDecks] = React.useState<DeckSummary[]>([]);
     const [lobbies, setLobbies] = React.useState<LobbySummary[]>([]);
+
     const [selectedRoleId, setSelectedRoleId] = React.useState<string | null>(null);
     const [selectedDeckId, setSelectedDeckId] = React.useState('default_60');
+    const [deckModalOpen, setDeckModalOpen] = React.useState(false);
+
     const [playerName, setPlayerName] = React.useState('');
     const [lobbyName, setLobbyName] = React.useState('');
     const [password, setPassword] = React.useState('');
-    const [queueName, setQueueName] = React.useState('');
+
     const [joinPlayerName, setJoinPlayerName] = React.useState('');
     const [joinPassword, setJoinPassword] = React.useState('');
-    // CPU設定はロビー作成後（ロビー画面）で行う。ここは互換のため残しているが、UIは非表示。
-    const [cpuCount, setCpuCount] = React.useState(0);
-    const [cpuLevel, setCpuLevel] = React.useState<'easy' | 'normal' | 'hard'>('normal');
+
+    const [queueName, setQueueName] = React.useState('');
     const [ticketId, setTicketId] = React.useState<string | null>(null);
     const [queueStatus, setQueueStatus] = React.useState<MatchmakingStatus | null>(null);
-    const [apiStatus, setApiStatus] = React.useState<'unknown' | 'online' | 'offline'>('unknown');
-    const [apiMessage, setApiMessage] = React.useState<string | null>(null);
+
+    const [message, setMessage] = React.useState<string | null>(null);
     const [showPatchNotes, setShowPatchNotes] = React.useState(false);
+    const [wsConnected, setWsConnected] = React.useState(false);
+
+    const wsRef = React.useRef<WebSocket | null>(null);
+    const pendingCreateOwnerNameRef = React.useRef<string | null>(null);
+    const ticketIdRef = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        ticketIdRef.current = ticketId;
+    }, [ticketId]);
+
     const patchNotesForDisplay = React.useMemo(() => {
         const marker = /^## v/m;
         const match = marker.exec(patchNotesMarkdown);
@@ -56,232 +63,329 @@ const Lobby: React.FC = () => {
         return patchNotesMarkdown.slice(match.index).trim();
     }, [patchNotesMarkdown]);
 
-    const rememberPlayerControl = React.useCallback((matchId: string, playerId?: string | null, playerName?: string | null) => {
-        if (matchId && playerId) {
-            rememberMatchPlayer(matchId, playerId, playerName ?? undefined);
-        }
-    }, []);
-
-    const navigate = useNavigate();
-
-    const handleNetworkFailure = React.useCallback((message?: string) => {
-        setApiStatus('offline');
-        setApiMessage(message ?? 'APIに接続できません。`npm run dev` または `npm run dev:server` でサーバーを起動してください。');
-    }, []);
-
-    const flagNetworkError = React.useCallback((error: unknown) => {
-        if (error instanceof TypeError || (error as Error)?.message?.includes('Failed to fetch')) {
-            handleNetworkFailure();
-        }
-    }, [handleNetworkFailure]);
-
-    const checkApiHealth = React.useCallback(async () => {
+    React.useEffect(() => {
         try {
-            await fetch(withApiBase('/health'), { credentials: 'include' });
-            setApiStatus('online');
-            setApiMessage(null);
-            return true;
-        } catch (_error) {
-            handleNetworkFailure();
-            return false;
-        }
-    }, [handleNetworkFailure]);
-
-    const loadInitialCatalogs = React.useCallback(async () => {
-        const healthy = await checkApiHealth();
-        if (!healthy) {
-            throw new Error('API offline');
-        }
-        const [roleData, deckData] = await Promise.all([fetchRoles(), fetchDecks()]);
-        setRoles(roleData);
-        setDecks(deckData);
-        if (deckData.length > 0) {
-            setSelectedDeckId(deckData[0].id);
-        }
-    }, [checkApiHealth]);
-
-    const refreshLobbies = React.useCallback(async () => {
-        try {
-            const healthy = await checkApiHealth();
-            if (!healthy) {
-                setLobbies([]);
-                return;
+            const roleData = getRolesCatalogLocal();
+            const deckData = listDeckSummariesLocal();
+            setRoles(roleData);
+            setDecks(deckData);
+            if (!selectedRoleId && roleData.length > 0) {
+                setSelectedRoleId(roleData[0].id);
             }
-            setLobbies(await fetchLobbies());
+            if (deckData.length > 0 && !deckData.some((d) => d.id === selectedDeckId)) {
+                setSelectedDeckId(deckData[0].id);
+            }
         } catch (error) {
             console.error(error);
-            setLobbies([]);
-            flagNetworkError(error);
+            setMessage('ロール/デッキの読み込みに失敗しました。');
         }
-    }, [checkApiHealth, flagNetworkError]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const selectedDeck = React.useMemo(() => decks.find((deck) => deck.id === selectedDeckId) ?? null, [decks, selectedDeckId]);
+
+    const sendWsAction = React.useCallback((payload: ActionPayload): boolean => {
+        const ws = wsRef.current;
+        if (!ws) return false;
+        if (ws.readyState !== WebSocket.OPEN) return false;
+        try {
+            ws.send(JSON.stringify({ t: 'action', payload }));
+            return true;
+        } catch {
+            return false;
+        }
+    }, []);
 
     React.useEffect(() => {
-        loadInitialCatalogs()
-            .catch((error) => {
-                setRoles([]);
-                setDecks([]);
-                flagNetworkError(error);
+        if (typeof window === 'undefined') return;
+
+        const url = `${wsBase(API_BASE)}/lobbies/ws`;
+        let reconnectTimer: number | null = null;
+        let pingTimer: number | null = null;
+        let lastPongAt = Date.now();
+        let backoffMs = 500;
+        let closedByClient = false;
+        let startTimer: number | null = null;
+
+        const cleanup = () => {
+            if (reconnectTimer) window.clearTimeout(reconnectTimer);
+            if (pingTimer) window.clearInterval(pingTimer);
+            reconnectTimer = null;
+            pingTimer = null;
+        };
+
+        const closeCurrent = () => {
+            const prev = wsRef.current;
+            wsRef.current = null;
+            if (prev) {
+                try {
+                    prev.close();
+                } catch {
+                    // noop
+                }
+            }
+        };
+
+        const connect = () => {
+            cleanup();
+            closeCurrent();
+
+            const ws = new WebSocket(url);
+            wsRef.current = ws;
+            closedByClient = false;
+            const isCurrent = () => wsRef.current === ws;
+
+            const scheduleReconnect = () => {
+                if (!isCurrent()) return;
+                if (closedByClient) return;
+                setWsConnected(false);
+                cleanup();
+                if (reconnectTimer) window.clearTimeout(reconnectTimer);
+                const wait = Math.min(5000, backoffMs);
+                backoffMs = Math.min(5000, Math.floor(backoffMs * 1.6));
+                reconnectTimer = window.setTimeout(() => connect(), wait);
+            };
+
+            ws.addEventListener('open', () => {
+                if (!isCurrent()) return;
+                setWsConnected(true);
+                backoffMs = 500;
+                lastPongAt = Date.now();
+
+                const existingTicket = ticketIdRef.current;
+                if (existingTicket) {
+                    try {
+                        ws.send(JSON.stringify({ t: 'action', payload: { k: 'matchmaking/watch', ticketId: existingTicket } satisfies ActionPayload }));
+                    } catch {
+                        // noop
+                    }
+                }
+
+                pingTimer = window.setInterval(() => {
+                    const now = Date.now();
+                    if (now - lastPongAt > 60000) {
+                        try {
+                            ws.close();
+                        } catch {
+                            // noop
+                        }
+                        return;
+                    }
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        return;
+                    }
+                    try {
+                        ws.send(JSON.stringify({ t: 'ping' }));
+                    } catch {
+                        // noop
+                    }
+                }, 25000);
             });
-        refreshLobbies();
-    }, [loadInitialCatalogs, refreshLobbies, flagNetworkError]);
 
-    React.useEffect(() => {
-        if (apiStatus !== 'offline') {
-            return undefined;
-        }
-        const timer = setInterval(() => {
-            checkApiHealth().catch(() => {
-                /* swallow */
-            });
-        }, 5000);
-        return () => clearInterval(timer);
-    }, [apiStatus, checkApiHealth]);
+            ws.addEventListener('message', (event) => {
+                if (!isCurrent()) return;
+                let parsed: ServerMsg | null = null;
+                try {
+                    parsed = JSON.parse(String(event.data)) as ServerMsg;
+                } catch {
+                    return;
+                }
 
-    React.useEffect(() => {
-        if (!ticketId) {
-            return undefined;
-        }
-
-        const interval = setInterval(() => {
-            getMatchmakingStatus(ticketId)
-                .then((result) => {
-                    setQueueStatus(result.status);
-                    if (result.status === 'matched' && result.matchId) {
+                if (parsed.t === 'pong') {
+                    lastPongAt = Date.now();
+                    return;
+                }
+                if (parsed.t === 'lobbies') {
+                    setLobbies((parsed.lobbies as LobbySummary[]) ?? []);
+                    return;
+                }
+                if (parsed.t === 'matchmakingTicket') {
+                    const newTicketId = String(parsed.ticketId ?? '');
+                    if (!newTicketId) {
+                        setMessage('マッチング開始に失敗しました。');
+                        return;
+                    }
+                    setTicketId(newTicketId);
+                    setQueueStatus('waiting');
+                    return;
+                }
+                if (parsed.t === 'matchmakingStatus') {
+                    const currentTicketId = String(parsed.ticketId ?? '');
+                    const status = (String(parsed.status ?? '') as MatchmakingStatus) || 'not_found';
+                    if (ticketIdRef.current && currentTicketId && ticketIdRef.current !== currentTicketId) {
+                        return;
+                    }
+                    setQueueStatus(status);
+                    if (status === 'matched') {
+                        const matchId = String(parsed.matchId ?? '');
+                        const playerId = String(parsed.playerId ?? '');
+                        const playerNameResolved = parsed.playerName ? String(parsed.playerName) : undefined;
+                        if (!matchId || !playerId) {
+                            setMessage('マッチング成立に失敗しました。');
+                            setTicketId(null);
+                            return;
+                        }
+                        rememberMatchPlayer(matchId, playerId, playerNameResolved);
                         setTicketId(null);
                         setQueueStatus(null);
-                        navigate(`/match/${result.matchId}`);
+                        navigate(`/match/${matchId}`);
                     }
-                })
-                .catch((error) => {
-                    setQueueStatus('not_found');
-                    clearInterval(interval);
-                    flagNetworkError(error);
-                });
-        }, 2000);
+                    if (status === 'not_found') {
+                        setTicketId(null);
+                    }
+                    return;
+                }
+                if (parsed.t === 'lobbyCreated') {
+                    const lobbyId = String(parsed.lobbyId ?? '');
+                    const ownerPlayerId = String(parsed.ownerPlayerId ?? '');
+                    if (!lobbyId || !ownerPlayerId) {
+                        setMessage('ロビー作成に失敗しました。');
+                        return;
+                    }
+                    const ownerNameResolved = pendingCreateOwnerNameRef.current ?? 'ホスト';
+                    rememberLobbyPlayer(lobbyId, ownerPlayerId, ownerNameResolved);
+                    navigate(`/lobby/${lobbyId}`);
+                    return;
+                }
+                if (parsed.t === 'soloMatchCreated') {
+                    const matchId = String(parsed.matchId ?? '');
+                    const playerId = String(parsed.playerId ?? '');
+                    const playerNameResolved = parsed.playerName ? String(parsed.playerName) : undefined;
+                    if (!matchId || !playerId) {
+                        setMessage('ソロマッチ開始に失敗しました。');
+                        return;
+                    }
+                    rememberMatchPlayer(matchId, playerId, playerNameResolved);
+                    navigate(`/match/${matchId}`);
+                    return;
+                }
+                if (parsed.t === 'error') {
+                    setMessage(String(parsed.message ?? 'サーバーエラー'));
+                }
+            });
 
-        return () => clearInterval(interval);
-    }, [ticketId, navigate]);
+            ws.addEventListener('close', () => scheduleReconnect());
+            ws.addEventListener('error', () => scheduleReconnect());
+        };
 
-    const handleSoloStart = async () => {
+        // React StrictMode (dev) で Effect が二重実行されると、接続直後に close され
+        // 「WebSocket is closed before the connection is established」が出やすい。
+        // 1tick 遅らせて、1回目の mount/unmount では接続しないようにする。
+        startTimer = window.setTimeout(() => connect(), 0);
+
+        return () => {
+            closedByClient = true;
+            if (startTimer) window.clearTimeout(startTimer);
+            cleanup();
+            closeCurrent();
+        };
+    }, [navigate]);
+
+    const handleSoloStart = React.useCallback(() => {
         if (!selectedRoleId) {
             alert('ロールを選択してください。');
             return;
         }
         const resolvedPlayerName = normalizeName(playerName);
         if (playerName.trim() && !resolvedPlayerName) {
-            alert('プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+            alert('プレイヤー名は8文字まで、英数字/ひらがな/カタカナ/漢字のみです。');
             return;
         }
-        try {
-            const { matchId, playerId, state } = await createSoloMatchVsCpu(
-                selectedRoleId,
-                resolvedPlayerName ?? 'Player',
-                selectedDeckId
-            );
-            const owner = state.players.find((p) => p.id === playerId) ?? state.players?.[0];
-            rememberPlayerControl(matchId, owner?.id, owner?.name);
-            navigate(`/match/${matchId}`);
-        } catch (error) {
-            flagNetworkError(error);
-            alert(`マッチ作成に失敗しました: ${(error as Error).message}`);
-        }
-    };
 
-    const handleCreateLobby = async () => {
+        const ok = sendWsAction({
+            k: 'matches/soloCpu',
+            name: resolvedPlayerName ?? 'Player',
+            roleId: selectedRoleId,
+            deckId: selectedDeckId,
+            cpuLevel: 'normal',
+        } as ActionPayload);
+        if (!ok) {
+            alert('WebSocketに接続できていません。少し待ってから再試行してください。');
+        }
+    }, [playerName, selectedDeckId, selectedRoleId, sendWsAction]);
+
+    const handleCreateLobby = React.useCallback(() => {
         const ownerNameResolved = normalizeName(playerName) ?? 'ホスト';
-        if (playerName.trim() && ownerNameResolved === 'ホスト') {
-            alert('プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+        if (playerName.trim() && !normalizeName(playerName)) {
+            alert('プレイヤー名は8文字まで、英数字/ひらがな/カタカナ/漢字のみです。');
             return;
         }
         const lobbyNameResolved = normalizeName(lobbyName);
         if (lobbyName.trim() && !lobbyNameResolved) {
-            alert('ロビー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+            alert('ロビー名は8文字まで、英数字/ひらがな/カタカナ/漢字のみです。');
             return;
         }
-        try {
-            const { lobbyId, ownerPlayerId } = await createLobby({
-                lobbyName: lobbyNameResolved ?? undefined,
-                ownerName: ownerNameResolved,
-                password: password || undefined,
-                deckId: selectedDeckId,
-            });
 
-            if (selectedRoleId) {
-                await setLobbyRole(lobbyId, ownerPlayerId, selectedRoleId);
-            }
+        pendingCreateOwnerNameRef.current = ownerNameResolved;
+        const ok = sendWsAction({
+            k: 'lobbies/create',
+            deckId: selectedDeckId,
+            lobbyName: lobbyNameResolved ?? undefined,
+            ownerName: ownerNameResolved,
+            password: password || undefined,
+            roleId: selectedRoleId ?? undefined,
+        });
+        if (!ok) {
+            alert('WebSocketに接続できていません。少し待ってから再試行してください。');
+        }
+    }, [lobbyName, password, playerName, selectedDeckId, selectedRoleId, sendWsAction]);
 
-            rememberLobbyPlayer(lobbyId, ownerPlayerId, ownerNameResolved);
-            refreshLobbies();
-            navigate(`/lobby/${lobbyId}`);
-        } catch (error) {
-            flagNetworkError(error);
-            alert(`ロビー作成に失敗しました: ${(error as Error).message}`);
-        }
-    };
+    const handleJoinLobby = React.useCallback(
+        (lobby: LobbySummary) => {
+            const resolvedName = normalizeName(joinPlayerName || playerName);
+            if (!resolvedName) {
+                alert('参加するプレイヤー名を入力してください。');
+                return;
+            }
+            if (lobby.isPrivate && !joinPassword.trim()) {
+                alert('このロビーはパスワードが必要です。');
+                return;
+            }
+            const pw = lobby.isPrivate ? joinPassword.trim() : undefined;
+            try {
+                sessionStorage.setItem(
+                    `pendingLobbyJoin:${lobby.id}`,
+                    JSON.stringify({ name: resolvedName, password: pw, roleId: selectedRoleId ?? undefined })
+                );
+                if (!lobby.isPrivate) {
+                    setJoinPassword('');
+                }
+                setJoinPlayerName(resolvedName);
+                navigate(`/lobby/${lobby.id}`);
+            } catch (error) {
+                alert(`ロビー参加に失敗しました: ${(error as Error).message}`);
+            }
+        },
+        [joinPassword, joinPlayerName, navigate, playerName, selectedRoleId]
+    );
 
-    const handleJoinLobby = async (lobby: LobbySummary) => {
-        const resolvedName = normalizeName(joinPlayerName || playerName);
-        if (!resolvedName) {
-            alert('参加するプレイヤー名を入力してください。');
-            return;
-        }
-        if (lobby.isPrivate && !joinPassword.trim()) {
-            alert('このロビーはパスワードが必要です。参加用パスワードを入力してください。');
-            return;
-        }
-        const pw = lobby.isPrivate ? joinPassword.trim() : undefined;
-        try {
-            const result = await joinLobby(lobby.id, {
-                name: resolvedName,
-                password: pw,
-                roleId: selectedRoleId ?? undefined,
-            });
-            if (selectedRoleId && result?.player?.id) {
-                await setLobbyRole(lobby.id, result.player.id, selectedRoleId);
-            }
-            if (result?.player?.id) {
-                rememberLobbyPlayer(lobby.id, result.player.id, resolvedName);
-            }
-            if (!lobby.isPrivate) {
-                setJoinPassword('');
-            }
-            setJoinPlayerName(resolvedName);
-            navigate(`/lobby/${lobby.id}`);
-        } catch (error) {
-            flagNetworkError(error);
-            alert(`ロビー参加に失敗しました: ${(error as Error).message}`);
-        }
-    };
-
-    const handleMatchmaking = async () => {
+    const handleMatchmaking = React.useCallback(() => {
         const resolvedQueueName = normalizeName(queueName || playerName);
         if ((queueName || playerName || '').trim() && !resolvedQueueName) {
-            alert('プレイヤー名は8文字以内の英数字/ひらがな/カタカナ/漢字のみです。');
+            alert('プレイヤー名は8文字まで、英数字/ひらがな/カタカナ/漢字のみです。');
             return;
         }
-        try {
-            const { ticketId: newTicket } = await enqueueMatchmaking(resolvedQueueName ?? 'プレイヤー', selectedRoleId ?? undefined, selectedDeckId);
-            setTicketId(newTicket);
-            setQueueStatus('waiting');
-        } catch (error) {
-            flagNetworkError(error);
-            alert(`マッチング登録に失敗しました: ${(error as Error).message}`);
+        const ok = sendWsAction({
+            k: 'matchmaking/enqueue',
+            name: resolvedQueueName ?? 'プレイヤー',
+            roleId: selectedRoleId ?? undefined,
+            deckId: selectedDeckId,
+        });
+        if (!ok) {
+            alert('WebSocketに接続できていません。少し待ってから再試行してください。');
+            return;
         }
-    };
+        setQueueStatus('waiting');
+    }, [playerName, queueName, selectedDeckId, selectedRoleId, sendWsAction]);
 
-    const handleCancelMatchmaking = async () => {
+    const handleCancelMatchmaking = React.useCallback(() => {
         if (!ticketId) return;
-        try {
-            await cancelMatchmaking(ticketId);
-            setTicketId(null);
-            setQueueStatus(null);
-        } catch (error) {
-            flagNetworkError(error);
-            alert(`マッチングキャンセルに失敗しました: ${(error as Error).message}`);
-        }
-    };
+        sendWsAction({ k: 'matchmaking/cancel', ticketId });
+        setTicketId(null);
+        setQueueStatus(null);
+    }, [sendWsAction, ticketId]);
 
-    const sectionStyle = {
+    const sectionStyle: React.CSSProperties = {
         marginTop: 24,
         background: '#fff',
         borderRadius: 16,
@@ -296,7 +400,8 @@ const Lobby: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                     <div>
                         <h1 style={{ fontSize: 32, margin: 0 }}>ホーム</h1>
-                        <p style={{ marginTop: 12, color: '#e2e8f0' }}>ロールとデッキを選び、友だちとロビーまたは自動マッチングで対戦を始めましょう。</p>
+                        <p style={{ marginTop: 12, color: '#e2e8f0' }}>ロールとデッキを選んで、ソロ/ロビー/自動マッチングで遊べます。</p>
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#cbd5f5' }}>WS: {wsConnected ? '接続中' : '未接続（自動再接続）'}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button
@@ -320,20 +425,15 @@ const Lobby: React.FC = () => {
                     </div>
                 </div>
             </section>
-            {apiStatus === 'offline' && (
-                <section style={{ ...sectionStyle, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16 }}>
-                    <h2 style={{ fontSize: 18, color: '#b91c1c', marginBottom: 8 }}>API に接続できません</h2>
-                    <p style={{ color: '#b91c1c', marginBottom: 8 }}>
-                        {apiMessage ?? 'バックエンドサーバーに到達できません。以下を確認してください。'}
-                    </p>
-                    <ul style={{ color: '#991b1b', paddingLeft: 18, marginBottom: 12 }}>
-                        <li>WSL / ターミナルで `npm run dev` または `npm run dev:server` を実行してポート 4000 を起動する</li>
-                        <li>既存の Node プロセスがポートを塞いでいないか確認（`lsof -i :4000`）</li>
-                        <li>再接続しても解消しない場合は `.env` の URL 設定を確認</li>
-                    </ul>
-                    <button onClick={() => { checkApiHealth().catch(() => undefined); }} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #b91c1c', background: '#fff', color: '#b91c1c' }}>
-                        再接続を試す
-                    </button>
+
+            {message && (
+                <section style={{ ...sectionStyle, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <div style={{ color: '#9a3412' }}>{message}</div>
+                        <button onClick={() => setMessage(null)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #fdba74', background: '#fff' }}>
+                            閉じる
+                        </button>
+                    </div>
                 </section>
             )}
 
@@ -353,69 +453,57 @@ const Lobby: React.FC = () => {
                             cursor: selectedRoleId ? 'pointer' : 'not-allowed',
                         }}
                     >
-                        ソロで即マッチ開始
+                        ソロで即マッチ（CPU 1人）
                     </button>
                 </div>
             </section>
 
             <section style={sectionStyle}>
                 <h2 style={{ fontSize: 20, marginBottom: 8 }}>デッキ選択</h2>
-                <select
-                    value={selectedDeckId}
-                    onChange={(e) => setSelectedDeckId(e.target.value)}
-                    style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                <button
+                    onClick={() => setDeckModalOpen(true)}
+                    style={{
+                        width: '100%',
+                        padding: 12,
+                        borderRadius: 12,
+                        border: '1px solid #e2e8f0',
+                        background: '#fff',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                    }}
                 >
-                    {decks.map((deck) => (
-                        <option key={deck.id} value={deck.id}>
-                            {deck.name}（{deck.total}枚）
-                        </option>
-                    ))}
-                </select>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>選択中のデッキ</div>
+                    <div style={{ marginTop: 4, fontWeight: 800 }}>
+                        {selectedDeck ? `${selectedDeck.name}（${selectedDeck.total}枚）` : selectedDeckId}
+                    </div>
+                </button>
+                <DeckSelectModal
+                    open={deckModalOpen}
+                    decks={decks}
+                    selectedDeckId={selectedDeckId}
+                    onClose={() => setDeckModalOpen(false)}
+                    onSelect={(deckId) => {
+                        setSelectedDeckId(deckId);
+                        setDeckModalOpen(false);
+                    }}
+                />
             </section>
 
             <section style={sectionStyle}>
-                <h2 style={{ fontSize: 20, marginBottom: 8 }}>ロビー参加情報</h2>
-                <p style={{ color: '#64748b', marginBottom: 12 }}>既存ロビーへ参加するときに使用するプレイヤー名・パスワード（鍵付きのみ）を設定します。</p>
+                <h2 style={{ fontSize: 20, marginBottom: 8 }}>ロビー参加</h2>
+                <p style={{ color: '#64748b', marginBottom: 12 }}>参加に使う名前/パスワードを入力してから、ロビー一覧の「参加」を押してください。</p>
                 <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                    <input value={joinPlayerName} onChange={(e) => setJoinPlayerName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="参加用プレイヤー名" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
-                    <input value={joinPassword} onChange={(e) => setJoinPassword(e.target.value)} placeholder="参加用パスワード（鍵付きのみ）" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                    <input value={joinPlayerName} onChange={(e) => setJoinPlayerName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="参加プレイヤー名（省略時は下のプレイヤー名）" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
+                    <input value={joinPassword} onChange={(e) => setJoinPassword(e.target.value)} placeholder="参加パスワード（必要なロビーのみ）" style={{ padding: 10, borderRadius: 10, border: '1px solid #e2e8f0' }} />
                 </div>
             </section>
 
             <section style={sectionStyle}>
                 <h2 style={{ fontSize: 20, marginBottom: 8 }}>ロビー作成</h2>
                 <div style={{ display: 'grid', gap: 8 }}>
-                    <input value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="プレイヤー名" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                    <input value={lobbyName} onChange={(e) => setLobbyName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="ロビー名" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <input value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="プレイヤー名（省略可）" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <input value={lobbyName} onChange={(e) => setLobbyName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="ロビー名（省略可）" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
                     <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="パスワード（任意）" style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                    <div style={{ display: 'none', gap: 8, flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#475569', minWidth: 180 }}>
-                            CPU人数（0〜5）
-                            <select
-                                value={cpuCount}
-                                onChange={(e) => setCpuCount(Number(e.target.value))}
-                                style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}
-                            >
-                                {[0, 1, 2, 3, 4, 5].map((n) => (
-                                    <option key={n} value={n}>
-                                        {n}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: '#475569', minWidth: 180 }}>
-                            CPU強さ
-                            <select
-                                value={cpuLevel}
-                                onChange={(e) => setCpuLevel(e.target.value as 'easy' | 'normal' | 'hard')}
-                                style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}
-                            >
-                                <option value="easy">EASY</option>
-                                <option value="normal">NORMAL</option>
-                                <option value="hard">HARD</option>
-                            </select>
-                        </label>
-                    </div>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={handleCreateLobby} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#0f172a', color: '#fff' }}>
@@ -425,12 +513,9 @@ const Lobby: React.FC = () => {
             </section>
 
             <section style={sectionStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: 20 }}>公開ロビー一覧</h2>
-                    <button onClick={refreshLobbies} style={{ border: 'none', background: '#e2e8f0', padding: '6px 12px', borderRadius: 6 }}>更新</button>
-                </div>
+                <h2 style={{ fontSize: 20, marginBottom: 8 }}>ロビー一覧</h2>
                 {lobbies.length === 0 ? (
-                    <p style={{ color: '#64748b' }}>公開ロビーはありません。</p>
+                    <p style={{ color: '#64748b' }}>ロビーはありません。</p>
                 ) : (
                     <table style={{ width: '100%', marginTop: 8, borderCollapse: 'collapse' }}>
                         <thead>
@@ -446,7 +531,7 @@ const Lobby: React.FC = () => {
                                 <tr key={lobby.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     <td>
                                         {lobby.name}
-                                        {lobby.isPrivate ? '（鍵付き）' : ''}
+                                        {lobby.isPrivate ? '（パスワード）' : ''}
                                     </td>
                                     <td>{lobby.playerCount}</td>
                                     <td>{lobby.deckId}</td>
@@ -465,7 +550,7 @@ const Lobby: React.FC = () => {
             <section style={sectionStyle}>
                 <h2 style={{ fontSize: 20 }}>自動マッチング</h2>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                    <input value={queueName} onChange={(e) => setQueueName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="マッチング用プレイヤー名" style={{ flex: 1, minWidth: 200, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <input value={queueName} onChange={(e) => setQueueName(e.target.value)} maxLength={NAME_MAX_LENGTH} placeholder="マッチング用プレイヤー名（省略時はプレイヤー名）" style={{ flex: 1, minWidth: 200, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
                     <button onClick={handleMatchmaking} disabled={Boolean(ticketId)} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: ticketId ? '#94a3b8' : '#16a34a', color: '#fff' }}>
                         {ticketId ? '待機中' : 'マッチングに参加'}
                     </button>
@@ -475,18 +560,13 @@ const Lobby: React.FC = () => {
                         </button>
                     )}
                 </div>
-                {ticketId && (
-                    <p style={{ marginTop: 8 }}>ステータス: {queueStatus ?? 'checking...'} （チケット: {ticketId}）</p>
-                )}
+                {ticketId && <p style={{ marginTop: 8 }}>ステータス: {queueStatus ?? 'checking...'} / チケット: {ticketId}</p>}
             </section>
 
             <section id="patch-notes" style={sectionStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <h2 style={{ fontSize: 20, margin: 0 }}>パッチノート</h2>
-                    <button
-                        onClick={() => setShowPatchNotes((prev) => !prev)}
-                        style={{ border: '1px solid #cbd5f5', background: '#fff', padding: '6px 12px', borderRadius: 10 }}
-                    >
+                    <button onClick={() => setShowPatchNotes((prev) => !prev)} style={{ border: '1px solid #cbd5f5', background: '#fff', padding: '6px 12px', borderRadius: 10 }}>
                         {showPatchNotes ? '閉じる' : '開く'}
                     </button>
                 </div>
@@ -510,7 +590,7 @@ const Lobby: React.FC = () => {
                         {patchNotesForDisplay}
                     </pre>
                 ) : (
-                    <p style={{ marginTop: 8, color: '#64748b' }}>「開く」を押すと、最新版の更新履歴を表示します。</p>
+                    <p style={{ marginTop: 8, color: '#64748b' }}>「開く」を押すと、公開用の変更履歴を表示します。</p>
                 )}
             </section>
         </div>
@@ -518,4 +598,3 @@ const Lobby: React.FC = () => {
 };
 
 export default Lobby;
-

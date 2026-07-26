@@ -1,5 +1,6 @@
 ﻿import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import type { ActionPayload } from '@shared/protocol';
 import type {
     CardDefinition,
     CardEffect,
@@ -10,14 +11,25 @@ import type {
     Player,
     PlayerRuntimeState,
     RoleActionDefinition,
+    TeamColor,
 } from '@shared/types';
-import { drawCards, endTurn, getMatch, playCard, resolvePrompt, rescueBra, roleAction as performRoleAction, roleAttack } from '@client/api/matches';
 import cardsCatalogRaw from '../../../data/cards.json';
 import rolesCatalogRaw from '../../../data/roles.json';
-import { clearRememberedMatchPlayer, getRememberedMatchPlayer, rememberMatchPlayer } from '@client/utils/matchPlayer';
-import { getRoleActions, ROLE_ACTION_BASE_STATS } from '@shared/roleActions';
+import {
+    clearRememberedMatchPlayer,
+    getRememberedMatchPlayer,
+    getRememberedMatchSpectator,
+    rememberMatchPlayer,
+} from '@client/utils/matchPlayer';
+import { rememberLobbyPlayer, rememberLobbySpectator } from '@client/utils/matchPlayer';
+import { getRoleActionsForRoleIds, ROLE_ACTION_BASE_STATS } from '@shared/roleActions';
 import { API_BASE, wsBase } from '@client/config/env';
 import styles from './Match.module.css';
+import matchGameBgUrl from '../assets/match/match-game-bg.png';
+import handCardAttackBgUrl from '../assets/match/hand-card-attack-bg.png';
+import handCardDefenseBgUrl from '../assets/match/hand-card-defense-bg.png';
+import handCardSpellBgUrl from '../assets/match/hand-card-spell-bg.png';
+import handCardEquipBgUrl from '../assets/match/hand-card-equip-bg.png';
 
 type CardsFile = {
     cards: CardDefinition[];
@@ -48,6 +60,9 @@ type StatusEffectChip = {
     value?: number | string;
     color: string;
     tooltip: string;
+    bucket?: 'role' | 'equip' | 'defense' | 'buff' | 'debuff';
+    showLabel?: boolean;
+    sortOrder?: number;
 };
 
 type CardEffectAdjustment = {
@@ -63,6 +78,12 @@ type TargetRule = {
     disallowDefeated?: boolean;
 };
 
+type TargetSelectionContext =
+    | { kind: 'generic' }
+    | { kind: 'card'; cardId?: string }
+    | { kind: 'roleAttack' }
+    | { kind: 'roleAction'; actionId: string };
+
 const CARD_LOOKUP = new Map<string, CardDefinition>(((cardsCatalogRaw as CardsFile).cards ?? []).map((card) => [card.id, card]));
 const ROLE_LOOKUP = new Map<string, RoleEntry>(((rolesCatalogRaw as RolesFile).roles ?? []).map((role) => [role.id, role]));
 
@@ -71,6 +92,13 @@ const statusColors: Record<string, string> = {
     inProgress: '#22c55e',
     finished: '#ef4444',
 };
+
+const TEAM_OPTIONS: Array<{ id: TeamColor; label: string; bg: string; border: string; text: string }> = [
+    { id: 'red', label: '赤', bg: '#fee2e2', border: '#fecaca', text: '#991b1b' },
+    { id: 'blue', label: '青', bg: '#dbeafe', border: '#bfdbfe', text: '#1d4ed8' },
+    { id: 'green', label: '緑', bg: '#dcfce7', border: '#bbf7d0', text: '#166534' },
+    { id: 'yellow', label: '黄', bg: '#fef9c3', border: '#fde68a', text: '#92400e' },
+];
 
 const STAT_OPTIONS: Array<'atk' | 'def' | 'spe' | 'bra'> = ['atk', 'def', 'spe', 'bra'];
 
@@ -83,6 +111,84 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const getCategoryLabel = (category?: string | null): string | undefined =>
     category ? CATEGORY_LABELS[category] ?? category.toUpperCase() : undefined;
+
+const KIND_LABELS: Record<string, string> = {
+    skill: 'スキル',
+    install: '設置',
+};
+
+const CHIP_BUCKET_ORDER: Record<NonNullable<StatusEffectChip['bucket']>, number> = {
+    role: 0,
+    equip: 1,
+    defense: 2,
+    buff: 3,
+    debuff: 4,
+};
+
+const getStatusChipBucket = (chipKey: string): NonNullable<StatusEffectChip['bucket']> => {
+    switch (chipKey) {
+        case 'hayate-wing':
+        case 'charge':
+        case 'surgery-immobilize':
+        case 'surgery-heal':
+        case 'taunt':
+        case 'mine-chance':
+            return 'role';
+        case 'invincible':
+        case 'adrenaline':
+        case 'next-role-atk-bonus':
+        case 'card-bonus':
+        case 'feint':
+            return 'buff';
+        case 'adrenaline-rebound':
+        case 'burn':
+        case 'bleed':
+        case 'timed-bomb':
+        case 'future-sight':
+        case 'shock':
+        case 'waterlogged':
+        case 'cold':
+        case 'gaze':
+        case 'silence-role':
+        case 'anesthesia':
+        case 'pending-debuff':
+        case 'stun':
+        case 'dizzy':
+        case 'suppressed':
+            return 'debuff';
+        default:
+            return 'role';
+    }
+};
+
+const sortChips = (chips: StatusEffectChip[]): StatusEffectChip[] =>
+    [...chips].sort((a, b) => {
+        const aBucket = CHIP_BUCKET_ORDER[a.bucket ?? 'role'] ?? 0;
+        const bBucket = CHIP_BUCKET_ORDER[b.bucket ?? 'role'] ?? 0;
+        if (aBucket !== bBucket) return aBucket - bBucket;
+        const aOrder = a.sortOrder ?? 0;
+        const bOrder = b.sortOrder ?? 0;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return a.label.localeCompare(b.label, 'ja');
+    });
+
+const MATCH_DESIGN_WIDTH = 1920;
+const MATCH_DESIGN_HEIGHT = 1080;
+
+const getKindLabel = (kind?: string | null): string | undefined =>
+    kind ? KIND_LABELS[kind] ?? kind.toUpperCase() : undefined;
+
+const HAND_CARD_BG_BY_CATEGORY: Record<string, string> = {
+    attack: handCardAttackBgUrl,
+    defense: handCardDefenseBgUrl,
+    spell: handCardSpellBgUrl,
+    equip: handCardEquipBgUrl,
+};
+
+type DeckCategoryFilter = 'all' | 'attack' | 'defense' | 'spell' | 'equip';
+type DeckZoneFilter = 'all' | 'deck' | 'hand' | 'discard' | 'install' | 'remaining' | 'empty';
+type DeckSortKey = 'name' | 'remaining' | 'total' | 'cost' | 'category';
+type DeckSortDir = 'asc' | 'desc';
 
 const CURSE_LABELS: Record<string, string> = {
     weakness: '衰弱の呪い',
@@ -178,6 +284,59 @@ const isActionToastLog = (entry: GameLogEntry): entry is ActionToastLog =>
     entry.type === 'playerDefeated' ||
     entry.type === 'statusEffect';
 
+const shouldIncludeTurnLogEntry = (entry: GameLogEntry): boolean => {
+    if (entry.type === 'damageResolved') {
+        if (entry.source === 'status' || entry.source === 'ability') {
+            return false;
+        }
+    }
+    return true;
+};
+
+const buildTurnLogDisplay = (logs: GameLogEntry[], maxEntries = 20, lookback = 120): GameLogEntry[] => {
+    if (!logs.length) return [];
+
+    const recent = logs.slice(Math.max(0, logs.length - lookback)).filter(shouldIncludeTurnLogEntry);
+    const groups: GameLogEntry[][] = [];
+    let currentGroup: GameLogEntry[] = [];
+
+    recent.forEach((entry) => {
+        if (entry.type === 'turnStart') {
+            if (currentGroup.length) {
+                if (currentGroup.length === 1 && currentGroup[0]?.type === 'roundStart') {
+                    currentGroup.push(entry);
+                    return;
+                }
+                groups.push(currentGroup);
+            }
+            currentGroup = [entry];
+            return;
+        }
+        if (entry.type === 'roundStart') {
+            if (currentGroup.length) {
+                groups.push(currentGroup);
+            }
+            currentGroup = [entry];
+            return;
+        }
+        if (!currentGroup.length) {
+            currentGroup = [entry];
+            return;
+        }
+        currentGroup.push(entry);
+    });
+
+    if (currentGroup.length) {
+        groups.push(currentGroup);
+    }
+
+    // ターンログは「発生順」を優先する。
+    // ターン開始/使用/効果詳細のまとまりを崩さないため、ターン内の再ソートは行わない。
+    const flat = groups.flat();
+    if (flat.length <= maxEntries) return flat;
+    return flat.slice(flat.length - maxEntries);
+};
+
 const buildCardEffectAdjustments = (
     card: CardDefinition | null | undefined,
     multiplier: number,
@@ -187,63 +346,118 @@ const buildCardEffectAdjustments = (
         return [];
     }
     const adjustments: CardEffectAdjustment[] = [];
-    const applyValue = (base: number) => base * multiplier + bonus;
-    card.effects?.forEach((effect) => {
+    const applyScaled = (base: number) => base * multiplier + bonus;
+    const applyInt = (base: number) => Math.max(0, Math.floor(base * multiplier + bonus));
+    const pushScaled = (label: string, base: number, prefix = '') => {
+        adjustments.push({ label: `${prefix}${label}`, base, adjusted: applyScaled(base) });
+    };
+    const pushInt = (label: string, base: number, prefix = '') => {
+        adjustments.push({ label: `${prefix}${label}`, base, adjusted: applyInt(base) });
+    };
+
+    const walkEffect = (effect: CardEffect, prefix = '') => {
+        // ロール条件付き（専用シナジー）効果はプレビュー上で個別表示しない。
+        if (effect.condition?.roleId) {
+            return;
+        }
         switch (effect.type) {
+            case 'chooseOne':
+                effect.options.forEach((option) => {
+                    const nextPrefix = `${prefix}${option.label}：`;
+                    option.effects.forEach((nested) => walkEffect(nested, nextPrefix));
+                });
+                return;
             case 'dealDamage':
                 if (typeof effect.value === 'number') {
-                    adjustments.push({ label: 'ダメージ', base: effect.value, adjusted: applyValue(effect.value) });
+                    pushInt('ダメージ', effect.value, prefix);
                 }
-                break;
+                return;
+            case 'coinFlipDealDamage':
+                pushInt('ダメージ', effect.value, prefix);
+                return;
+            case 'coinFlipDealDamageEither':
+                pushInt('ダメージ（対象）', effect.targetValue, prefix);
+                pushInt('ダメージ（自分）', effect.selfValue, prefix);
+                return;
+            case 'dealDamagePerSealedHand':
+                pushScaled('封印ダメ倍率', effect.multiplier, prefix);
+                return;
+            case 'afterRoleAttackDamage':
+                if (typeof effect.value === 'number') {
+                    pushInt('追撃ダメージ', effect.value, prefix);
+                    return;
+                }
+                if (typeof effect.valueMultiplierOfDealt === 'number') {
+                    pushScaled('追撃倍率', effect.valueMultiplierOfDealt, prefix);
+                }
+                return;
+            case 'futureSightRoleAttack':
+                pushInt('未来予知Atk補正', effect.atkBonus, prefix);
+                return;
             case 'addStatToken':
                 if (typeof effect.value === 'number') {
                     const statLabel = STAT_LABELS[effect.stat] ?? effect.stat.toUpperCase();
-                    adjustments.push({
-                        label: `${statLabel}トークン`,
-                        base: effect.value,
-                        adjusted: applyValue(effect.value),
-                    });
+                    pushInt(`${statLabel}トークン`, effect.value, prefix);
                 }
-                break;
+                return;
             case 'applyStatDebuffUntilDamage': {
                 const statLabel = STAT_LABELS[effect.stat] ?? effect.stat.toUpperCase();
-                adjustments.push({
-                    label: `${statLabel}デバフ`,
-                    base: effect.value,
-                    adjusted: applyValue(effect.value),
-                });
-                break;
+                pushInt(`${statLabel}デバフ`, effect.value, prefix);
+                return;
             }
             case 'adjustBra':
-                adjustments.push({ label: 'Bra', base: effect.value, adjusted: applyValue(effect.value) });
-                break;
-            case 'drawCards': {
-                const adjusted = Math.max(0, Math.floor(effect.count * multiplier + bonus));
-                adjustments.push({ label: 'ドロー', base: effect.count, adjusted });
-                break;
-            }
+                pushInt('Bra', effect.value, prefix);
+                return;
+            case 'drawCards':
+                pushInt('ドロー', effect.count, prefix);
+                return;
             case 'applyBurn':
-                adjustments.push({ label: '炎上', base: effect.value, adjusted: applyValue(effect.value) });
-                break;
-            case 'applyStun': {
-                const adjusted = Math.max(0, Math.floor(effect.durationRounds * multiplier + bonus));
-                adjustments.push({
-                    label: 'スタン',
-                    base: effect.durationRounds,
-                    adjusted,
-                });
-                break;
-            }
+                pushInt('炎上', effect.value, prefix);
+                return;
+            case 'applyStun':
+                pushInt('スタン', effect.durationRounds, prefix);
+                return;
+            case 'applyDizzy':
+                pushInt('めまい', effect.value, prefix);
+                return;
+            case 'applyShock':
+                pushInt('感電', effect.value, prefix);
+                return;
             case 'heal':
-                adjustments.push({ label: '回復', base: effect.value, adjusted: applyValue(effect.value) });
-                break;
+                pushInt('回復', effect.value, prefix);
+                return;
             case 'modifyMaxHpInstall':
-                adjustments.push({ label: '最大HP', base: effect.value, adjusted: applyValue(effect.value) });
-                break;
+                pushInt('最大HP', effect.value, prefix);
+                return;
+            case 'gainAtkBoostTurn':
+                pushInt('Atkブースト', effect.value, prefix);
+                return;
+            case 'setNextRoleAttackAtkBonus':
+                pushInt('次攻撃Atk+', effect.value, prefix);
+                return;
+            case 'handStatModifier': {
+                const statLabel = STAT_LABELS[effect.stat] ?? effect.stat.toUpperCase();
+                pushInt(`${statLabel}（手札）`, effect.value, prefix);
+                return;
+            }
+            case 'contactBurnOnRoleAttack':
+                pushInt('接触炎上', effect.value, prefix);
+                return;
+            case 'reduceDamageOnce':
+                pushInt('ダメージ軽減', effect.amount, prefix);
+                return;
+            case 'poltergeist':
+                pushScaled('倍率', effect.multiplier, prefix);
+                return;
+            case 'libraryBurst':
+                pushScaled('倍率', effect.multiplier, prefix);
+                return;
             default:
-                break;
+                return;
         }
-    });
+    };
+
+    card.effects?.forEach((effect) => walkEffect(effect));
     return adjustments;
 };
 
@@ -340,6 +554,21 @@ const buildStatusEffects = (
         });
     }
 
+    if (Array.isArray(roleState.futureSight) && roleState.futureSight.length > 0) {
+        const counts = roleState.futureSight
+            .map((entry) => (typeof entry.count === 'number' ? Math.max(0, Math.floor(entry.count)) : 0))
+            .filter((value) => Number.isFinite(value));
+        const next = counts.length > 0 ? Math.min(...counts) : 0;
+        effects.push({
+            key: 'future-sight',
+            icon: '🔮',
+            label: '未来予知',
+            value: `残り${next}`,
+            color: '#a855f7',
+            tooltip: 'ターン終了ごとにカウントが減り、0で予知攻撃が発動',
+        });
+    }
+
     if ((roleState.shockTokens ?? 0) > 0) {
         const shock = roleState.shockTokens ?? 0;
         effects.push({
@@ -349,6 +578,90 @@ const buildStatusEffects = (
             value: shock,
             color: '#eab308',
             tooltip: `感電${shock}: 5ごとにBraを1失い、その度に感電を消費`,
+        });
+    }
+
+    if ((roleState.waterloggedStacks ?? 0) > 0) {
+        const water = roleState.waterloggedStacks ?? 0;
+        effects.push({
+            key: 'waterlogged',
+            icon: '🌊',
+            label: '水びたし',
+            value: water,
+            color: '#38bdf8',
+            tooltip: `水びたし${water}: Spe-${water} / ターン終了時に水びたし×10%で風邪を付与し、水びたし-1`,
+        });
+    }
+
+    if ((roleState.coldStacks ?? 0) > 0) {
+        const cold = roleState.coldStacks ?? 0;
+        effects.push({
+            key: 'cold',
+            icon: '🤧',
+            label: '風邪',
+            value: cold,
+            color: '#60a5fa',
+            tooltip: `風邪${cold}: ターン終了時に1ダメージ / 20%で自然回復`,
+        });
+    }
+
+    if ((roleState.gazeMarks ?? 0) > 0) {
+        const marks = roleState.gazeMarks ?? 0;
+        effects.push({
+            key: 'gaze',
+            icon: '👁️',
+            label: '凝視',
+            value: marks,
+            color: '#a78bfa',
+            tooltip: `凝視${marks}: ロール攻撃時に追加固定 2^(1+凝視) ダメージ`,
+        });
+    }
+
+    if ((roleState.silenceTurns ?? 0) > 0) {
+        const turns = roleState.silenceTurns ?? 0;
+        effects.push({
+            key: 'silence-role',
+            icon: '🤐',
+            label: '沈黙',
+            value: turns,
+            color: '#94a3b8',
+            tooltip: `沈黙${turns}: 呪文カードを使用できない（ターン終了時に-1）`,
+        });
+    }
+
+    if ((roleState.invincibleStacks ?? 0) > 0) {
+        const stacks = roleState.invincibleStacks ?? 0;
+        effects.push({
+            key: 'invincible',
+            icon: '🛡️',
+            label: '無敵',
+            value: stacks,
+            color: '#22c55e',
+            tooltip: `無敵${stacks}: 被ダメージ時に1消費してダメージを0にできる`,
+        });
+    }
+
+    if ((roleState.mineChancePercent ?? 0) > 0) {
+        const chance = roleState.mineChancePercent ?? 0;
+        effects.push({
+            key: 'mine-chance',
+            icon: '💥',
+            label: '地雷率',
+            value: `${chance}%`,
+            color: '#f59e0b',
+            tooltip: `地雷の発動率: ${chance}%`,
+        });
+    }
+
+    if ((roleState.chargeTokens ?? 0) > 0) {
+        const charge = roleState.chargeTokens ?? 0;
+        effects.push({
+            key: 'charge',
+            icon: '🔋',
+            label: '蓄電',
+            value: charge,
+            color: '#38bdf8',
+            tooltip: `蓄電${charge}: ロール/カード効果で消費されるトークン`,
         });
     }
 
@@ -386,7 +699,7 @@ const buildStatusEffects = (
         const { stat, value } = roleState.pendingStatDebuff;
         effects.push({
             key: 'pending-debuff',
-            icon: 'DEB',
+            icon: '📉',
             label: `弱体: ${stat.toUpperCase()}`,
             value,
             color: '#f87171',
@@ -401,7 +714,7 @@ const buildStatusEffects = (
         const remain = hasStunRound && currentRound ? Math.max(0, stunUntilRound - currentRound + 1) : undefined;
         effects.push({
             key: 'stun',
-            icon: 'STN',
+            icon: '🛑',
             label: 'スタン',
             value: remain,
             color: '#facc15',
@@ -432,13 +745,36 @@ const buildStatusEffects = (
         });
     }
 
+    if (roleState.nextRoleAttackIgnoreDefense) {
+        effects.push({
+            key: 'feint',
+            icon: '👁️‍🗨️',
+            label: 'フェイント',
+            value: '次',
+            color: '#a78bfa',
+            tooltip: '次のロール攻撃は防御カードを無視する',
+        });
+    }
+
+    const nextAtkBonus = roleState.nextRoleAttackAtkBonus ?? 0;
+    if (nextAtkBonus !== 0) {
+        effects.push({
+            key: 'next-role-atk-bonus',
+            icon: '🗡️',
+            label: '次攻撃強化',
+            value: nextAtkBonus > 0 ? `+${Math.floor(nextAtkBonus)}` : `${Math.floor(nextAtkBonus)}`,
+            color: '#34d399',
+            tooltip: `次のロール攻撃のAtk${nextAtkBonus >= 0 ? '+' : ''}${Math.floor(nextAtkBonus)}`,
+        });
+    }
+
 
     const suppressedUntil = roleState.suppressedUntilRound;
     if (typeof suppressedUntil === 'number') {
         const remain = currentRound ? Math.max(0, suppressedUntil - currentRound + 1) : undefined;
         effects.push({
             key: 'suppressed',
-            icon: 'LOCK',
+            icon: '🔒',
             label: '抑制',
             value: remain ? `${remain}R` : undefined,
             color: '#94a3b8',
@@ -450,7 +786,7 @@ const buildStatusEffects = (
     if (cardBonus !== 0) {
         effects.push({
             key: 'card-bonus',
-            icon: 'ITEM+2',
+            icon: '✨',
             label: 'アイテム強化',
             value: `+${cardBonus}`,
             color: '#f97316',
@@ -491,32 +827,57 @@ const Match: React.FC = () => {
     const ACTION_TOAST_DURATION_MS = 1200;
 
     const { id } = useParams();
+    const navigate = useNavigate();
     const [state, setState] = React.useState<GameState | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const [wsConnected, setWsConnected] = React.useState(false);
+    const [reconnectNonce, setReconnectNonce] = React.useState(0);
     const [localPlayerInfo, setLocalPlayerInfo] = React.useState<StoredPlayerInfo>(() => {
         if (typeof window === 'undefined' || !id) return null;
         return getRememberedMatchPlayer(id);
     });
-    const [customCardId, setCustomCardId] = React.useState('');
+    const [isSpectator, setIsSpectator] = React.useState<boolean>(() => {
+        if (typeof window === 'undefined' || !id) return false;
+        return getRememberedMatchSpectator(id);
+    });
     const [tooltip, setTooltip] = React.useState<
         { title: string; text: string; x: number; y: number; adjustments?: CardEffectAdjustment[] } | null
     >(null);
-    const [hoveredPlayerId, setHoveredPlayerId] = React.useState<string | null>(null);
     const [selectedTargetId, setSelectedTargetId] = React.useState<string | null>(null);
     const [selectedStatChoice, setSelectedStatChoice] = React.useState<'atk' | 'def' | 'spe' | 'bra' | ''>('');
     const [roleActionChoices, setRoleActionChoices] = React.useState<Record<string, Record<string, string>>>({});
     const [roleActionBusy, setRoleActionBusy] = React.useState(false);
     const [promptBusy, setPromptBusy] = React.useState(false);
+    const [infoDrawBusy, setInfoDrawBusy] = React.useState(false);
     const [helpOpen, setHelpOpen] = React.useState<'deck' | 'rules' | 'roles' | null>(null);
+    const [deckSearchText, setDeckSearchText] = React.useState('');
+    const [deckCategoryFilter, setDeckCategoryFilter] = React.useState<DeckCategoryFilter>('all');
+    const [deckZoneFilter, setDeckZoneFilter] = React.useState<DeckZoneFilter>('all');
+    const [deckInspectMode, setDeckInspectMode] = React.useState<'remaining' | 'all'>('remaining');
+    const [deckSortKey, setDeckSortKey] = React.useState<DeckSortKey>('name');
+    const [deckSortDir, setDeckSortDir] = React.useState<DeckSortDir>('asc');
     const [jesterSpin, setJesterSpin] = React.useState<{ label: string; result?: string } | null>(null);
     const [lastJesterLogKey, setLastJesterLogKey] = React.useState<string | null>(null);
     const [damagePopup, setDamagePopup] = React.useState<DamageResolvedLog | null>(null);
     const [damagePopupQueue, setDamagePopupQueue] = React.useState<DamageResolvedLog[]>([]);
     const [actionToast, setActionToast] = React.useState<ActionToastLog | null>(null);
     const [actionToastQueue, setActionToastQueue] = React.useState<ActionToastLog[]>([]);
+    const [matchResultOpen, setMatchResultOpen] = React.useState(false);
+    const [roleActionPage, setRoleActionPage] = React.useState(0);
+    const [viewportSize, setViewportSize] = React.useState<{ width: number; height: number }>(() => ({
+        width: typeof window === 'undefined' ? MATCH_DESIGN_WIDTH : window.innerWidth,
+        height: typeof window === 'undefined' ? MATCH_DESIGN_HEIGHT : window.innerHeight,
+    }));
+    const matchResultShownRef = React.useRef<string | null>(null);
     const [selectionModal, setSelectionModal] = React.useState<
-        | { type: 'target'; title: string; rule: TargetRule }
+        | {
+              type: 'target';
+              title: string;
+              rule: TargetRule;
+              context?: TargetSelectionContext;
+              note?: string;
+              forcedTargetId?: string;
+          }
         | { type: 'stat'; title: string; options?: Array<'atk' | 'def' | 'spe' | 'bra'> }
         | { type: 'chooseOne'; title: string; options: Array<{ value: string; label: string }> }
         | null
@@ -532,41 +893,56 @@ const Match: React.FC = () => {
     const jesterSpinStartRef = React.useRef<number | null>(null);
     const jesterSpinClearRef = React.useRef<number | null>(null);
     const wsRef = React.useRef<WebSocket | null>(null);
-    const wsMatchIdRef = React.useRef<string | null>(null);
+    const localPlayerNameRef = React.useRef<string | null>(null);
+    const sendWsAction = React.useCallback((payload: ActionPayload): boolean => {
+        const ws = wsRef.current;
+        if (!ws) return false;
+        if (ws.readyState !== WebSocket.OPEN) return false;
+        try {
+            ws.send(JSON.stringify({ t: 'action', payload }));
+            return true;
+        } catch {
+            return false;
+        }
+    }, []);
+
+    const requestReconnect = React.useCallback(() => {
+        setError(null);
+        setWsConnected(false);
+        try {
+            wsRef.current?.close();
+        } catch {
+            // noop
+        }
+        setReconnectNonce((prev) => prev + 1);
+    }, []);
 
     const localPlayerId = localPlayerInfo?.id ?? null;
     const localPlayerName = localPlayerInfo?.name;
 
-    const refresh = React.useCallback(() => {
-        if (!id) return;
-        getMatch(id)
-            .then(({ state: nextState }) => {
-                setState(nextState);
-                if (localPlayerId && !nextState.players.some((p) => p.id === localPlayerId)) {
-                    if (localPlayerName) {
-                        const fallback = nextState.players.find((p) => p.name === localPlayerName);
-                        if (fallback) {
-                            rememberMatchPlayer(id, fallback.id, fallback.name);
-                            setLocalPlayerInfo({ id: fallback.id, name: fallback.name });
-                            return;
-                        }
-                    }
-                    setLocalPlayerInfo(null);
-                    clearRememberedMatchPlayer(id);
-                }
-            })
-            .catch((e) => setError((e as Error).message));
-    }, [id, localPlayerId, localPlayerName]);
+    React.useEffect(() => {
+        if (typeof window === 'undefined' || !id) {
+            setIsSpectator(false);
+            return;
+        }
+        setIsSpectator(getRememberedMatchSpectator(id));
+    }, [id]);
 
     React.useEffect(() => {
-        refresh();
-    }, [refresh]);
+        if (!id) return;
+        if (!isSpectator) return;
+        if (!localPlayerInfo) return;
+        setLocalPlayerInfo(null);
+        clearRememberedMatchPlayer(id);
+    }, [id, isSpectator, localPlayerInfo]);
+
+    React.useEffect(() => {
+        localPlayerNameRef.current = localPlayerName ?? null;
+    }, [localPlayerName]);
 
     React.useEffect(() => {
         if (!id) return;
         if (typeof window === 'undefined') return;
-        if (wsMatchIdRef.current === id) return;
-        wsMatchIdRef.current = id;
 
         const url = `${wsBase(API_BASE)}/rooms/${encodeURIComponent(id)}/ws`;
         let reconnectTimer: number | null = null;
@@ -574,6 +950,7 @@ const Match: React.FC = () => {
         let lastPongAt = Date.now();
         let backoffMs = 500;
         let closedByClient = false;
+        let startTimer: number | null = null;
 
         const cleanup = () => {
             if (reconnectTimer) window.clearTimeout(reconnectTimer);
@@ -601,9 +978,10 @@ const Match: React.FC = () => {
             const ws = new WebSocket(url);
             wsRef.current = ws;
             closedByClient = false;
+            const isCurrent = () => wsRef.current === ws;
 
             const sendJoin = () => {
-                const name = (localPlayerName ?? 'Player').trim() || 'Player';
+                const name = (localPlayerNameRef.current ?? 'Player').trim() || 'Player';
                 try {
                     ws.send(JSON.stringify({ t: 'join', name }));
                 } catch {
@@ -612,15 +990,18 @@ const Match: React.FC = () => {
             };
 
             const scheduleReconnect = () => {
+                if (!isCurrent()) return;
                 if (closedByClient) return;
                 setWsConnected(false);
                 cleanup();
+                if (reconnectTimer) window.clearTimeout(reconnectTimer);
                 const wait = Math.min(5000, backoffMs);
                 backoffMs = Math.min(5000, Math.floor(backoffMs * 1.6));
                 reconnectTimer = window.setTimeout(() => connect(), wait);
             };
 
             ws.addEventListener('open', () => {
+                if (!isCurrent()) return;
                 setWsConnected(true);
                 backoffMs = 500;
                 lastPongAt = Date.now();
@@ -635,6 +1016,9 @@ const Match: React.FC = () => {
                         }
                         return;
                     }
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        return;
+                    }
                     try {
                         ws.send(JSON.stringify({ t: 'ping' }));
                     } catch {
@@ -644,6 +1028,7 @@ const Match: React.FC = () => {
             });
 
             ws.addEventListener('message', (event) => {
+                if (!isCurrent()) return;
                 let parsed: any = null;
                 try {
                     parsed = JSON.parse(String(event.data));
@@ -659,6 +1044,14 @@ const Match: React.FC = () => {
                     setError(null);
                     return;
                 }
+                if (parsed?.t === 'lobby') {
+                    if (id && localPlayerId && localPlayerName) {
+                        rememberLobbyPlayer(id, localPlayerId, localPlayerName);
+                        rememberLobbySpectator(id, Boolean(isSpectator));
+                    }
+                    navigate(`/lobby/${encodeURIComponent(id)}`);
+                    return;
+                }
                 if (parsed?.t === 'error') {
                     setError(String(parsed.message ?? 'サーバーエラー'));
                 }
@@ -668,22 +1061,37 @@ const Match: React.FC = () => {
             ws.addEventListener('error', () => scheduleReconnect());
         };
 
-        connect();
+        // React StrictMode (dev) で Effect が二重実行されると、接続直後に close され
+        // 「WebSocket is closed before the connection is established」が出やすい。
+        startTimer = window.setTimeout(() => connect(), 0);
 
         return () => {
             closedByClient = true;
+            if (startTimer) window.clearTimeout(startTimer);
             cleanup();
             closeCurrent();
         };
-    }, [id, localPlayerName]);
+    }, [id, navigate, reconnectNonce]);
 
     React.useEffect(() => {
         if (!id) return;
-        if (import.meta.env.MODE === 'production') return;
-        if (wsConnected) return;
-        const timer = window.setInterval(() => refresh(), 2000);
-        return () => window.clearInterval(timer);
-    }, [id, refresh, wsConnected]);
+        if (!state) return;
+        if (isSpectator) return;
+        if (!localPlayerId) return;
+        if (state.players.some((p) => p.id === localPlayerId)) return;
+
+        if (localPlayerName) {
+            const fallback = state.players.find((p) => p.name === localPlayerName);
+            if (fallback) {
+                rememberMatchPlayer(id, fallback.id, fallback.name);
+                setLocalPlayerInfo({ id: fallback.id, name: fallback.name });
+                return;
+            }
+        }
+
+        setLocalPlayerInfo(null);
+        clearRememberedMatchPlayer(id);
+    }, [id, state, isSpectator, localPlayerId, localPlayerName]);
 
     React.useEffect(() => {
         if (!state || state.players.length === 0) return;
@@ -693,6 +1101,25 @@ const Match: React.FC = () => {
         }
         setSelectedTargetId(null);
     }, [state, selectedTargetId]);
+
+    React.useEffect(() => {
+        if (!id || !state) return;
+        if (state.status !== 'finished') return;
+        if (matchResultShownRef.current === id) return;
+
+        matchResultShownRef.current = id;
+        setMatchResultOpen(true);
+    }, [id, state]);
+
+    React.useEffect(() => {
+        if (!id) return;
+        const status = state?.status;
+        if (!status) return;
+        if (status === 'finished') return;
+
+        setMatchResultOpen(false);
+        matchResultShownRef.current = null;
+    }, [id, state?.status]);
 
     if (!id) {
         return <div className={styles.page}>マッチIDが不正です。</div>;
@@ -704,11 +1131,85 @@ const Match: React.FC = () => {
     const runtimeStates = state?.board?.playerStates ?? {};
     const installsByPlayer = React.useMemo(() => (state ? groupInstallsByPlayer(runtimeStates, CARD_LOOKUP) : {}), [state, runtimeStates]);
     const playerName = React.useCallback((pid: string | undefined) => state?.players.find((p) => p.id === pid)?.name ?? '不明なプレイヤー', [state?.players]);
+    const teamMode = Boolean(state?.teamMode);
+
+    const showFloatingTooltip = React.useCallback(
+        (title: string, text: string, event: React.MouseEvent) => {
+            const offsetX = 16;
+            const offsetY = 14;
+            setTooltip({
+                title,
+                text,
+                x: event.clientX + offsetX,
+                y: event.clientY + offsetY,
+            });
+        },
+        [setTooltip]
+    );
+
+    const clearFloatingTooltip = React.useCallback(() => {
+        setTooltip(null);
+    }, [setTooltip]);
+
+    const getTeamDef = React.useCallback(
+        (team?: TeamColor | null) => (team ? TEAM_OPTIONS.find((opt) => opt.id === team) ?? null : null),
+        []
+    );
+    const renderPlayerChip = React.useCallback(
+        (pid: string | undefined) => {
+            const name = playerName(pid);
+            const team = state?.players.find((p) => p.id === pid)?.team;
+            const teamDef = getTeamDef(team);
+            if (!teamMode || !teamDef) {
+                return <>{name}</>;
+            }
+            return (
+                <span
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        background: teamDef.bg,
+                        border: `1px solid ${teamDef.border}`,
+                        color: teamDef.text,
+                        fontWeight: 900,
+                    }}
+                >
+                    {name}
+                </span>
+            );
+        },
+        [getTeamDef, playerName, state?.players, teamMode]
+    );
+    const renderTeamChip = React.useCallback(
+        (team: TeamColor) => {
+            const teamDef = getTeamDef(team);
+            if (!teamDef) return <>{`${team}チーム`}</>;
+            return (
+                <span
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        background: teamDef.bg,
+                        border: `1px solid ${teamDef.border}`,
+                        color: teamDef.text,
+                        fontWeight: 900,
+                    }}
+                >
+                    {teamDef.label}チーム
+                </span>
+            );
+        },
+        [getTeamDef]
+    );
     const isPlayerDefeated = (pid: string) => Boolean(runtimeStates[pid]?.isDefeated);
     const braTokens = state?.braTokens ?? {};
     const roleAttackUsed = state?.roleAttackUsed ?? {};
     const logs: GameLogEntry[] = state?.logs ?? [];
-    const logsToDisplay = [...logs].slice(-20).reverse();
+    const logsToDisplay = React.useMemo(() => buildTurnLogDisplay(logs, 20), [logs]);
     const totalHandCount = React.useMemo(
         () => Object.values(hands).reduce((sum, hand) => sum + hand.length, 0),
         [hands]
@@ -771,16 +1272,82 @@ const Match: React.FC = () => {
             ? localPlayerRuntime.baseStats.bra + localPlayerRuntime.statTokens.bra + localPlayerRuntime.turnBoosts.bra
             : null;
     const rescueBraCost = localPlayerRuntime ? Math.max(1, Math.floor(localPlayerRuntime.maxHp / 4)) : null;
-    const localRoleActions = getRoleActions(localPlayer?.roleId);
+    const showRescueInDrawSlot = localMaxBra !== null && localMaxBra <= 0 && rescueBraCost !== null;
+    const copiedRoleIds = React.useMemo(
+        () => localPlayerRuntime?.roleState?.copiedRoleAbilities?.map((entry) => entry.roleId) ?? [],
+        [localPlayerRuntime?.roleState?.copiedRoleAbilities]
+    );
+    const hasRoleAbility = React.useCallback(
+        (roleId: string) => Boolean(localPlayer?.roleId === roleId || copiedRoleIds.includes(roleId)),
+        [copiedRoleIds, localPlayer?.roleId]
+    );
+    const localRoleActions = getRoleActionsForRoleIds([localPlayer?.roleId, ...copiedRoleIds]);
+    const roleActionsPerPage = 4;
+    const localRoleActionPageCount = Math.max(1, Math.ceil(localRoleActions.length / roleActionsPerPage));
+    const safeRoleActionPage = Math.min(roleActionPage, Math.max(0, localRoleActionPageCount - 1));
+    const visibleLocalRoleActions = localRoleActions.slice(
+        safeRoleActionPage * roleActionsPerPage,
+        safeRoleActionPage * roleActionsPerPage + roleActionsPerPage
+    );
     const cardEffectMultiplier =
-        localPlayerRuntime?.roleState?.cardEffectMultiplier ?? (localPlayer?.roleId === 'efficiency' ? 2 : 1);
+        localPlayerRuntime?.roleState?.cardEffectMultiplier ?? (hasRoleAbility('efficiency') ? 2 : 1);
     const cardEffectBonus = localPlayerRuntime?.roleState?.cardEffectBonus ?? 0;
     const pendingPrompt = state?.pendingPrompt ?? null;
     const pendingCard = pendingPrompt ? CARD_LOOKUP.get(pendingPrompt.cardId) : undefined;
     const pendingEffect = pendingPrompt && pendingCard ? pendingCard.effects?.[pendingPrompt.effectIndex] : undefined;
+    const pendingPromptLabel = pendingPrompt?.promptLabel ?? pendingCard?.name ?? pendingPrompt?.cardId;
     const isPromptTarget = Boolean(pendingPrompt && localPlayer?.id === pendingPrompt.targetId);
-    const isPromptBlocking = Boolean(pendingPrompt);
-    const dischargeExists = Boolean(state?.players.some((p) => p.roleId === 'discharge'));
+    const pendingInfoDraw = state?.pendingInfoDraw ?? null;
+    const pendingInfoDrawPlayer = pendingInfoDraw ? state?.players.find((p) => p.id === pendingInfoDraw.playerId) : undefined;
+    const isInfoDrawTarget = Boolean(pendingInfoDraw && localPlayer?.id === pendingInfoDraw.playerId);
+    const isPromptBlocking = Boolean(pendingPrompt || pendingInfoDraw);
+    const hostPlayerId = state?.players[0]?.id ?? null;
+    const isHost = Boolean(hostPlayerId && localPlayerId && hostPlayerId === localPlayerId);
+    const otherPlayers = React.useMemo(
+        () => (state?.players ?? []).filter((p) => !localPlayer || p.id !== localPlayer.id),
+        [localPlayer, state?.players]
+    );
+    const livingPlayers = React.useMemo(() => {
+        if (!state) return [];
+        return state.players.filter((p) => !runtimeStates[p.id]?.isDefeated);
+    }, [state, runtimeStates]);
+    const winnerText = React.useMemo<React.ReactNode>(() => {
+        if (!state) return '';
+        if (state.winnerTeam) {
+            return (
+                <>
+                    {renderTeamChip(state.winnerTeam)} の勝利！
+                </>
+            );
+        }
+        if (state.winnerId) {
+            return (
+                <>
+                    {renderPlayerChip(state.winnerId)} の勝利！
+                </>
+            );
+        }
+        if (livingPlayers.length === 1) {
+            return (
+                <>
+                    {renderPlayerChip(livingPlayers[0].id)} の勝利！
+                </>
+            );
+        }
+        if (livingPlayers.length === 0) {
+            return '全員脱落（引き分け）';
+        }
+        return (
+            <>
+                決着（生存: {livingPlayers.map((p, idx) => (
+                    <React.Fragment key={p.id}>
+                        {idx > 0 ? ', ' : ''}
+                        {renderPlayerChip(p.id)}
+                    </React.Fragment>
+                ))}）
+            </>
+        );
+    }, [livingPlayers, renderPlayerChip, renderTeamChip, state]);
     const allCards = (cardsCatalogRaw as CardsFile).cards ?? [];
     const jesterSpinItems = React.useMemo(
         () => [
@@ -874,6 +1441,74 @@ const Match: React.FC = () => {
             .sort((a, b) => (a.info?.name ?? a.cardId).localeCompare(b.info?.name ?? b.cardId));
     }, [state]);
 
+    const deckCountsToDisplay = React.useMemo(() => {
+        const query = deckSearchText.trim();
+        const q = query.toLowerCase();
+        const dirFactor = deckSortDir === 'desc' ? -1 : 1;
+
+        const filtered = deckCounts.filter(({ cardId, count, info }) => {
+            if (deckInspectMode === 'remaining' && count.remaining === 0) {
+                return false;
+            }
+            if (deckCategoryFilter !== 'all' && info?.category !== deckCategoryFilter) {
+                return false;
+            }
+            if (deckZoneFilter === 'deck' && count.inDeck === 0) return false;
+            if (deckZoneFilter === 'hand' && count.inHand === 0) return false;
+            if (deckZoneFilter === 'discard' && count.inDiscard === 0) return false;
+            if (deckZoneFilter === 'install' && count.inInstall === 0) return false;
+            if (deckZoneFilter === 'remaining' && count.remaining === 0) return false;
+            if (deckZoneFilter === 'empty' && count.remaining !== 0) return false;
+            if (q.length > 0) {
+                const name = (info?.name ?? cardId).toLowerCase();
+                const text = (info?.text ?? '').toLowerCase();
+                if (!name.includes(q) && !text.includes(q)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        const getCost = (info?: CardDefinition) => (typeof info?.cost === 'number' ? info.cost : 1);
+        const getCategoryKey = (info?: CardDefinition) => getCategoryLabel(info?.category) ?? info?.category ?? '';
+
+        return filtered.slice().sort((a, b) => {
+            switch (deckSortKey) {
+                case 'remaining': {
+                    const diff = (a.count.remaining ?? 0) - (b.count.remaining ?? 0);
+                    if (diff !== 0) return diff * dirFactor;
+                    return (a.info?.name ?? a.cardId).localeCompare(b.info?.name ?? b.cardId) * dirFactor;
+                }
+                case 'total': {
+                    const diff = (a.count.total ?? 0) - (b.count.total ?? 0);
+                    if (diff !== 0) return diff * dirFactor;
+                    return (a.info?.name ?? a.cardId).localeCompare(b.info?.name ?? b.cardId) * dirFactor;
+                }
+                case 'cost': {
+                    const diff = getCost(a.info) - getCost(b.info);
+                    if (diff !== 0) return diff * dirFactor;
+                    return (a.info?.name ?? a.cardId).localeCompare(b.info?.name ?? b.cardId) * dirFactor;
+                }
+                case 'category': {
+                    const diff = getCategoryKey(a.info).localeCompare(getCategoryKey(b.info));
+                    if (diff !== 0) return diff * dirFactor;
+                    return (a.info?.name ?? a.cardId).localeCompare(b.info?.name ?? b.cardId) * dirFactor;
+                }
+                case 'name':
+                default:
+                    return (a.info?.name ?? a.cardId).localeCompare(b.info?.name ?? b.cardId) * dirFactor;
+            }
+        });
+    }, [
+        deckCounts,
+        deckInspectMode,
+        deckSearchText,
+        deckCategoryFilter,
+        deckZoneFilter,
+        deckSortKey,
+        deckSortDir,
+    ]);
+
     const closeDamagePopup = React.useCallback(() => {
         if (damagePopupTimerRef.current) {
             window.clearTimeout(damagePopupTimerRef.current);
@@ -884,7 +1519,16 @@ const Match: React.FC = () => {
 
     React.useEffect(() => {
         setRoleActionChoices({});
-    }, [localPlayer?.roleId]);
+    }, [localPlayer?.roleId, copiedRoleIds.join('|')]);
+
+    React.useEffect(() => {
+        const onResize = () => {
+            setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+        onResize();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
 
     React.useEffect(() => {
         return () => {
@@ -946,16 +1590,13 @@ const Match: React.FC = () => {
         const key = `${latest.timestamp}-${latest.playerId}-${latest.actionId}`;
         if (key === lastJesterLogKey) return;
         setLastJesterLogKey(key);
-        if (latest.playerId === localPlayerId) {
-            return;
-        }
         const resultText = latest.description ?? '道化の効果';
         runJesterSpinWithResult(resultText);
     }, [state?.logs, lastJesterLogKey, localPlayerId, runJesterSpinWithResult]);
 
     React.useEffect(() => {
         if (!state?.logs?.length) return;
-        if (pendingPrompt) return;
+        if (pendingPrompt || pendingInfoDraw) return;
         if (damagePopup) return;
         const makeKey = (entry: DamageResolvedLog) =>
             `${entry.timestamp}-${entry.attackerId ?? 'none'}-${entry.targetId}-${entry.source}-${entry.attempted}-${entry.totalAfterReductions}-${entry.hpDamage}-${entry.tempAbsorbed}`;
@@ -968,11 +1609,11 @@ const Match: React.FC = () => {
         });
         if (fresh.length === 0) return;
         setDamagePopupQueue((prev) => [...prev, ...fresh]);
-    }, [state?.logs, pendingPrompt, damagePopup]);
+    }, [state?.logs, pendingPrompt, pendingInfoDraw, damagePopup]);
 
     React.useEffect(() => {
         if (!state?.logs?.length) return;
-        if (pendingPrompt) return;
+        if (pendingPrompt || pendingInfoDraw) return;
         if (damagePopup) return;
         if (!actionToastInitializedRef.current) {
             const seen = seenActionToastKeysRef.current;
@@ -1025,7 +1666,7 @@ const Match: React.FC = () => {
         });
         if (fresh.length === 0) return;
         setActionToastQueue((prev) => [...prev, ...fresh]);
-    }, [state?.logs, pendingPrompt, damagePopup]);
+    }, [state?.logs, pendingPrompt, pendingInfoDraw, damagePopup]);
 
     React.useEffect(() => {
         if (actionToast) return;
@@ -1089,7 +1730,14 @@ const Match: React.FC = () => {
     const requestSelection = React.useCallback(
         (
             modal:
-                | { type: 'target'; title: string; rule: TargetRule }
+                | {
+                      type: 'target';
+                      title: string;
+                      rule: TargetRule;
+                      context?: TargetSelectionContext;
+                      note?: string;
+                      forcedTargetId?: string;
+                  }
                 | { type: 'stat'; title: string; options?: Array<'atk' | 'def' | 'spe' | 'bra'> }
                 | { type: 'chooseOne'; title: string; options: Array<{ value: string; label: string }> }
         ) => {
@@ -1114,7 +1762,7 @@ const Match: React.FC = () => {
     const attackIsStruggle = currentBraValue <= 0;
     const attackButtonLabel = attackIsStruggle ? '悪あがき' : 'ロール攻撃';
     const roleAttackAlreadyUsed = localPlayerId ? Boolean(roleAttackUsed[localPlayerId]) : true;
-    const isBarrage = localPlayer?.roleId === 'barrage';
+    const isBarrage = hasRoleAbility('barrage');
     const allowRepeatRoleAttack = Boolean(isBarrage && !attackIsStruggle);
     const roleAttackDisabled =
         !localPlayer ||
@@ -1130,7 +1778,7 @@ const Match: React.FC = () => {
         return ids.map((pid) => playerName(pid)).join(', ');
     };
 
-    const formatLogEntry = (entry: GameLogEntry): string => {
+    const formatLogEntry = (entry: GameLogEntry): React.ReactNode => {
         const roundLabel =
             typeof entry.round === 'number' && Number.isFinite(entry.round)
                 ? entry.round
@@ -1138,78 +1786,181 @@ const Match: React.FC = () => {
                   ? state.round
                   : undefined;
         const prefix = roundLabel !== undefined ? `R${roundLabel} ` : '';
+        const renderTargets = (ids?: string[]) => {
+            if (!ids || ids.length === 0) return null;
+            return ids.map((pid, idx) => (
+                <React.Fragment key={`${entry.type}-target-${pid}`}>
+                    {idx > 0 ? ', ' : ''}
+                    {renderPlayerChip(pid)}
+                </React.Fragment>
+            ));
+        };
         switch (entry.type) {
             case 'roundStart':
                 return roundLabel !== undefined ? `ラウンド${roundLabel}開始` : 'ラウンド開始';
             case 'turnStart':
                 if (entry.label) {
-                    return `${prefix}${playerName(entry.playerId)}の${entry.label}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}の{entry.label}
+                        </>
+                    );
                 }
                 if (entry.deferred || entry.kind === 'extended') {
-                    return `${prefix}${playerName(entry.playerId)}の延長ターン開始`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}の延長ターン開始
+                        </>
+                    );
                 }
-                return `${prefix}${playerName(entry.playerId)}のターン開始`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}のターン開始
+                    </>
+                );
             case 'abilityDamage': {
-                const sourceName = entry.sourcePlayerId ? playerName(entry.sourcePlayerId) : null;
+                const source = entry.sourcePlayerId ? renderPlayerChip(entry.sourcePlayerId) : null;
                 if (entry.sourceAbilityId === 'bomb_self_blowback') {
-                    return `${prefix}${sourceName ?? playerName(entry.playerId)}の爆弾反動で${playerName(entry.playerId)}が${entry.amount}ダメージ`;
+                    return (
+                        <>
+                            {prefix}
+                            {source ?? renderPlayerChip(entry.playerId)}の爆弾反動で{renderPlayerChip(entry.playerId)}が{entry.amount}ダメージ
+                        </>
+                    );
                 }
                 if (entry.sourceAbilityId === 'bomb_thorns') {
-                    return `${prefix}${sourceName ?? playerName(entry.playerId)}の爆弾反射で${playerName(entry.playerId)}が${entry.amount}ダメージ`;
+                    return (
+                        <>
+                            {prefix}
+                            {source ?? renderPlayerChip(entry.playerId)}の爆弾反射で{renderPlayerChip(entry.playerId)}が{entry.amount}ダメージ
+                        </>
+                    );
                 }
                 if (entry.sourceAbilityId === 'bomb_timed_bomb') {
-                    return `${prefix}${playerName(entry.playerId)}の時限爆弾が爆発して${entry.amount}ダメージ`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}の時限爆弾が爆発して{entry.amount}ダメージ
+                        </>
+                    );
                 }
-                if (sourceName) {
-                    return `${prefix}${sourceName}の能力で${playerName(entry.playerId)}が${entry.amount}ダメージ`;
+                if (source) {
+                    return (
+                        <>
+                            {prefix}
+                            {source}の能力で{renderPlayerChip(entry.playerId)}が{entry.amount}ダメージ
+                        </>
+                    );
                 }
-                return `${prefix}${playerName(entry.playerId)}が能力で${entry.amount}ダメージ`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}が能力で{entry.amount}ダメージ
+                    </>
+                );
             }
             case 'cardPlay': {
                 const cardInfo = CARD_LOOKUP.get(entry.cardId);
-                const targetText = describeTargets(entry.targets);
                 const cardName = cardInfo?.name ?? entry.cardId;
-                return `${prefix}${playerName(entry.playerId)}が「${cardName}」を${targetText ? `${targetText}に` : ''}使用`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}が「{cardName}」を{entry.targets?.length ? <>{renderTargets(entry.targets)}に</> : ''}使用
+                    </>
+                );
             }
             case 'roleAttack': {
                 const detail = entry.isStruggle ? '（悪あがき）' : '';
-                const base = `${prefix}${playerName(entry.attackerId)}が${playerName(entry.targetId)}にロール攻撃${detail} - ${entry.damage}ダメージ`;
-                return entry.selfInflicted ? `${base} / 自傷 ${entry.selfInflicted}` : base;
+                const selfText = entry.selfInflicted ? `（自傷 ${entry.selfInflicted}）` : '';
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.attackerId)}が{renderPlayerChip(entry.targetId)}にロール攻撃{detail}
+                        {selfText}
+                    </>
+                );
             }
             case 'roleAttackHit': {
-                return `${prefix}${playerName(entry.attackerId)}の連撃 ${entry.hitIndex}/${entry.totalHits} → ${playerName(entry.targetId)} に ${entry.damage}ダメージ`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.attackerId)}の連撃 {entry.hitIndex}/{entry.totalHits} → {renderPlayerChip(entry.targetId)} に {entry.damage}ダメージ
+                    </>
+                );
             }
             case 'playerDefeated':
-                return `${prefix}${playerName(entry.playerId)}が脱落`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}が脱落
+                    </>
+                );
             case 'roleAction': {
                 const desc = entry.description ?? entry.actionId;
-                const target = entry.targetId ? ` → ${playerName(entry.targetId)}` : '';
-                return `${prefix}${playerName(entry.playerId)}が${desc}${target}`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}が{desc}
+                        {entry.targetId ? <> → {renderPlayerChip(entry.targetId)}</> : ''}
+                    </>
+                );
             }
             case 'statusEffect': {
                 const kindText = entry.kind === 'heal' ? '回復' : 'ダメージ';
                 const effectText = entry.effect === 'burn' ? '炎上' : '出血';
-                return `${prefix}${playerName(entry.playerId)}の${effectText}: ${entry.amount}${kindText}`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}の{effectText}: {entry.amount}
+                        {kindText}
+                    </>
+                );
             }
             case 'cardEffect': {
                 const cardName = CARD_LOOKUP.get(entry.cardId)?.name ?? entry.cardId;
-                const targetName = entry.targetId ? playerName(entry.targetId) : playerName(entry.playerId);
+                const target = renderPlayerChip(entry.targetId ?? entry.playerId);
                 if (entry.kind === 'draw') {
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}が${entry.count ?? 0}枚ドロー`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}が{entry.count ?? 0}枚ドロー
+                        </>
+                    );
                 }
                 if (entry.kind === 'heal') {
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}がHP+${entry.amount ?? 0}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}がHP+{entry.amount ?? 0}
+                        </>
+                    );
                 }
                 if (entry.kind === 'adjustBra') {
                     const delta = entry.amount ?? 0;
                     const sign = delta >= 0 ? '+' : '';
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}のBra${sign}${delta}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}のBra{sign}
+                            {delta}
+                        </>
+                    );
                 }
                 if (entry.kind === 'addStatToken') {
                     const statLabel = STAT_LABELS[entry.stat ?? ''] ?? (entry.stat ? entry.stat.toUpperCase() : 'Stat');
                     const delta = entry.amount ?? 0;
                     const sign = delta >= 0 ? '+' : '';
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}の追加${statLabel}${sign}${delta}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}の追加{statLabel}
+                            {sign}
+                            {delta}
+                        </>
+                    );
                 }
                 if (entry.kind === 'applyStatus') {
                     const statusLabel: Record<string, string> = {
@@ -1223,15 +1974,38 @@ const Match: React.FC = () => {
                     const value = entry.amount ?? 0;
                     const sign = value >= 0 ? '+' : '';
                     const suffix = entry.status === 'stun' ? ` (${value}R)` : '';
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}に${label}${sign}${value}${suffix}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}に{label}
+                            {sign}
+                            {value}
+                            {suffix}
+                        </>
+                    );
                 }
                 if (entry.kind === 'sealHand') {
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}の手札を封印 (${entry.count ?? 0}枚)`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}の手札を封印 ({entry.count ?? 0}枚)
+                        </>
+                    );
                 }
                 if (entry.kind === 'discard') {
-                    return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」で${targetName}: ${entry.note ?? `手札を${entry.count ?? 0}枚捨てた`}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.playerId)}がカード「{cardName}」で{target}: {entry.note ?? `手札を${entry.count ?? 0}枚捨てた`}
+                        </>
+                    );
                 }
-                return `${prefix}${playerName(entry.playerId)}がカード「${cardName}」を使用`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}がカード「{cardName}」を使用
+                    </>
+                );
             }
             case 'damageReduced': {
                 const reason =
@@ -1241,21 +2015,46 @@ const Match: React.FC = () => {
                             ? `カード「${CARD_LOOKUP.get(entry.cardId)?.name ?? entry.cardId}」`
                             : '防御カード'
                         : entry.abilityId ?? '能力');
-                return `${prefix}${playerName(entry.playerId)}のダメージを${entry.amount}軽減 (${reason})`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.playerId)}のダメージを{entry.amount}軽減 ({reason})
+                    </>
+                );
             }
             case 'damageResolved': {
                 const label = entry.label ?? 'ダメージ';
                 const reducedText = entry.attempted !== entry.totalAfterReductions ? ` (${entry.attempted}→${entry.totalAfterReductions})` : '';
                 if (entry.prevented) {
                     if (entry.attackerId && entry.attackerId !== entry.targetId) {
-                        return `${prefix}${playerName(entry.attackerId)}→${playerName(entry.targetId)} ${label}: 無効${reducedText}`;
+                        return (
+                            <>
+                                {prefix}
+                                {renderPlayerChip(entry.attackerId)}→{renderPlayerChip(entry.targetId)} {label}: 無効{reducedText}
+                            </>
+                        );
                     }
-                    return `${prefix}${playerName(entry.targetId)} ${label}: 無効${reducedText}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.targetId)} {label}: 無効{reducedText}
+                        </>
+                    );
                 }
                 if (entry.attackerId && entry.attackerId !== entry.targetId) {
-                    return `${prefix}${playerName(entry.attackerId)}→${playerName(entry.targetId)} ${label}: ${entry.totalAfterReductions}ダメージ${reducedText}`;
+                    return (
+                        <>
+                            {prefix}
+                            {renderPlayerChip(entry.attackerId)}→{renderPlayerChip(entry.targetId)} {label}: {entry.totalAfterReductions}ダメージ{reducedText}
+                        </>
+                    );
                 }
-                return `${prefix}${playerName(entry.targetId)} ${label}: ${entry.totalAfterReductions}ダメージ${reducedText}`;
+                return (
+                    <>
+                        {prefix}
+                        {renderPlayerChip(entry.targetId)} {label}: {entry.totalAfterReductions}ダメージ{reducedText}
+                    </>
+                );
             }
             default:
                 return '';
@@ -1266,7 +2065,14 @@ const Match: React.FC = () => {
         if (!targetId) return false;
         if (!state?.players.some((player) => player.id === targetId)) return false;
         if (rule.mode === 'self' && targetId !== localPlayerId) return false;
-        if (rule.mode === 'others' && targetId === localPlayerId) return false;
+        if (rule.mode === 'others') {
+            if (targetId === localPlayerId) return false;
+            if (state?.teamMode) {
+                const actorTeam = state.players.find((player) => player.id === localPlayerId)?.team ?? null;
+                const targetTeam = state.players.find((player) => player.id === targetId)?.team ?? null;
+                if (actorTeam && targetTeam && actorTeam === targetTeam) return false;
+            }
+        }
         if (rule.disallowDefeated && isPlayerDefeated(targetId)) return false;
         return true;
     };
@@ -1276,7 +2082,13 @@ const Match: React.FC = () => {
             if (!state) return [];
             return state.players.filter((player) => {
                 if (rule.mode === 'self' && player.id !== localPlayerId) return false;
-                if (rule.mode === 'others' && player.id === localPlayerId) return false;
+                if (rule.mode === 'others') {
+                    if (player.id === localPlayerId) return false;
+                    if (state.teamMode) {
+                        const actorTeam = state.players.find((p) => p.id === localPlayerId)?.team ?? null;
+                        if (actorTeam && player.team && player.team === actorTeam) return false;
+                    }
+                }
                 if (rule.disallowDefeated && isPlayerDefeated(player.id)) return false;
                 return true;
             });
@@ -1284,14 +2096,42 @@ const Match: React.FC = () => {
         [state, localPlayerId, isPlayerDefeated]
     );
 
-    const requestTargetSelection = async (rule: TargetRule, title: string): Promise<string | null> => {
+    const requestTargetSelection = async (
+        rule: TargetRule,
+        title: string,
+        context: TargetSelectionContext = { kind: 'generic' }
+    ): Promise<string | null> => {
+        const taunterId =
+            state?.players.find((player) => {
+                if (isPlayerDefeated(player.id)) return false;
+                return Boolean(runtimeStates[player.id]?.roleState?.tauntUntilNextTurnStart);
+            })?.id ?? null;
+        const forcedTargetId = taunterId && taunterId !== localPlayerId ? taunterId : null;
+
         const candidates = getTargetCandidates(rule);
+        if (forcedTargetId && !candidates.some((player) => player.id === forcedTargetId)) {
+            alert(`「このゆびとまれ」中のため対象は${playerName(forcedTargetId)}に固定されますが、対象にできません。`);
+            return null;
+        }
         if (candidates.length === 0) {
             alert('対象にできるプレイヤーがいません。');
             return null;
         }
-        const selected = await requestSelection({ type: 'target', title, rule });
+        const note = forcedTargetId
+            ? `「このゆびとまれ」中のため、対象は${playerName(forcedTargetId)}に固定されます。`
+            : undefined;
+        const selected = await requestSelection({
+            type: 'target',
+            title,
+            rule,
+            context,
+            note,
+            forcedTargetId: forcedTargetId ?? undefined,
+        });
         if (!selected) return null;
+        if (forcedTargetId && selected !== forcedTargetId) {
+            return null;
+        }
         setSelectedTargetId(selected);
         return selected;
     };
@@ -1324,6 +2164,10 @@ const Match: React.FC = () => {
 
     const selectionTargets =
         selectionModal?.type === 'target' ? getTargetCandidates(selectionModal.rule) : [];
+    const selectionCopiedFromSet = React.useMemo(() => {
+        const copied = localPlayerRuntime?.roleState?.copiedRoleAbilities ?? [];
+        return new Set(copied.map((entry) => entry.fromPlayerId));
+    }, [localPlayerRuntime?.roleState?.copiedRoleAbilities]);
 
     const handleDraw = async (count = 1) => {
         const playerId = requireLocalPlayer();
@@ -1332,9 +2176,16 @@ const Match: React.FC = () => {
             alert('割り込み確認中のため操作できません。');
             return;
         }
+        const currentBra = braTokens[playerId] ?? 0;
+        if (currentBra <= 0) {
+            alert('Braが不足しています。');
+            return;
+        }
         try {
-            const { state: nextState } = await drawCards(id, playerId, count);
-            setState(nextState);
+            const ok = sendWsAction({ k: 'match/draw', playerId, count });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、ドローできません。');
+            }
         } catch (err) {
             alert('ドローに失敗しました: ' + (err as Error).message);
         }
@@ -1400,7 +2251,7 @@ const Match: React.FC = () => {
                     alert('選択肢が不正です。');
                     return;
                 }
-                if (localPlayer?.roleId === 'strong_greed') {
+                if (hasRoleAbility('strong_greed')) {
                     greedSelections = {};
                     for (const opt of opts) {
                         const optEffects = (opt.effects ?? []).filter((eff) => eff.trigger === chooseOneEffect.trigger);
@@ -1408,7 +2259,8 @@ const Match: React.FC = () => {
                         if (optTargetRule) {
                             const targetId = await requestTargetSelection(
                                 optTargetRule,
-                                `${cardMeta?.name ?? cardId}：${opt.label} の対象を選択`
+                                `${cardMeta?.name ?? cardId}：${opt.label} の対象を選択`,
+                                { kind: 'card', cardId }
                             );
                             if (!targetId) return;
                             greedSelections[opt.value] = { ...(greedSelections[opt.value] ?? {}), targets: [targetId] };
@@ -1446,7 +2298,7 @@ const Match: React.FC = () => {
                 }
             }
 
-            const isGreed = localPlayer?.roleId === 'strong_greed';
+            const isGreed = hasRoleAbility('strong_greed');
             const onPlayEffects = (cardMeta?.effects ?? []).filter((eff) => eff.trigger === 'onPlay');
             const nonChooseOneOnPlayEffects = onPlayEffects.filter((eff) => eff.type !== 'chooseOne');
             const statChoiceEffects = isGreed
@@ -1474,7 +2326,7 @@ const Match: React.FC = () => {
                     : getCardTargetRule(cardMeta);
             const needsTarget = Boolean(targetRule);
             if (needsTarget && targetRule) {
-                const targetId = await requestTargetSelection(targetRule, 'カード対象を選択');
+                const targetId = await requestTargetSelection(targetRule, 'カード対象を選択', { kind: 'card', cardId });
                 if (!targetId) return;
                 params.targets = [targetId];
             }
@@ -1498,11 +2350,54 @@ const Match: React.FC = () => {
                 }
                 choicesPayload = { ...(choicesPayload ?? {}), curseDiscardIndex: discardIdx };
             }
+            if (cardMeta?.id === 'reconstruct') {
+                const currentHand = state?.hands?.[playerId] ?? [];
+                const usedIndex = typeof handIndex === 'number' && Number.isFinite(handIndex) ? Math.floor(handIndex) : -1;
+                const remainingHand = currentHand.filter((_, idx) => idx !== usedIndex);
+                if (remainingHand.length < 2) {
+                    alert('再構築に必要な手札が足りません。');
+                    return;
+                }
+                const buildDiscardOptions = (excludeIndexes: number[]) =>
+                    remainingHand
+                        .map((cid, idx) => ({ cid, idx }))
+                        .filter((entry) => !excludeIndexes.includes(entry.idx))
+                        .map((entry) => ({
+                            value: String(entry.idx),
+                            label: CARD_LOOKUP.get(entry.cid)?.name ?? entry.cid,
+                        }));
+                const firstSelected = await requestChooseOneSelection('再構築: 1枚目に捨てる手札を選択', buildDiscardOptions([]));
+                if (!firstSelected) return;
+                const firstIndex = Number.parseInt(firstSelected, 10);
+                if (!Number.isFinite(firstIndex)) {
+                    alert('再構築の手札指定が不正です。');
+                    return;
+                }
+                const secondSelected = await requestChooseOneSelection('再構築: 2枚目に捨てる手札を選択', buildDiscardOptions([firstIndex]));
+                if (!secondSelected) return;
+                const secondIndex = Number.parseInt(secondSelected, 10);
+                if (!Number.isFinite(secondIndex)) {
+                    alert('再構築の手札指定が不正です。');
+                    return;
+                }
+                choicesPayload = { ...(choicesPayload ?? {}), discardIndexes: [firstIndex, secondIndex] };
+            }
             if (choicesPayload) {
                 params.choices = choicesPayload;
             }
-            const { state: nextState } = await playCard(id, playerId, cardId, params);
-            setState(nextState);
+            if (
+                sendWsAction({
+                    k: 'match/play',
+                    playerId,
+                    cardId,
+                    targets: params.targets,
+                    choices: params.choices,
+                    handIndex: params.handIndex,
+                })
+            ) {
+                return;
+            }
+            throw new Error('WebSocket未接続のため、カードを使用できません。');
         } catch (err) {
             alert('カードをプレイできませんでした: ' + (err as Error).message);
         } finally {
@@ -1519,15 +2414,16 @@ const Match: React.FC = () => {
             return;
         }
         const attackRule: TargetRule = { mode: 'others', disallowDefeated: true };
-        const targetId = await requestTargetSelection(attackRule, '攻撃対象を選択');
+        const targetId = await requestTargetSelection(attackRule, '攻撃対象を選択', { kind: 'roleAttack' });
         if (!targetId) return;
         const struggle = (braTokens[playerId] ?? 0) <= 0;
         try {
-            const { state: nextState } = await roleAttack(id, playerId, targetId, struggle);
-            setState(nextState);
+            const ok = sendWsAction({ k: 'match/roleAttack', playerId, targetId, struggle });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、ロール攻撃できません。');
+            }
         } catch (err) {
             alert('ロール攻撃に失敗しました: ' + (err as Error).message);
-            refresh();
         } finally {
             setSelectedTargetId(null);
         }
@@ -1541,8 +2437,10 @@ const Match: React.FC = () => {
             return;
         }
         try {
-            const { state: nextState } = await endTurn(id, playerId);
-            setState(nextState);
+            const ok = sendWsAction({ k: 'match/endTurn', playerId });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、ターン終了できません。');
+            }
         } catch (err) {
             alert('ターン終了に失敗しました: ' + (err as Error).message);
         }
@@ -1573,12 +2471,25 @@ const Match: React.FC = () => {
         }
 
         try {
-            const { state: nextState } = await rescueBra(id, playerId);
-            setState(nextState);
+            const ok = sendWsAction({ k: 'match/rescueBra', playerId });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、救済を実行できません。');
+            }
         } catch (err) {
             alert('救済に失敗しました: ' + (err as Error).message);
         }
     };
+
+    const handleEndMatchToLobby = React.useCallback(() => {
+        if (!localPlayerId) {
+            alert('操作するプレイヤーが設定されていません。');
+            return;
+        }
+        const ok = sendWsAction({ k: 'match/end', playerId: localPlayerId } satisfies ActionPayload);
+        if (!ok) {
+            alert('WebSocket未接続のため、マッチを終了できません。');
+        }
+    }, [localPlayerId, sendWsAction]);
 
     const updateRoleActionChoice = React.useCallback((actionId: string, key: string, value: string) => {
         setRoleActionChoices((prev) => ({
@@ -1605,7 +2516,10 @@ const Match: React.FC = () => {
                     : action.requiresTarget === 'others'
                     ? { mode: 'others', disallowDefeated: true }
                     : { mode: 'any', disallowDefeated: true };
-            const selected = await requestTargetSelection(rule, '対象プレイヤーを選択');
+            const selected = await requestTargetSelection(rule, '対象プレイヤーを選択', {
+                kind: 'roleAction',
+                actionId: action.id,
+            });
             if (!selected) return;
             targetId = selected;
         }
@@ -1631,45 +2545,24 @@ const Match: React.FC = () => {
                 }
                 injectedChoices = { handIndex };
             }
-            if (action.id === 'jester_random') {
-                clearJesterSpinTimers();
-                let spinIndex = 0;
-                setJesterSpin({ label: jesterSpinItems[0] });
-                jesterSpinStartRef.current = Date.now();
-                jesterSpinIntervalRef.current = window.setInterval(() => {
-                    spinIndex = (spinIndex + 1) % jesterSpinItems.length;
-                    setJesterSpin({ label: jesterSpinItems[spinIndex] });
-                }, 90);
+            if (action.id === 'doctor_reshape') {
+                const reshapeStats: Array<'atk' | 'def' | 'spe'> = ['atk', 'def', 'spe'];
+                const statDown = await requestStatSelection('整形: 下げるステータスを選択', reshapeStats);
+                if (!statDown) return;
+                const statUp = await requestStatSelection(
+                    '整形: 上げるステータスを選択',
+                    reshapeStats.filter((stat) => stat !== statDown)
+                );
+                if (!statUp) return;
+                injectedChoices = { ...(injectedChoices ?? {}), statDown, statUp };
             }
-            const { state: nextState } = await performRoleAction(id, playerId, action.id, {
-                targetId: targetId ?? undefined,
-                choices: injectedChoices ?? roleActionChoices[action.id],
-            });
-            if (action.id === 'jester_random') {
-                const latestRoleAction = [...(nextState.logs ?? [])].reverse().find(isRoleActionLog);
-                const isSelfAction =
-                    latestRoleAction &&
-                    latestRoleAction.playerId === playerId &&
-                    latestRoleAction.actionId === action.id;
-                const resultText = isSelfAction ? latestRoleAction.description ?? '道化の効果' : '道化の効果';
-                if (isSelfAction && latestRoleAction) {
-                    setLastJesterLogKey(`${latestRoleAction.timestamp}-${latestRoleAction.playerId}-${latestRoleAction.actionId}`);
-                }
-                const startedAt = jesterSpinStartRef.current ?? Date.now();
-                const elapsed = Date.now() - startedAt;
-                const remain = Math.max(0, 1000 - elapsed);
-                jesterSpinTimeoutRef.current = window.setTimeout(() => {
-                    if (jesterSpinIntervalRef.current) {
-                        window.clearInterval(jesterSpinIntervalRef.current);
-                        jesterSpinIntervalRef.current = null;
-                    }
-                    setJesterSpin({ label: resultText, result: resultText });
-                    jesterSpinClearRef.current = window.setTimeout(() => {
-                        setJesterSpin(null);
-                    }, 1000);
-                }, remain);
+            // jester_random のスピン演出はログ検知(useEffect)側で統一する
+            // （WS経由でもHTTP経由でも同じ挙動にするため）
+            const choices = injectedChoices ?? roleActionChoices[action.id];
+            const ok = sendWsAction({ k: 'match/roleAction', playerId, actionId: action.id, targetId, choices });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、ロールアクションを実行できません。');
             }
-            setState(nextState);
         } catch (err) {
             alert('ロールアクションの実行に失敗しました: ' + (err as Error).message);
         } finally {
@@ -1690,12 +2583,35 @@ const Match: React.FC = () => {
         }
         try {
             setPromptBusy(true);
-            const { state: nextState } = await resolvePrompt(id, localPlayer.id, accepted);
-            setState(nextState);
+            const ok = sendWsAction({ k: 'match/resolvePrompt', playerId: localPlayer.id, accepted });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、割り込みを処理できません。');
+            }
         } catch (err) {
             alert('割り込みの処理に失敗しました: ' + (err as Error).message);
         } finally {
             setPromptBusy(false);
+        }
+    };
+
+    const handleInfoDrawChoice = async (cardId: string) => {
+        if (!pendingInfoDraw || !localPlayer) {
+            return;
+        }
+        if (!isInfoDrawTarget) {
+            alert('情報のカード選択対象ではありません。');
+            return;
+        }
+        try {
+            setInfoDrawBusy(true);
+            const ok = sendWsAction({ k: 'match/resolveInfoDraw', playerId: localPlayer.id, cardId });
+            if (!ok) {
+                throw new Error('WebSocket未接続のため、情報のカード選択を処理できません。');
+            }
+        } catch (err) {
+            alert('情報のカード選択に失敗しました: ' + (err as Error).message);
+        } finally {
+            setInfoDrawBusy(false);
         }
     };
 
@@ -1716,6 +2632,19 @@ const Match: React.FC = () => {
         if (cost > 0 && currentBraValue < cost) {
             return { disabled: true, reason: 'Braが不足しています' };
         }
+        const localHandCount = (hands[localPlayer.id] ?? []).length;
+        if (action.id === 'tsunami_ultimate') {
+            const requiredDiscardCount = getTargetCandidates({ mode: 'others', disallowDefeated: true }).length;
+            if (localHandCount < requiredDiscardCount) {
+                return {
+                    disabled: true,
+                    reason: `手札が不足しています（必要${requiredDiscardCount}枚）`,
+                };
+            }
+        }
+        if (action.id === 'meteor_ultimate' && localHandCount < 3) {
+            return { disabled: true, reason: '手札が不足しています（必要3枚）' };
+        }
         if (action.requiresTarget) {
             const rule: TargetRule =
                 action.requiresTarget === 'self'
@@ -1733,7 +2662,7 @@ const Match: React.FC = () => {
                 return { disabled: true, reason: '選択中のプレイヤーは手術中です' };
             }
         }
-        if (action.choices?.length) {
+        if (action.choices?.length && action.id !== 'doctor_reshape') {
             const choiceValues = roleActionChoices[action.id] ?? {};
             for (const choice of action.choices) {
                 if (!choiceValues[choice.key]) {
@@ -1762,9 +2691,16 @@ const Match: React.FC = () => {
         if (!action.choices?.length) {
             return null;
         }
+        if (action.id === 'doctor_reshape') {
+            return null;
+        }
         const choiceValues = roleActionChoices[action.id] ?? {};
         return (
-            <div className={styles.choiceRow}>
+            <div
+                className={styles.choiceRow}
+                onClick={(event) => event.stopPropagation()}
+                onMouseDown={(event) => event.stopPropagation()}
+            >
                 {action.choices.map((choice) => {
                     const options = choice.options ?? ROLE_ACTION_BASE_STATS;
                     return (
@@ -1791,31 +2727,40 @@ const Match: React.FC = () => {
 
     const renderPlayerCard = (player: Player) => {
         const controlling = localPlayerId === player.id;
+        const teamDef = teamMode ? getTeamDef(player.team ?? null) : null;
         const roleInfo = player.roleId ? ROLE_LOOKUP.get(player.roleId) : undefined;
         const runtime = runtimeStates[player.id];
         const roleRuntime = runtime?.roleState;
-        const surgeryPhase = roleRuntime?.surgeryPhase;
-        const surgeryText =
-            surgeryPhase === 'immobilize'
-                ? '手術準備中（このターンは行動不可）'
-                : surgeryPhase === 'heal'
-                ? '手術回復待ち（次のターン開始時にHP+15）'
-                : null;
-        const chargeTokens = roleRuntime?.chargeTokens ?? 0;
-        const shockTokens = roleRuntime?.shockTokens ?? 0;
+        const copiedRoles = roleRuntime?.copiedRoleAbilities ?? [];
         const statusEffects = buildStatusEffects(runtime, player.roleId, state?.round, player.id, state?.nextRoundPriority);
         const clampGiantStat = (stat: 'def' | 'spe', value: number): number => {
             if (player.roleId !== 'giant') return value;
             return Math.min(value, 0);
         };
+        const getDisplayedStatValue = (stat: 'atk' | 'def' | 'spe' | 'bra') => {
+            if (!runtime) return null;
+            const raw = runtime.baseStats[stat] + runtime.statTokens[stat] + runtime.turnBoosts[stat];
+            if (stat === 'def' || stat === 'spe') {
+                return clampGiantStat(stat, raw);
+            }
+            return raw;
+        };
+        const getDisplayedBaseStat = (stat: 'atk' | 'def' | 'spe' | 'bra') => {
+            if (!runtime) return null;
+            const raw = runtime.baseStats[stat];
+            if (stat === 'def' || stat === 'spe') {
+                return clampGiantStat(stat, raw);
+            }
+            return raw;
+        };
         const stats = runtime
             ? {
                   hp: `${runtime.hp} / ${runtime.maxHp}`,
                   tempHp: runtime.tempHp,
-                  atk: runtime.baseStats.atk + runtime.statTokens.atk + runtime.turnBoosts.atk,
-                  def: clampGiantStat('def', runtime.baseStats.def + runtime.statTokens.def + runtime.turnBoosts.def),
-                  spe: clampGiantStat('spe', runtime.baseStats.spe + runtime.statTokens.spe + runtime.turnBoosts.spe),
-                  bra: runtime.baseStats.bra + runtime.statTokens.bra + runtime.turnBoosts.bra,
+                  atk: getDisplayedStatValue('atk') ?? 0,
+                  def: getDisplayedStatValue('def') ?? 0,
+                  spe: getDisplayedStatValue('spe') ?? 0,
+                  bra: getDisplayedStatValue('bra') ?? 0,
               }
             : roleInfo?.params
             ? {
@@ -1827,21 +2772,88 @@ const Match: React.FC = () => {
                   bra: roleInfo.params.bra,
               }
             : null;
-        const showDetail = runtime && hoveredPlayerId === player.id;
         const installsForPlayer = installsByPlayer[player.id] ?? [];
+        const installChips: StatusEffectChip[] = installsForPlayer
+            .filter((install) => install.category === 'equip' || install.category === 'defense')
+            .map((install, index) => {
+                const isEquip = install.category === 'equip';
+                const kindLabel = getKindLabel(install.kind) ?? 'スキル';
+                const categoryLabel = getCategoryLabel(install.category) ?? install.category ?? '設置';
+                return {
+                    key: `install-${install.instanceId}`,
+                    icon: isEquip ? '🧰' : '🛡️',
+                    label: install.name,
+                    color: isEquip ? 'rgba(167, 243, 208, 0.92)' : 'rgba(191, 219, 254, 0.92)',
+                    tooltip: `${categoryLabel} ・ ${kindLabel}${install.text ? `\n${install.text}` : ''}`,
+                    bucket: isEquip ? 'equip' : 'defense',
+                    showLabel: true,
+                    sortOrder: index,
+                };
+            });
+        const copiedRoleChips: StatusEffectChip[] = copiedRoles.map((entry, index) => {
+            const copiedName = ROLE_LOOKUP.get(entry.roleId)?.name ?? entry.roleId;
+            const fromName = playerName(entry.fromPlayerId);
+            return {
+                key: `copied-${entry.roleId}-${entry.fromPlayerId}-${index}`,
+                icon: '🪞',
+                label: `［${copiedName}］`,
+                color: 'rgba(199, 210, 254, 0.92)',
+                tooltip: `複製元: ${fromName}`,
+                bucket: 'role',
+                showLabel: true,
+                sortOrder: 50 + index,
+            };
+        });
+        const mergedChips = sortChips([
+            ...statusEffects.map((chip, index) => ({
+                ...chip,
+                bucket: chip.bucket ?? getStatusChipBucket(chip.key),
+                sortOrder: chip.sortOrder ?? index,
+            })),
+            ...copiedRoleChips,
+            ...installChips,
+        ]);
+        const roleName = roleInfo?.name ?? (player.roleId ? `［${player.roleId}］` : 'ロール未設定');
+        const renderStatValue = (stat: 'atk' | 'def' | 'spe' | 'bra', label: string, value: number) => {
+            if (!runtime) {
+                return <span>{label} {value}</span>;
+            }
+            const base = getDisplayedBaseStat(stat) ?? runtime.baseStats[stat];
+            const token = runtime.statTokens[stat] ?? 0;
+            const turnBoost = runtime.turnBoosts[stat] ?? 0;
+            const total = getDisplayedStatValue(stat) ?? value;
+            const toneClass =
+                total > base ? styles.statValueUp : total < base ? styles.statValueDown : '';
+            const tooltipLines = [
+                `基礎: ${base}`,
+                `トークン: ${token >= 0 ? '+' : ''}${token}`,
+                `ターン補正: ${turnBoost >= 0 ? '+' : ''}${turnBoost}`,
+                `合計: ${total}`,
+            ];
+            return (
+                <span
+                    onMouseMove={(event) => showFloatingTooltip(label, tooltipLines.join('\n'), event)}
+                    onMouseLeave={clearFloatingTooltip}
+                >
+                    {label}{' '}
+                    <span className={toneClass}>{total}</span>
+                </span>
+            );
+        };
         return (
             <li
                 key={player.id}
                 className={styles.playerCard}
-                onMouseEnter={() => setHoveredPlayerId(player.id)}
-                onMouseLeave={() => setHoveredPlayerId((prev) => (prev === player.id ? null : prev))}
+                style={teamDef ? { background: teamDef.bg, borderColor: teamDef.border } : undefined}
             >
                 <div className={styles.playerHeader}>
                     <div>
                         <div className={styles.playerName}>{player.name}</div>
-                        <div className={styles.playerRole}>ロール: {roleInfo?.name ?? '未設定'}</div>
                     </div>
-                    {controlling && <span className={styles.controlBadge}>このタブで操作中</span>}
+                    <span className={styles.roleBadge}>
+                        ロール: {roleName}
+                        {runtime?.isDefeated ? ' / 脱落' : ''}
+                    </span>
                 </div>
                 {stats && (
                     <div className={styles.statLine}>
@@ -1849,75 +2861,35 @@ const Match: React.FC = () => {
                             HP {stats.hp}
                             {runtime && runtime.tempHp > 0 && ` (+Temp ${runtime.tempHp})`}
                         </span>
-                        <span>Atk {stats.atk}</span>
-                        <span>Def {stats.def}</span>
-                        <span>Spe {stats.spe}</span>
-                        <span>Bra {stats.bra}</span>
+                        {renderStatValue('atk', 'Atk', stats.atk)}
+                        {renderStatValue('def', 'Def', stats.def)}
+                        {renderStatValue('spe', 'Spe', stats.spe)}
+                        {renderStatValue('bra', 'Bra', stats.bra)}
                     </div>
                 )}
                 <div className={styles.statLine}>
                     <span>Bra トークン: {braTokens[player.id] ?? 0}</span>
                     <span>手札 {hands[player.id]?.length ?? 0}枚</span>
                 </div>
-                {dischargeExists && (chargeTokens > 0 || shockTokens > 0) && (
-                    <div className={styles.statLine}>
-                        {player.roleId === 'discharge' && chargeTokens > 0 && <span>チャージ: {chargeTokens}</span>}
-                        {shockTokens > 0 && <span>感電: {shockTokens}</span>}
-                    </div>
-                )}
-                {runtime?.isDefeated && <div className={styles.defeatedText}>脱落</div>}
-                {surgeryText && <div className={styles.surgeryText}>{surgeryText}</div>}
-                {statusEffects.length > 0 && (
+                {mergedChips.length > 0 && (
                     <div className={styles.effectChips}>
-                        {statusEffects.map((effect) => (
+                        {mergedChips.map((effect) => (
                             <span
                                 key={`${player.id}-${effect.key}`}
-                                title={effect.tooltip}
                                 className={styles.effectChip}
                                 style={{ background: effect.color }}
+                                onMouseMove={(event) => {
+                                    showFloatingTooltip(effect.label, effect.tooltip, event);
+                                }}
+                                onMouseLeave={() => {
+                                    clearFloatingTooltip();
+                                }}
                             >
                                 <span aria-hidden>{effect.icon}</span>
-                                <span>{effect.label}</span>
+                                {effect.showLabel && <span className={styles.effectChipLabel}>{effect.label}</span>}
                                 {effect.value !== undefined && <span>{effect.value}</span>}
                             </span>
                         ))}
-                    </div>
-                )}
-                {roleInfo?.text && <p className={styles.roleText}>{roleInfo.text}</p>}
-                {showDetail && runtime && (
-                    <div className={styles.playerDetail}>
-                        <div className={styles.detailGrid}>
-                            <div>
-                                <div className={styles.detailLabel}>ターン中ボーナス</div>
-                                <div className={styles.detailValue}>
-                                    Atk {runtime.turnBoosts.atk}, Def {runtime.turnBoosts.def}, Spe {runtime.turnBoosts.spe}, Bra {runtime.turnBoosts.bra}
-                                </div>
-                            </div>
-                            <div>
-                                <div className={styles.detailLabel}>トークン</div>
-                                <div className={styles.detailValue}>
-                                    Atk {runtime.statTokens.atk}, Def {runtime.statTokens.def}, Spe {runtime.statTokens.spe}, Bra {runtime.statTokens.bra}
-                                </div>
-                            </div>
-                        </div>
-                        {installsForPlayer.length > 0 && (
-                            <div className={styles.installList}>
-                                <div className={styles.detailLabel}>設置カード</div>
-                                <ul>
-                                    {installsForPlayer.map((install) => (
-                                        <li key={install.instanceId} className={styles.installItem}>
-                                            <div className={styles.installName}>{install.name}</div>
-                                            {install.category && (
-                                                <div className={styles.installMeta}>
-                                                    {getCategoryLabel(install.category)} ・ {install.kind ?? 'skill'}
-                                                </div>
-                                            )}
-                                            {install.text && <p className={styles.installText}>{install.text}</p>}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
                     </div>
                 )}
             </li>
@@ -1927,45 +2899,95 @@ const Match: React.FC = () => {
     const handWrapperStyle: React.CSSProperties = {
         display: 'flex',
         gap: 12,
+        alignItems: 'flex-start',
         overflowX: 'auto',
-        paddingBottom: 6,
+        paddingBottom: 0,
     };
 
-    const cardButtonStyle = (active: boolean): React.CSSProperties => ({
-        position: 'relative',
-        border: '1px solid #cbd5f5',
-        borderRadius: 12,
-        padding: '12px 14px',
-        textAlign: 'left',
-        background: active ? 'linear-gradient(135deg, #1d4ed8, #9333ea)' : '#f1f5f9',
-        color: active ? '#fff' : '#0f172a',
-        cursor: active ? 'pointer' : 'not-allowed',
-        boxShadow: active ? '0 6px 15px rgba(37, 99, 235, 0.35)' : 'none',
-        minHeight: 150,
-        width: 180,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-        justifyContent: 'space-between',
-        flexShrink: 0,
-    });
+    const matchScale = Math.min(
+        1,
+        viewportSize.width / MATCH_DESIGN_WIDTH,
+        viewportSize.height / MATCH_DESIGN_HEIGHT
+    );
+    const scaledCanvasWidth = Math.round(MATCH_DESIGN_WIDTH * matchScale);
+    const scaledCanvasHeight = Math.round(MATCH_DESIGN_HEIGHT * matchScale);
+    const pageScaleStyle: React.CSSProperties = {
+        width: 1480,
+        minWidth: 1480,
+        maxWidth: 1480,
+        height: MATCH_DESIGN_HEIGHT,
+        minHeight: MATCH_DESIGN_HEIGHT,
+        margin: '0 auto',
+        padding: '18px 24px 20px',
+        transform: `scale(${matchScale})`,
+        transformOrigin: 'top left',
+        overflow: 'hidden',
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.70), rgba(255,255,255,0.72)), url(${matchGameBgUrl})`,
+        backgroundSize: '100% 82%',
+        backgroundPosition: 'top center',
+        backgroundRepeat: 'no-repeat',
+    };
+
+    const turnLogPanelStyle: React.CSSProperties = {};
+
+    const cardButtonStyle = (active: boolean, category?: string | null): React.CSSProperties => {
+        const bgUrl = category ? HAND_CARD_BG_BY_CATEGORY[category] : undefined;
+        return {
+            position: 'relative',
+            border: '1px solid #cbd5f5',
+            borderRadius: 12,
+            padding: '10px 12px',
+            textAlign: 'left',
+            background: bgUrl
+                ? `${active ? 'linear-gradient(rgba(255,255,255,0.08), rgba(15,23,42,0.04)),' : 'linear-gradient(rgba(255,255,255,0.30), rgba(255,255,255,0.20)),'} url(${bgUrl}) center / cover no-repeat`
+                : active
+                ? 'linear-gradient(135deg, #1d4ed8, #9333ea)'
+                : '#f1f5f9',
+            backgroundColor: '#f1f5f9',
+            color: '#fff',
+            cursor: active ? 'pointer' : 'not-allowed',
+            boxShadow: active ? '0 6px 15px rgba(15, 23, 42, 0.25)' : 'none',
+            minHeight: 108,
+            width: 180,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            textShadow: '0 2px 8px rgba(15,23,42,0.95), 0 1px 2px rgba(0,0,0,0.9)',
+        };
+    };
 
     return (
-        <div className={styles.page}>
+        <div className={styles.pageViewport}>
+            <div className={styles.pageCanvasSlot} style={{ width: scaledCanvasWidth, height: scaledCanvasHeight }}>
+                <div className={styles.page} style={pageScaleStyle}>
             <header className={styles.header}>
                 <div>
                     <h1 className={styles.title}>Match {id}</h1>
                     <p className={styles.subtitle}>ロビーID: {id}</p>
                 </div>
                 <div className={styles.headerMeta}>
-                    {state && (
-                        <>
-                            <span className={styles.metaBadge}>手番: {currentPlayerName}</span>
-                            <span className={styles.metaBadge}>{deckInfo}</span>
-                            {trickRoomLabel && <span className={styles.metaBadge}>{trickRoomLabel}</span>}
-                        </>
-                    )}
                     <div className={styles.helpButtons}>
+                        <button
+                            type="button"
+                            className={styles.helpButton}
+                            onClick={requestReconnect}
+                            title="WebSocketを再接続します"
+                        >
+                            再接続
+                        </button>
+                        {isHost && state?.status === 'finished' && (
+                            <button
+                                type="button"
+                                className={`${styles.helpButton} ${styles.hostEndButton}`}
+                                onClick={handleEndMatchToLobby}
+                                disabled={!wsConnected || isSpectator}
+                                title="マッチを終了してロビーに戻ります（ホスト）"
+                            >
+                                ロビーに戻る
+                            </button>
+                        )}
                         <button type="button" className={styles.helpButton} onClick={() => setHelpOpen('roles')}>
                             ロール
                         </button>
@@ -2008,9 +3030,11 @@ const Match: React.FC = () => {
                         }}
                     >
                         <h3 style={{ margin: 0 }}>ダメージ確認</h3>
-                        <p style={{ marginTop: 8, fontSize: 14, color: '#475569', lineHeight: 1.5 }}>
-                            {playerName(pendingPrompt.attackerId)} → {playerName(pendingPrompt.targetId)}
-                        </p>
+                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 100%', fontSize: 18, fontWeight: 900, color: '#0f172a' }}>
+                                {renderPlayerChip(pendingPrompt.attackerId)} → {renderPlayerChip(pendingPrompt.targetId)}
+                            </div>
+                        </div>
                         <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
                             <div style={{ padding: 12, borderRadius: 12, background: '#f8fafc' }}>
                                 <div style={{ fontSize: 12, color: '#64748b' }}>与えようとしているダメージ</div>
@@ -2029,8 +3053,8 @@ const Match: React.FC = () => {
                                 </div>
                             </div>
                             <div style={{ padding: 12, borderRadius: 12, background: '#fff7ed', border: '1px solid #fed7aa' }}>
-                                <div style={{ fontSize: 12, color: '#9a3412' }}>防御カード（割り込み）</div>
-                                <div style={{ fontWeight: 800, marginTop: 4 }}>{pendingCard?.name ?? pendingPrompt.cardId}</div>
+                                <div style={{ fontSize: 12, color: '#9a3412' }}>防御効果（割り込み）</div>
+                                <div style={{ fontWeight: 800, marginTop: 4 }}>{pendingPromptLabel}</div>
                                 {pendingCard?.text && (
                                     <p style={{ marginTop: 6, fontSize: 12, color: '#7c2d12', lineHeight: 1.5 }}>
                                         {pendingCard.text}
@@ -2106,6 +3130,80 @@ const Match: React.FC = () => {
                     </div>
                 </div>
             )}
+            {pendingInfoDraw && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 41,
+                        padding: 16,
+                    }}
+                >
+                    <div
+                        style={{
+                            background: '#fff',
+                            borderRadius: 16,
+                            padding: 20,
+                            maxWidth: isInfoDrawTarget ? 640 : 420,
+                            width: '100%',
+                            boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)',
+                        }}
+                    >
+                        <h3 style={{ margin: 0 }}>情報: カード選択</h3>
+                        <div style={{ marginTop: 6, fontSize: 13, color: '#475569', fontWeight: 700 }}>
+                            {pendingInfoDraw.drawIndex}/{pendingInfoDraw.drawTotal}
+                        </div>
+                        {isInfoDrawTarget ? (
+                            <>
+                                <p style={{ marginTop: 12, marginBottom: 10, color: '#334155' }}>
+                                    山札の上から2枚を見て、手札に加えるカードを1枚選んでください。
+                                </p>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                                    {pendingInfoDraw.options.map((cardId, index) => {
+                                        const info = CARD_LOOKUP.get(cardId);
+                                        return (
+                                            <button
+                                                key={`${pendingInfoDraw.id}-${index}-${cardId}`}
+                                                type="button"
+                                                onClick={() => handleInfoDrawChoice(cardId)}
+                                                disabled={infoDrawBusy}
+                                                className={styles.secondaryButton}
+                                                style={{
+                                                    minHeight: 150,
+                                                    padding: 14,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'stretch',
+                                                    textAlign: 'left',
+                                                    gap: 8,
+                                                }}
+                                            >
+                                                <span style={{ fontSize: 18, fontWeight: 900, color: '#0f172a' }}>
+                                                    {info?.name ?? cardId}
+                                                </span>
+                                                <span style={{ fontSize: 12, color: '#64748b' }}>
+                                                    {getCategoryLabel(info?.category)} / {getKindLabel(info?.kind)}
+                                                </span>
+                                                <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                                                    {info?.text ?? '説明がありません。'}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        ) : (
+                            <p style={{ marginTop: 14, color: '#334155', lineHeight: 1.6 }}>
+                                {pendingInfoDrawPlayer?.name ?? '情報'} がカードを選択しています...
+                            </p>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {damagePopup && (
                 <div
@@ -2149,11 +3247,23 @@ const Match: React.FC = () => {
                             }}
                         >
                             <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', textAlign: 'center', lineHeight: 1.2 }}>
-                                {damagePopup.source === 'status'
-                                    ? `${playerName(damagePopup.targetId)}（特殊ダメージ${damagePopup.label ? `: ${damagePopup.label}` : ''}）`
-                                    : damagePopup.attackerId === damagePopup.targetId
-                                      ? `${playerName(damagePopup.targetId)}（自傷${damagePopup.label ? `: ${damagePopup.label}` : ''}）`
-                                      : `${playerName(damagePopup.attackerId)} → ${playerName(damagePopup.targetId)}`}
+                                {damagePopup.source === 'status' ? (
+                                    <>
+                                        {renderPlayerChip(damagePopup.targetId)}
+                                        <span>
+                                            （特殊ダメージ{damagePopup.label ? `: ${damagePopup.label}` : ''}）
+                                        </span>
+                                    </>
+                                ) : damagePopup.attackerId === damagePopup.targetId ? (
+                                    <>
+                                        {renderPlayerChip(damagePopup.targetId)}
+                                        <span>（自傷{damagePopup.label ? `: ${damagePopup.label}` : ''}）</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        {renderPlayerChip(damagePopup.attackerId)} → {renderPlayerChip(damagePopup.targetId)}
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -2246,7 +3356,7 @@ const Match: React.FC = () => {
                 </div>
             )}
 
-            {actionToast && !pendingPrompt && !damagePopup && (
+            {actionToast && !pendingPrompt && !pendingInfoDraw && !damagePopup && (
                 <div
                     style={{
                         position: 'fixed',
@@ -2282,108 +3392,169 @@ const Match: React.FC = () => {
             {state && (
                 <div className={styles.matchGrid}>
                     <div className={styles.mainColumn}>
-                        <section className={`${styles.sectionCard} ${styles.compactSection}`}>
-                            <div className={styles.statusGrid}>
-                                <div className={styles.statusCard}>
-                                    <div className={styles.statusLabel}>現在の手番</div>
-                                    <div className={styles.statusValue}>{currentPlayerName}</div>
-                                </div>
-                                <div className={styles.statusCard}>
-                                    <div className={styles.statusLabel}>山札 / 捨て札</div>
-                                    <div className={styles.statusValue}>{deckPileInfo}</div>
-                                </div>
-                                <button onClick={refresh} className={styles.secondaryButton}>
-                                    手動更新
-                                </button>
-                            </div>
-                            {localPlayer && (
-                                <>
-                                    <div className={styles.controlsRow}>
-                                        <button
-                                            onClick={() => handleDraw(1)}
-                                            disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated || isPromptBlocking}
-                                            className={styles.primaryButton}
-                                        >
-                                            1枚ドロー
-                                        </button>
-                                        <button
-                                            onClick={handleRoleAttack}
-                                            disabled={roleAttackDisabled || isPromptBlocking}
-                                            className={`${styles.primaryButton} ${attackIsStruggle ? styles.dangerButton : ''}`}
-                                        >
-                                            {attackButtonLabel}
-                                        </button>
-                                        {localMaxBra !== null && localMaxBra <= 0 && rescueBraCost !== null && (
-                                            <button
-                                                onClick={handleRescueBra}
-                                                disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated || isPromptBlocking}
-                                                className={`${styles.primaryButton} ${styles.dangerButton}`}
-                                                title="最大Braが0のときのみ実行できます。最大HPの1/4を消費して最大Braを+1します。"
-                                            >
-                                                救済（HP-{rescueBraCost} / 最大Bra+1）
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={handleEndTurn}
-                                            disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated || isPromptBlocking}
-                                            className={styles.secondaryButton}
-                                        >
-                                            ターンを終える
-                                        </button>
-                                    </div>
-                                    {localRoleActions.length > 0 && (
-                                        <div className={styles.roleActionGrid}>
-                                            {localRoleActions.map((action) => {
-                                                const availability = getRoleActionAvailability(action);
-                                                return (
-                                                    <div key={action.id} className={styles.roleActionCard}>
-                                                        <div className={styles.roleActionHeader}>
-                                                            <strong>{action.label}</strong>
-                                                            <span className={styles.roleActionCost}>Bra消費: {action.costBra ?? 0}</span>
-                                                        </div>
-                                                        {action.description && (
-                                                            <p className={styles.roleActionText}>{action.description}</p>
-                                                        )}
-                                                        {action.requiresTarget && (
-                                                            <div className={styles.roleActionMeta}>
-                                                                対象: {selectedTargetId ? playerName(selectedTargetId) : '未選択'}
-                                                            </div>
-                                                        )}
-                                                        {renderRoleActionChoiceControls(action)}
-                                                        <button
-                                                            onClick={() => handleRoleAction(action)}
-                                                            disabled={availability.disabled || isPromptBlocking}
-                                                            className={styles.roleActionButton}
-                                                        >
-                                                            実行
-                                                        </button>
-                                                        {availability.disabled && availability.reason && (
-                                                            <div className={styles.roleActionReason}>{availability.reason}</div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                        <section className={`${styles.sectionCard} ${styles.heroSection}`}>
+                            <div className={styles.heroGrid}>
+                                <div className={styles.heroSelfPanel}>
+                                    {localPlayer ? (
+                                        <ul className={styles.heroPlayerList}>{renderPlayerCard(localPlayer)}</ul>
+                                    ) : (
+                                        <div className={styles.heroFallback}>
+                                            {!wsConnected
+                                                ? 'サーバー接続中…'
+                                                : isSpectator
+                                                ? '観戦中（操作不可）'
+                                                : '操作権なし'}
                                         </div>
                                     )}
-                                </>
-                            )}
-                        </section>
+                                </div>
 
-                        <section className={`${styles.sectionCard} ${styles.playersSection}`}>
-                            <div className={styles.sectionHeader}>
-                                <h2>プレイヤー情報</h2>
-                                {localPlayer ? (
-                                    <span className={styles.sectionBadge}>このタブは {localPlayer.name} を操作中</span>
-                                ) : (
-                                    <span className={styles.sectionBadgeDanger}>このタブには操作権がありません</span>
-                                )}
+                                <div className={styles.heroActionPanel}>
+                                    <div className={styles.statusGrid}>
+                                        <div className={styles.statusCard}>
+                                            <div className={styles.statusLabel}>現在の手番</div>
+                                            <div className={styles.statusValue}>{currentPlayerName}</div>
+                                        </div>
+                                        <div className={styles.statusCard}>
+                                            <div className={styles.statusLabel}>山札 / 捨て札</div>
+                                            <div className={styles.statusValue}>{deckPileInfo}</div>
+                                        </div>
+                                    </div>
+
+                                    {localPlayer && (
+                                        <>
+                                            <div className={styles.controlsRow}>
+                                                <button
+                                                    onClick={() => (showRescueInDrawSlot ? handleRescueBra() : handleDraw(1))}
+                                                    disabled={
+                                                        showRescueInDrawSlot
+                                                            ? !isCurrentPlayer(localPlayer.id) || isLocalDefeated || isPromptBlocking
+                                                            : !isCurrentPlayer(localPlayer.id) ||
+                                                              isLocalDefeated ||
+                                                              isPromptBlocking ||
+                                                              (braTokens[localPlayer.id] ?? 0) <= 0
+                                                    }
+                                                    className={`${styles.primaryButton} ${
+                                                        showRescueInDrawSlot ? styles.dangerButton : ''
+                                                    }`}
+                                                    title={
+                                                        showRescueInDrawSlot
+                                                            ? '最大Braが0のときのみ実行できます。最大HPの1/4を消費して最大Braを+1します。'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    {showRescueInDrawSlot ? `救済（HP-${rescueBraCost} / 最大Bra+1）` : '1枚ドロー'}
+                                                </button>
+                                                <button
+                                                    onClick={handleRoleAttack}
+                                                    disabled={roleAttackDisabled || isPromptBlocking}
+                                                    className={`${styles.primaryButton} ${attackIsStruggle ? styles.dangerButton : ''}`}
+                                                >
+                                                    {attackButtonLabel}
+                                                </button>
+                                                <button
+                                                    onClick={handleEndTurn}
+                                                    disabled={!isCurrentPlayer(localPlayer.id) || isLocalDefeated || isPromptBlocking}
+                                                    className={styles.secondaryButton}
+                                                >
+                                                    ターンを終える
+                                                </button>
+                                            </div>
+
+                                            {localRoleActions.length > 0 && (
+                                                <div className={styles.abilitySection}>
+                                                    {localRoleActionPageCount > 1 && (
+                                                        <div className={styles.abilityHeader}>
+                                                            <div className={styles.abilityPager}>
+                                                                <button
+                                                                    type="button"
+                                                                    className={styles.helpButton}
+                                                                    onClick={() =>
+                                                                        setRoleActionPage((prev) => Math.max(0, prev - 1))
+                                                                    }
+                                                                    disabled={safeRoleActionPage <= 0}
+                                                                >
+                                                                    ←
+                                                                </button>
+                                                                <span className={styles.abilityPageText}>
+                                                                    {safeRoleActionPage + 1} / {localRoleActionPageCount}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    className={styles.helpButton}
+                                                                    onClick={() =>
+                                                                        setRoleActionPage((prev) =>
+                                                                            Math.min(localRoleActionPageCount - 1, prev + 1)
+                                                                        )
+                                                                    }
+                                                                    disabled={safeRoleActionPage >= localRoleActionPageCount - 1}
+                                                                >
+                                                                    →
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className={`${styles.roleActionGrid} ${styles.roleActionGridThreeCols}`}>
+                                                        {visibleLocalRoleActions.map((action) => {
+                                                            const availability = getRoleActionAvailability(action);
+                                                            const actionTooltipText = action.description ?? '';
+                                                            const canShowTooltip = actionTooltipText.trim().length > 0;
+                                                            const isDisabled = availability.disabled || isPromptBlocking;
+                                                            return (
+                                                                <div
+                                                                    key={action.id}
+                                                                    className={`${styles.roleActionCard} ${
+                                                                        isDisabled ? styles.roleActionCardDisabled : ''
+                                                                    }`}
+                                                                    role="button"
+                                                                    tabIndex={isDisabled ? -1 : 0}
+                                                                    aria-disabled={isDisabled}
+                                                                    onClick={() => {
+                                                                        if (isDisabled) return;
+                                                                        handleRoleAction(action);
+                                                                    }}
+                                                                    onKeyDown={(event) => {
+                                                                        if (isDisabled) return;
+                                                                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                                                                        event.preventDefault();
+                                                                        handleRoleAction(action);
+                                                                    }}
+                                                                    onMouseMove={(event) => {
+                                                                        if (!canShowTooltip) return;
+                                                                        showFloatingTooltip(action.label, actionTooltipText, event);
+                                                                    }}
+                                                                    onMouseLeave={() => {
+                                                                        if (!canShowTooltip) return;
+                                                                        clearFloatingTooltip();
+                                                                    }}
+                                                                >
+                                                                    <div className={styles.roleActionHeader}>
+                                                                        <strong className={styles.roleActionName}>{action.label}</strong>
+                                                                        <span className={styles.roleActionCost}>
+                                                                            Bra消費: {action.costBra ?? 0}
+                                                                        </span>
+                                                                    </div>
+                                                                    {renderRoleActionChoiceControls(action)}
+                                                                    {availability.disabled &&
+                                                                        availability.reason &&
+                                                                        availability.reason !== '自分のターンではありません。' && (
+                                                                            <div className={styles.roleActionReason}>
+                                                                                {availability.reason}
+                                                                            </div>
+                                                                        )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                            <ul className={styles.playerList}>{state.players.map((player) => renderPlayerCard(player))}</ul>
                         </section>
 
                         {localPlayer && (
-                            <section className={`${styles.sectionCard} ${styles.handSection}`}>
-                                <h2 className={styles.sectionTitle}>手札</h2>
+                            <section className={`${styles.sectionCard} ${styles.handSection} ${styles.handSectionFixed}`}>
                                 <div style={handWrapperStyle}>
                                     {(hands[localPlayer.id] ?? []).length === 0 && <span className={styles.mutedText}>手札なし</span>}
                                     {(hands[localPlayer.id] ?? []).map((cardId, idx) => {
@@ -2427,12 +3598,16 @@ const Match: React.FC = () => {
                                                     );
                                                     const curseLabel = getCurseLabel(curseId);
                                                     const curseDescription = getCurseDescription(curseId);
-                                                    const bloodPatternText = isBloodPattern ? '🩸 血の紋様\n' : '';
-                                                    const curseHeaderText = curseLabel ? `🪄 ${curseLabel}\n` : '';
-                                                    const curseDescriptionText = curseDescription ? `📝 ${curseDescription}\n\n` : '';
+                                                    const tooltipPrefixLines: string[] = [];
+                                                    if (curseLabel) tooltipPrefixLines.push(`🪄 ${curseLabel}`);
+                                                    if (curseDescription) tooltipPrefixLines.push(`📝 ${curseDescription}`);
+                                                    if (isBloodPattern) tooltipPrefixLines.push('🩸 血の紋様');
+                                                    const costLine = `コスト: ${info?.cost ?? 1}`;
+                                                    const tooltipPrefix =
+                                                        tooltipPrefixLines.length > 0 ? `${tooltipPrefixLines.join('\n')}\n\n` : '';
                                                     setTooltip({
                                                         title: info?.name ?? cardId,
-                                                        text: `${curseHeaderText}${bloodPatternText}${curseDescriptionText}${info?.text ?? '説明がありません。'}`,
+                                                        text: `${tooltipPrefix}${costLine}\n\n${info?.text ?? '説明がありません。'}`,
                                                         x,
                                                         y,
                                                         adjustments,
@@ -2440,12 +3615,23 @@ const Match: React.FC = () => {
                                                 }}
                                                 onMouseLeave={() => setTooltip((prev) => (prev ? null : prev))}
                                             >
-                                                <button onClick={() => handlePlay(cardId, idx)} disabled={!canPlay} style={cardButtonStyle(canPlay)}>
-                                                    <div style={{ fontSize: 12, opacity: 0.8 }}>
-                                                        {getCategoryLabel(info?.category) ?? 'CARD'} ・ {info?.kind ?? 'skill'}
+                                                <button
+                                                    onClick={() => handlePlay(cardId, idx)}
+                                                    disabled={!canPlay}
+                                                    style={cardButtonStyle(canPlay, info?.category)}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            fontWeight: 400,
+                                                            fontSize: 20,
+                                                            textAlign: 'center',
+                                                            lineHeight: 1.1,
+                                                            letterSpacing: '0.02em',
+                                                            fontFamily: '"HighrollDotTitle", "DotGothic16", "MS Gothic", monospace',
+                                                        }}
+                                                    >
+                                                        {info?.name ?? cardId}
                                                     </div>
-                                                    <div style={{ fontWeight: 700, fontSize: 18, marginTop: 4 }}>{info?.name ?? cardId}</div>
-                                                    <div style={{ fontSize: 12, marginTop: 4 }}>コスト {info?.cost ?? 1}</div>
                                                 </button>
                                                 {isSealed && <div className={styles.sealedHandOverlay} aria-hidden="true" />}
                                                 {isCursed && <div className={styles.cursedHandOverlay} aria-hidden="true" />}
@@ -2454,35 +3640,35 @@ const Match: React.FC = () => {
                                         );
                                     })}
                                 </div>
-                                <div className={styles.customCardRow}>
-                                    <input
-                                        value={customCardId}
-                                        onChange={(e) => setCustomCardId(e.target.value)}
-                                        placeholder="カードIDを入力"
-                                        className={styles.textInput}
-                                    />
-                                    <button
-                                        onClick={() => handlePlay(customCardId)}
-                                        disabled={!isCurrentPlayer(localPlayer.id) || !customCardId || isLocalDefeated || isPromptBlocking}
-                                        className={styles.secondaryButton}
-                                    >
-                                        入力カードをプレイ
-                                    </button>
-                                </div>
                             </section>
                         )}
 
-                        {!localPlayer && (
-                            <section className={`${styles.sectionCard} ${styles.viewOnlyBanner}`}>
-                                <p>このブラウザは観戦モードです。ロビー参加時に割り当てられたプレイヤーのみ操作できます。</p>
-                            </section>
-                        )}
+                        <section
+                            className={`${styles.sectionCard} ${styles.playersSection} ${styles.playersStripSection} ${
+                                localPlayer ? styles.playersStripSectionNoHeader : ''
+                            }`}
+                        >
+                            {!localPlayer && (
+                                <div className={styles.sectionHeader}>
+                                    <h2>プレイヤー情報</h2>
+                                    {!wsConnected ? (
+                                        <span className={styles.sectionBadgeDanger}>接続中…（操作不可）</span>
+                                    ) : isSpectator ? (
+                                        <span className={styles.sectionBadgeDanger}>観戦中（操作不可）</span>
+                                    ) : (
+                                        <span className={styles.sectionBadgeDanger}>操作権なし（操作不可）</span>
+                                    )}
+                                </div>
+                            )}
+                            <ul className={styles.playerStrip}>
+                                {(localPlayer ? otherPlayers : state.players).map((player) => renderPlayerCard(player))}
+                            </ul>
+                        </section>
                     </div>
 
                     <aside className={styles.sidebar}>
-                        <section className={styles.sectionCard}>
-                            <h2 className={styles.sectionTitle}>ターンログ</h2>
-                            <div className={styles.logPanel}>
+                        <section className={`${styles.sectionCard} ${styles.logSectionCard}`}>
+                            <div className={styles.logPanel} style={turnLogPanelStyle}>
                                 {logsToDisplay.length === 0 ? (
                                     <p className={styles.mutedText}>まだログはありません。</p>
                                 ) : (
@@ -2504,10 +3690,12 @@ const Match: React.FC = () => {
                     </aside>
                 </div>
             )}
+                </div>
+            </div>
             {tooltip && (
                 <div className={styles.cardTooltipFloating} style={{ top: tooltip.y, left: tooltip.x }}>
                     <strong>{tooltip.title}</strong>
-                    <p style={{ marginTop: 4, lineHeight: 1.4 }}>{tooltip.text}</p>
+                    <p style={{ margin: '4px 0 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>{tooltip.text}</p>
                     {tooltip.adjustments && tooltip.adjustments.length > 0 && (
                         <div className={styles.cardEffectAdjustments}>
                             {tooltip.adjustments.map((adjustment, index) => {
@@ -2541,6 +3729,55 @@ const Match: React.FC = () => {
                     </div>
                 </div>
             )}
+            {matchResultOpen && state?.status === 'finished' && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(15, 23, 42, 0.35)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 34,
+                        padding: 16,
+                    }}
+                    onClick={() => setMatchResultOpen(false)}
+                >
+                    <div
+                        style={{
+                            background: '#fff',
+                            borderRadius: 16,
+                            padding: 18,
+                            maxWidth: 520,
+                            width: '100%',
+                            boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 style={{ margin: 0, fontSize: 20 }}>ゲーム終了</h2>
+                        <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: '#f8fafc' }}>
+                            <div style={{ fontWeight: 900, fontSize: 18, color: '#0f172a' }}>{winnerText}</div>
+                            <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>マッチID: {id}</div>
+                        </div>
+
+                        <div style={{ marginTop: 14, display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={() => setMatchResultOpen(false)} className={styles.secondaryButton}>
+                                閉じる
+                            </button>
+                            {isHost && (
+                                <button
+                                    type="button"
+                                    onClick={handleEndMatchToLobby}
+                                    className={styles.primaryButton}
+                                    disabled={!wsConnected || isSpectator}
+                                >
+                                    マッチを終了してロビーに戻る（ホスト）
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
             {selectionModal && (
                 <div className={styles.modalOverlay} onClick={() => closeSelection(null)}>
                     <div className={styles.modalPanel} onClick={(e) => e.stopPropagation()}>
@@ -2556,16 +3793,71 @@ const Match: React.FC = () => {
                                     <p className={styles.mutedText}>選択できるプレイヤーがいません。</p>
                                 ) : (
                                     <div style={{ display: 'grid', gap: 8 }}>
+                                        {selectionModal.note && (
+                                            <div className={styles.selectionNote}>{selectionModal.note}</div>
+                                        )}
                                         {selectionTargets.map((player) => (
-                                            <button
-                                                key={player.id}
-                                                type="button"
-                                                className={styles.secondaryButton}
-                                                onClick={() => closeSelection(player.id)}
-                                            >
-                                                {player.name}
-                                                {isPlayerDefeated(player.id) ? ' (脱落)' : ''}
-                                            </button>
+                                            (() => {
+                                                const context = selectionModal.context ?? { kind: 'generic' as const };
+                                                const isDuplicateCopy =
+                                                    context.kind === 'roleAction' &&
+                                                    context.actionId === 'duplicate_copy';
+
+                                                const badges: string[] = [];
+                                                let disabledReason: string | null = null;
+                                                const forcedTargetId = selectionModal.forcedTargetId ?? null;
+
+                                                const tauntActive = Boolean(
+                                                    runtimeStates[player.id]?.roleState?.tauntUntilNextTurnStart
+                                                );
+                                                if (tauntActive) {
+                                                    badges.push('対象固定中');
+                                                }
+
+                                                if (!disabledReason && forcedTargetId && player.id !== forcedTargetId) {
+                                                    disabledReason = '対象固定中のため選択できません';
+                                                }
+
+                                                if (isDuplicateCopy) {
+                                                    if (player.roleId === 'duplicate') {
+                                                        badges.push('複製不可');
+                                                        disabledReason = '［複製］の固有能力は複製できません';
+                                                    } else if (selectionCopiedFromSet.has(player.id)) {
+                                                        badges.push('複製済み');
+                                                        disabledReason = '同じプレイヤーから2回目の複製はできません';
+                                                    }
+                                                }
+
+                                                const disabled = Boolean(disabledReason);
+
+                                                return (
+                                                    <button
+                                                        key={player.id}
+                                                        type="button"
+                                                        className={styles.secondaryButton}
+                                                        onClick={() => closeSelection(player.id)}
+                                                        disabled={disabled}
+                                                        title={disabledReason ?? undefined}
+                                                    >
+                                                        <span className={styles.selectionOptionRow}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                                {renderPlayerChip(player.id)}
+                                                                {isPlayerDefeated(player.id) && (
+                                                                    <span style={{ color: '#b91c1c' }}>(脱落)</span>
+                                                                )}
+                                                            </span>
+                                                            <span className={styles.selectionOptionMeta}>
+                                                                {badges.map((badge) => (
+                                                                    <span key={`${player.id}-${badge}`} className={styles.selectionOptionBadge}>
+                                                                        {badge}
+                                                                    </span>
+                                                                ))}
+                                                            </span>
+                                                        </span>
+                                                        {disabledReason && <div className={styles.selectionOptionReason}>{disabledReason}</div>}
+                                                    </button>
+                                                );
+                                            })()
                                         ))}
                                     </div>
                                 )
@@ -2617,9 +3909,94 @@ const Match: React.FC = () => {
                         </div>
                         <div className={styles.modalBody}>
                             {helpOpen === 'deck' ? (
-                                <ul className={styles.cardList}>
-                                    {deckCounts.length === 0 && <li className={styles.cardItem}>デッキ情報がありません。</li>}
-                                    {deckCounts.map(({ cardId, count, info }) => (
+                                <>
+                                    <div className={styles.deckTools}>
+                                        <label className={styles.deckTool}>
+                                            <span className={styles.deckToolLabel}>検索（名前/効果）</span>
+                                            <input
+                                                className={styles.deckSearchInput}
+                                                value={deckSearchText}
+                                                onChange={(e) => setDeckSearchText(e.target.value)}
+                                                placeholder="例: 未来予知 / 炎上 / 防御"
+                                            />
+                                        </label>
+                                        <label className={styles.deckTool}>
+                                            <span className={styles.deckToolLabel}>種別</span>
+                                            <select
+                                                className={styles.select}
+                                                value={deckCategoryFilter}
+                                                onChange={(e) => setDeckCategoryFilter(e.target.value as DeckCategoryFilter)}
+                                            >
+                                                <option value="all">すべて</option>
+                                                <option value="attack">攻撃</option>
+                                                <option value="defense">防御</option>
+                                                <option value="spell">呪文</option>
+                                                <option value="equip">装備</option>
+                                            </select>
+                                        </label>
+                                        <label className={styles.deckTool}>
+                                            <span className={styles.deckToolLabel}>場所</span>
+                                            <select
+                                                className={styles.select}
+                                                value={deckZoneFilter}
+                                                onChange={(e) => setDeckZoneFilter(e.target.value as DeckZoneFilter)}
+                                            >
+                                                <option value="all">すべて</option>
+                                                <option value="deck">山札にある</option>
+                                                <option value="hand">手札にある</option>
+                                                <option value="discard">捨て札にある</option>
+                                                <option value="install">設置にある</option>
+                                                <option value="remaining">残りあり</option>
+                                                <option value="empty">残り0</option>
+                                            </select>
+                                        </label>
+                                        <label className={styles.deckTool}>
+                                            <span className={styles.deckToolLabel}>表示</span>
+                                            <select
+                                                className={styles.select}
+                                                value={deckInspectMode}
+                                                onChange={(e) => setDeckInspectMode(e.target.value as 'remaining' | 'all')}
+                                            >
+                                                <option value="remaining">残りありのみ</option>
+                                                <option value="all">全カード</option>
+                                            </select>
+                                        </label>
+                                        <label className={styles.deckTool}>
+                                            <span className={styles.deckToolLabel}>ソート</span>
+                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                <select
+                                                    className={styles.select}
+                                                    value={deckSortKey}
+                                                    onChange={(e) => setDeckSortKey(e.target.value as DeckSortKey)}
+                                                    style={{ minWidth: 160 }}
+                                                >
+                                                    <option value="name">名前</option>
+                                                    <option value="category">種別</option>
+                                                    <option value="cost">コスト</option>
+                                                    <option value="remaining">残り</option>
+                                                    <option value="total">総数</option>
+                                                </select>
+                                                <select
+                                                    className={styles.select}
+                                                    value={deckSortDir}
+                                                    onChange={(e) => setDeckSortDir(e.target.value as DeckSortDir)}
+                                                    style={{ minWidth: 110 }}
+                                                >
+                                                    <option value="asc">昇順</option>
+                                                    <option value="desc">降順</option>
+                                                </select>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div className={styles.deckSummaryRow}>
+                                        表示: {deckCountsToDisplay.length} 件（全 {deckCounts.length} 種類）
+                                    </div>
+                                    <ul className={styles.cardList}>
+                                        {deckCounts.length === 0 && <li className={styles.cardItem}>デッキ情報がありません。</li>}
+                                        {deckCounts.length > 0 && deckCountsToDisplay.length === 0 && (
+                                            <li className={styles.cardItem}>条件に一致するカードがありません。</li>
+                                        )}
+                                        {deckCountsToDisplay.map(({ cardId, count, info }) => (
                                         <li key={cardId} className={styles.cardItem}>
                                             <div className={styles.cardNameRow}>
                                                 <strong>{info?.name ?? cardId}</strong>
@@ -2637,12 +4014,16 @@ const Match: React.FC = () => {
                                                 {info?.category && (
                                                     <span className={styles.cardMetaChip}>{getCategoryLabel(info.category)}</span>
                                                 )}
-                                                {info?.kind && <span className={styles.cardMetaChip}>{info.kind}</span>}
+                                                {info?.kind && <span className={styles.cardMetaChip}>{getKindLabel(info.kind)}</span>}
+                                                <span className={styles.cardMetaChip}>
+                                                    山札 {count.inDeck} / 手札 {count.inHand} / 捨て札 {count.inDiscard} / 設置 {count.inInstall}
+                                                </span>
                                             </div>
                                             {info?.text && <p>{info.text}</p>}
                                         </li>
                                     ))}
-                                </ul>
+                                    </ul>
+                                </>
                             ) : helpOpen === 'roles' ? (
                                 <div className={styles.ruleBlock}>
                                     <p>現在のマッチに登場しているロールの詳細です。</p>
@@ -2670,25 +4051,93 @@ const Match: React.FC = () => {
                             ) : (
                                 <div className={styles.ruleBlock}>
                                     <p>目的: 相手のHPを0にして勝利します。</p>
-                                    <ul>
-                                        <li>手番: Spe順に進行します。</li>
-                                        <li>Bra: 行動ポイントとして消費します。</li>
-                                        <li>行動: ドロー、カード使用、ロール攻撃、ターン終了。</li>
-                                        <li>カード: 対象指定やステータス選択が必要なものがあります。</li>
-                                        <li>ログ: 右側で直近の行動履歴を確認できます。</li>
-                                    </ul>
-                                    <h3 style={{ marginTop: 12 }}>用語</h3>
-                                    <ul>
-                                        <li>通常ダメージ: Defで軽減されるダメージ（例: ジャブ、ボディプレス、ロール攻撃など）。</li>
-                                        <li>固定ダメージ: Defで軽減されないダメージ（例: ダイナマイトなど）。</li>
-                                        <li>特殊ダメージ: 炎上/出血などのダメージ。基本的に防御カードで防げない（例外あり）。</li>
-                                        <li>火炎: 炎上のスタック。ターン終了時にダメージ（火炎ロールなど一部例外あり）。</li>
-                                        <li>次のうちどれか選ぶ: 効果の候補から1つを選んで発動する形式。</li>
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                     <ul>
+                                         <li>手番: Spe順に進行します。</li>
+                                         <li>Bra: 行動ポイントとして消費します。</li>
+                                         <li>行動: ドロー（Bra-1）、カード使用（基本Bra-1）、ロール攻撃、ターン終了。</li>
+                                         <li>カード: 対象指定やステータス選択が必要なものがあります。</li>
+                                         <li>ログ: 右側で直近の行動履歴を確認できます。</li>
+                                     </ul>
+                                     <h3 style={{ marginTop: 12 }}>用語</h3>
+                                     <ul>
+                                         <li>通常ダメージ: Defで軽減されるダメージ（例: ジャブ、ボディプレス、ロール攻撃など）。</li>
+                                         <li>固定ダメージ: Defで軽減されないダメージ（例: ダイナマイトなど）。</li>
+                                         <li>特殊ダメージ: 炎上/出血などのダメージ。基本的に防御カードで防げない（例外あり）。</li>
+                                         <li>次のうちどれか選ぶ: 効果の候補から1つを選んで発動する形式。</li>
+                                     </ul>
+                                     <h3 style={{ marginTop: 12 }}>状態異常 / バフ / デバフ一覧</h3>
+                                     <p style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>
+                                         画面上のチップの数字は「スタック」または「残りターン/ラウンド」を表します。
+                                     </p>
+                                     <ul>
+                                         <li>
+                                             <strong>炎上（🔥）</strong>: ターン終了時にダメージ（炎上-1）。※［火炎］は回復に変化
+                                         </li>
+                                         <li>
+                                             <strong>出血（🩸）</strong>: 行動時に特殊1ダメージ / ターン終了時に特殊1ダメージ＋出血-1
+                                         </li>
+                                         <li>
+                                             <strong>感電（⚡）</strong>: 5ごとにBra-1し、その度に感電を消費
+                                         </li>
+                                         <li>
+                                             <strong>蓄電（🔋）</strong>: ロール/カード効果で消費されるトークン
+                                         </li>
+                                         <li>
+                                             <strong>スタン（STN）</strong>: Speが0になる
+                                         </li>
+                                         <li>
+                                             <strong>めまい（💫）</strong>: ターン終了時に-1。手札からカードを使うと50%で不発
+                                         </li>
+                                         <li>
+                                             <strong>時限爆弾（💣）</strong>: ターン終了ごとに-1 / 0で固定10ダメージ
+                                         </li>
+                                         <li>
+                                             <strong>麻酔（💉）</strong>: 次のターン Bra-◯
+                                         </li>
+                                         <li>
+                                             <strong>弱体（DEB）</strong>: 次にダメージを受けるまで対象ステータスが変化
+                                         </li>
+                                         <li>
+                                             <strong>手術準備中（🩺）</strong>: 次のターンは行動不可
+                                         </li>
+                                         <li>
+                                             <strong>手術回復待ち（❤️‍🩹）</strong>: 次のターン開始時にHP+15
+                                         </li>
+                                         <li>
+                                             <strong>アドレナリン（💉）</strong>: 一定ターン 追加Spe/Atk 上昇（終了後に反動）
+                                         </li>
+                                         <li>
+                                             <strong>反動（🥶）</strong>: アドレナリンの反動で 追加Spe/Atk 低下
+                                         </li>
+                                         <li>
+                                             <strong>はやてのつばさ（🪽）</strong>: 次のラウンドでSpeを無視して最優先で行動（トリックルーム中は最後）
+                                         </li>
+                                         <li>
+                                             <strong>このゆびとまれ（🧲）</strong>: 次の自分ターン開始まで、他プレイヤーの対象選択が自分に固定（使用者本人は自由に選択可能）
+                                         </li>
+                                         <li>
+                                             <strong>抑制（LOCK）</strong>: 次のラウンド終了まで固有能力なし
+                                         </li>
+                                         <li>
+                                             <strong>アイテム強化（ITEM+）</strong>: 次に使うアイテムの数値が上昇
+                                         </li>
+                                         <li>
+                                             <strong>次攻撃強化（🗡️）</strong>: 次のロール攻撃のAtk+◯（攻撃後に消費）
+                                         </li>
+                                         <li>
+                                             <strong>封印（×）</strong>: 封印された手札は使用できない（封印解除/減少で戻る）
+                                         </li>
+                                         <li>
+                                             <strong>呪い（🪄）</strong>: 呪いの種類に応じて追加効果/デバフ（ツールチップに表示）
+                                         </li>
+                                         <li>
+                                             <strong>血の紋様（🩸）</strong>: 手札の血の紋様の枚数に応じて追加効果（ツールチップに表示）
+                                         </li>
+                                     </ul>
+                                 </div>
+                             )}
+                         </div>
+                     </div>
                 </div>
             )}
         </div>

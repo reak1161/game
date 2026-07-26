@@ -3,23 +3,35 @@ main = "src/worker.ts"
 compatibility_date = "2026-02-03"
 workers_dev = true
 
+# [vars]
+# ALLOWED_ORIGINS = "https://highroll-ui.pages.dev,https://highroll.reak1161.com,https://reak1161.com,https://www.reak1161.com,https://api.reak1161.com"
+
 [[durable_objects.bindings]]
 name = "ROOMS"
 class_name = "RoomDO"
 
-[[kv_namespaces]]
-binding = "KV_CARDS"
-# 初回はダミーでOK。`wrangler kv:namespace create KV_CARDS` の出力IDに差し替える。
-id = "00000000000000000000000000000000"
+[[durable_objects.bindings]]
+name = "LOBBY_INDEX"
+class_name = "LobbyIndexDO"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["RoomDO"]
+new_sqlite_classes = ["RoomDO"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["LobbyIndexDO"]
 
 [env.production]
 name = "highroll-api"
 
-[[env.production.kv_namespaces]]
-binding = "KV_CARDS"
-id = "00000000000000000000000000000000"
+# [env.production.vars]
+# ALLOWED_ORIGINS = "https://highroll-ui.pages.dev,https://highroll.reak1161.com,https://reak1161.com,https://www.reak1161.com"
 
+[[env.production.durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDO"
+
+[[env.production.durable_objects.bindings]]
+name = "LOBBY_INDEX"
+class_name = "LobbyIndexDO"

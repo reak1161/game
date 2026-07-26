@@ -37,6 +37,8 @@ export const createInitialGameState = (matchId: string, initialPlayers: Player[]
     round: 1,
     status: 'waiting',
     winnerId: undefined,
+    winnerTeam: undefined,
+    teamMode: false,
     board: createInitialBoardState(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -51,11 +53,12 @@ export const createInitialGameState = (matchId: string, initialPlayers: Player[]
     turnOrder: [],
     turnOrderMode: undefined,
     turnOrderModeUntilRound: undefined,
-    roundTurnsTaken: 0,
-    deferredTurns: [],
-    deferredTurnActive: false,
-    pendingPrompt: undefined,
-});
+        roundTurnsTaken: 0,
+        deferredTurns: [],
+        deferredTurnActive: false,
+        pendingPrompt: undefined,
+        pendingInfoDraw: undefined,
+    });
 
 export const setPendingPrompt = (state: GameState, pendingPrompt?: GameState['pendingPrompt']): GameState =>
     withTimestamp({
@@ -97,6 +100,51 @@ export const setPlayerRole = (state: GameState, playerId: string, roleId: string
             player.id === playerId ? { ...player, roleId } : player
         ),
     });
+
+export const setPlayerTeam = (state: GameState, playerId: string, team: Player['team']): GameState =>
+    withTimestamp({
+        ...state,
+        players: state.players.map((player) =>
+            player.id === playerId ? { ...player, team } : player
+        ),
+    });
+
+export const clearPlayerRole = (state: GameState, playerId: string): GameState =>
+    withTimestamp({
+        ...state,
+        players: state.players.map((player) =>
+            player.id === playerId ? { ...player, roleId: undefined } : player
+        ),
+    });
+
+export const removePlayerFromState = (state: GameState, playerId: string): GameState => {
+    const players = state.players.filter((player) => player.id !== playerId);
+    const { [playerId]: _hand, ...hands } = state.hands;
+    const { [playerId]: _bra, ...braTokens } = state.braTokens;
+    const { [playerId]: _attackUsed, ...roleAttackUsed } = state.roleAttackUsed;
+    const { [playerId]: _runtime, ...playerStates } = state.board.playerStates;
+    const turnOrder = state.turnOrder.filter((id) => id !== playerId);
+    const deferredTurns = (state.deferredTurns ?? []).filter((entry) => entry.playerId !== playerId);
+
+    const currentPlayerId =
+        state.currentPlayerId && state.currentPlayerId === playerId
+            ? turnOrder[0]
+            : state.currentPlayerId;
+    const currentTurn = Math.min(state.currentTurn ?? 0, Math.max(0, turnOrder.length - 1));
+
+    return withTimestamp({
+        ...state,
+        players,
+        hands,
+        braTokens,
+        roleAttackUsed,
+        board: { ...state.board, playerStates },
+        turnOrder,
+        currentPlayerId,
+        currentTurn,
+        deferredTurns,
+    });
+};
 
 export const setSharedDeck = (state: GameState, deckId: string, cards: string[]): GameState =>
     withTimestamp({
@@ -243,5 +291,23 @@ export const setMatchStatus = (state: GameState, status: GameState['status'], wi
         ...state,
         status,
         winnerId,
+    });
+
+export const setTeamMode = (state: GameState, teamMode: boolean): GameState =>
+    withTimestamp({
+        ...state,
+        teamMode,
+    });
+
+export const setMatchResult = (
+    state: GameState,
+    status: GameState['status'],
+    result: { winnerId?: string; winnerTeam?: GameState['winnerTeam'] } = {}
+): GameState =>
+    withTimestamp({
+        ...state,
+        status,
+        winnerId: result.winnerId,
+        winnerTeam: result.winnerTeam,
     });
 

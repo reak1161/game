@@ -2,6 +2,9 @@
 
 ## 運用メモ
 - すべてのソースファイルは UTF-8 固定。Shift-JIS などを混在させると Vite で `Unexpected character` が発生する。
+- 日本語を含むファイルは PowerShell の `Set-Content` / `Out-File` / `-replace` などで直接書き戻さない。過去に日本語文字列が `????????` へ変換され、元の文字情報が失われたため。
+- 日本語を含む編集は `apply_patch` を優先する。大きい機械編集が必要な場合も、UTF-8 前提の一時スクリプトを `apply_patch` で作成してから実行する。
+- 日本語ファイルを編集した後は、型チェックとは別に `rg "????"` などで文字化けが混入していないか確認する。
 - 公開用のパッチノートは `docs/patch_notes_public.md`（短く要点のみ）。詳細な作業ログはこの `progress.md` に残す。
 - パッチノートの書き方（内部用）は `docs/patch_notes_rules.md` を参照。
 - クライアント / サーバー URL は `src/client/config/api.ts`（`withApiBase`, `SOCKET_URL`）と `.env`（`VITE_API_URL`, `VITE_SERVER_URL`）で切り替え。変更時は Vite を再起動する。
@@ -23,6 +26,175 @@
 
 ---
 
+## 2026-02-07
+### Done
+- デッキ選択UIをポップアップ（プレビュー付き）に統一
+  - `DeckSelectModal.tsx`：デッキ一覧＋内容プレビュー（カードID/枚数/種別）を表示。
+    - カードにカーソルを合わせると、そのカードの効果（テキスト）をツールチップ表示。
+  - ホーム（`Lobby.tsx`）：デッキ選択を `<select>` からモーダルに変更。
+  - ロビー（`LobbyRoom.tsx`）：デッキのプレビューを全員に開放し、ホストはWSでデッキ変更できるようにした。
+  - Workers（`RoomDO`）：`lobby/deck` アクションを追加し、マッチ開始前のみデッキ変更できるようにした（ホスト限定）。
+- マッチ→ロビーに戻ったときの操作権が消える問題を修正
+  - ロビー→マッチ遷移時に `rememberLobbyPlayer` をクリアしない（戻ってきたときに playerId を引き継ぐため）。
+  - マッチ終了でロビーに戻る通知を受けた時、必要なら `rememberLobbyPlayer` / `rememberLobbySpectator` を再保存する。
+- 全体攻撃（複数対象のダメージ）が途中で止まる問題を修正
+  - 割り込み（防御カード等）の確認が発生すると `pendingPrompt` が立ち、以降の対象にダメージが適用されないことがあった。
+  - 複数対象ダメージをキュー化し、割り込み解決後に残り対象へ処理を再開するようにした（`PendingAction: multiTargetDamage`）。
+- フェイント状態を表示 & 悪あがきでも適用に調整
+  - バトル画面の状態チップにフェイント（次のロール攻撃で防御カード無視）を追加。
+  - 悪あがき（Bra=0のロール攻撃）でもフェイント（防御カード無視）が適用されるようにした。
+
+## 2026-02-08
+### Done
+- ロビー解散を追加
+  - ホストがロビーを解散できるようにし、参加者はホームに戻る。
+- ロール選択UIを調整
+  - ロール一覧をスクロール可能にして、一定の高さ内に収まるようにした。
+  - ロール一覧の表示列数を最大4列に制限（画面幅に応じて1〜4列）。
+  - ロール詳細表示パネルの高さを固定し、内容はスクロール表示にした（画面のガクつきを防止）。
+- カード調整
+  - 【身代わりの鎧】の「HP最大時」条件を撤廃し、致死ダメージ時ならいつでも発動するようにした。
+- バトル画面を横長ウィンドウ向けに調整
+  - 画面幅が広い場合に、全体の横幅上限を広げ、プレイヤー情報などが横に伸びるようにした。
+- ターンログの表示順を調整
+  - 「上が古い → 下に最新が追加」される表示に変更（一定件数で古い順に消える）。
+  - 同一アクション内は「行動（〜を使用/攻撃） → 効果詳細」の順番を維持するようにした。
+- 対象選択ポップアップの分かりやすさを改善
+  - 「このゆびとまれ」中は対象が固定される旨を表示（ロール攻撃も含む）。
+  - 他プレイヤーが「このゆびとまれ」中の場合も、候補リストで「対象固定中」と表示。
+  - 対象固定中は、固定対象以外の候補を押せないようにした（使用者本人は自由に選択可能）。
+  - ［複製］で「複製済み」「複製不可」を表示し、選択できない対象を分かりやすくした。
+- 再接続ボタンの表示を調整
+  - 操作エリアから外して、画面上部に小さく表示するようにした。
+- マッチ終了後のホスト導線を改善
+  - 終了ポップアップを閉じても、画面上部に「ロビーに戻る（ホスト）」を表示して戻れるようにした。
+- バトル画面のステータス表示を圧縮
+  - 「現在の手番」「山札/捨て札」カードの余白/文字サイズを調整して縦幅を短くした。
+- 「次のロール攻撃Atk+◯」を状態チップで可視化
+  - ピックアップ等で付与される「次攻撃強化（🗡️）」をチップ表示し、ヘルプの一覧にも追記した。
+- マッチ中のプレイヤー情報を圧縮
+  - 「このタブで操作中」表示は廃止し、操作中プレイヤーを赤枠で強調するようにした。
+  - ロールは各プレイヤー情報の右上に表示し、ロール能力テキスト（説明文）はプレイヤー情報には表示しない。
+- 感電/蓄電トークン表示を整理
+  - 感電/蓄電はプレイヤー情報内のテキスト表示をやめ、状態チップ（⚡/🔋）で統一した（感電の二重表示を解消）。
+- デッキリストを更新
+  - `decklist.default_60.json` / `decklist.expanded_mixed_90.json` をソートし、デッキ名の文字化けを修正（UTF-8）。
+  - 拡張デッキを「全カード最低1枚入り（合計90枚）」に再構成。
+  - 全カード1枚ずつの `data/decklist.last_one_60.json`（60枚）を追加。
+- ［効率］のカード効果プレビュー対応を拡張
+  - 後から追加したカード（「次のうちどれか選ぶ」等）の数値変化も、ツールチップのプレビューに反映されるようにした。
+- ターンログの「ターン開始」と行動の並びを安定化
+  - ログのグルーピングを「ターン開始」基準に変更し、ターン開始 → 行動 → 効果詳細の順番が崩れないようにした。
+- ターンログの重複感を調整
+  - 状態異常/能力由来のダメージは専用ログ（出血/炎上/能力ダメージ）を優先し、汎用の「ダメージ結果」ログは表示しないようにした。
+  - ロール攻撃ログは「使用ログ」に寄せ、ダメージ数は「ダメージ結果」ログ側に寄せた（同じ情報が2回見えないように）。
+- 新ロール［複製］を追加
+  - `roles.json` にロール定義を追加。
+  - `duplicate_copy`（Bra1消費で対象の固有能力を複製）を追加し、複製したアビリティがUI/サーバー両方で使用できるようにした。
+  - 複製は最大3つまで保持し、4つ目以降は古いものから消える。同じプレイヤーから2回目の複製は不可。
+- ［複製］のパッシブ発動範囲を調整
+  - 複製したロールでもパッシブ判定が通るように、サーバー側のロール判定（魔女/反響/巨人など）を `hasRoleAbility()` ベースに統一した。
+  - 複製が上限（3つ）を超えて古い能力が消えるとき、延期などの内部状態が残らないよう掃除処理を追加した。
+- ロール説明（簡易/詳細）を整備
+
+- 新カード/装備を追加
+  - `data/cards.json` に以下を追加：背面刺し / 未来予知 / 速度は力 / 長考 / 注射器 / 万能薬 / ウインドブレイド / ただの剣
+  - サーバー側（`src/server/game/engine.ts`）で以下を実装：
+    - 通常ダメージで「Defを一部無視（-2）」できるように（背面刺し用）
+    - 「未来予知」：対象のターン終了ごとにカウントダウンし、0でロール攻撃相当ダメージを発生
+    - 「万能薬」：対象の主要な状態異常（炎上/出血/感電/めまい/スタン/挑発/アドレナリン等）を解除
+    - 【ウインドブレイド】：ターン開始時Spe+1 / ロール攻撃時にSpeトークン→Atkへ変換（疾風は攻撃時Spe+2→変換）
+    - 【ただの剣】：ロール攻撃時のAtkを+20%して計算
+  - クライアント（`src/client/pages/Match.tsx`）で「未来予知（🔮）」を状態チップ表示
+
+- バトル中の「デッキ内容」表示を強化
+  - `src/client/pages/Match.tsx` のデッキ内容モーダルに、検索（名前/効果）、種別フィルタ、場所フィルタ、ソートを追加
+  - 表示行に「山札/手札/捨て札/設置」の内訳も表示
+- デッキ名の表示を分かりやすく変更
+  - `data/decklist.default_60.json`: 「スタートデッキ」
+  - `data/decklist.expanded_mixed_90.json`: 「拡張デッキ」
+- ［複製］の複製中ロールを分かりやすく表示
+  - バトル画面のプレイヤー情報に「複製中: ［ロール名］…」を表示（ツールチップで複製元プレイヤーも表示）
+  - 状態チップにも「複製（🪞）」を追加
+  - ［複製］の `text` を短くし、詳細は `detailText` に整理した。
+- カード調整
+  - 「要塞」は特殊ダメージや反動（自傷）を防げないようにした（防御カードの適用範囲を整理）。
+  - 防御カードの `beforeDamageTaken` は原則 `sources: ["role","card"]` のみを対象にする方針に統一した（特殊ダメージ/反動は対象外）。
+- マッチ終了→ロビー復帰後もCPUの準備OKを維持
+  - ロビー復帰時にCPUプレイヤーは自動で準備OKの状態に戻すようにした（人間プレイヤーは未準備に戻る）。
+- ［複製］のパッシブ発動（UI側）を修正
+  - コピーした能力（例：［強欲］）も、カード使用時の選択UIが正しく動くようにした（ロールID直参照をやめ、コピー能力も含めて判定）。
+- バトル画面のプレイヤー情報レイアウトを調整
+  - 3人以上のとき、プレイヤー情報は「1行3人」表示にし、画面幅に応じて2列/1列に切り替えるようにした。
+
+## 2026-02-06
+### Done
+- バトルの決着表示を追加
+  - `Match.tsx`：`state.status === "finished"` で勝者ポップアップ（winnerId優先）を表示。
+  - 同じルームIDで連戦できるように、マッチが `finished` 以外に戻ったタイミングで「表示済み」フラグをリセット。
+- ホスト専用「マッチ終了→ロビー戻り」を追加
+  - `match/end` WS action を追加し、ホストのみ実行可能。
+  - Workers（`RoomDO`）側で同じplayerIdを維持したままロビー状態へ戻す（操作権の引き継ぎ用）。
+  - `Match.tsx` は `t:"lobby"` を受け取ったら `/lobby/:id` に遷移。
+- ロビーが開始されないまま残る問題への対策として、ロビー一覧（LobbyIndex）から1時間で自動的に除外するTTLを追加
+  - 物理削除ではなく「ホームのロビー一覧に残り続けない」ための掃除（作成時刻ベース）。
+- ロビー状態のまま1時間経過した部屋は、RoomDO側のストレージを削除扱い（tombstone化）して 404 を返すようにした
+  - 「DOインスタンス自体を消す」はできないため、永続データを破棄して再利用不可（同じIDでは復帰しない）とする。
+- チーム戦モードを追加（ロビー設定→マッチ反映）
+  - ロビー（`LobbyRoom.tsx` / `RoomDO`）でホストが `teamMode` を ON/OFF できるようにした。
+  - チームは `red/blue/green/yellow` から選択（自分は変更可、CPUはホストのみ変更可）。
+  - 開始条件（teamMode ON時）：非観戦プレイヤーが全員チーム選択済み、かつチームが2種類以上。
+  - マッチ（`engine.ts`）の勝利判定を「生存チームが1つ」へ拡張し、`winnerTeam` を state に保存。
+  - マッチUI（`Match.tsx`）はチーム戦中、ログ/勝者表示/対象選択ポップアップ/ダメージ確認ポップアップでプレイヤー名をチーム色チップ表示にした。
+  - ヘルプ（`Match.tsx`）に状態異常/バフ/デバフ一覧を追加した。
+  - ヘルプの「火炎」説明が重複していたため、用語側の火炎説明は削除して重複を解消した。
+- ドロー操作を Bra 消費に変更
+  - 1枚ドローは Bra を 1 消費して実行する（`Match.tsx` / `engine.ts` / `RoomDO`）。
+
+## 2026-02-05
+### Done
+- 和紙テクスチャの背景を追加
+  - 画像を `src/client/assets/washi-background.png` に配置し、`src/client/styles/global.css` の `body` 背景として設定。
+- バトル画面（`Match`）も和紙背景が見えるように、ページ全面の固定グラデーション背景を撤去（半透明パネルでUIを表示）。
+- 観戦状態の引き継ぎと、バトル画面の「操作不可」表示を整理
+  - ロビー→バトル遷移時に、観戦かどうかを `sessionStorage` に保存するようにした（`highroll:matchSpectator:<matchId>`）。
+  - 観戦者は `rememberMatchPlayer()` を保存しない（バトル画面でプレイヤー不在→「操作権なし」に見える混乱を避ける）。
+  - バトル画面（`Match.tsx`）は `matchSpectator` を参照して、以下を明確に出し分けるようにした。
+    - 観戦（仕様）
+    - 接続中（WS未接続/再接続中）
+    - 操作権なし（参加情報なし）
+- `docs/online_workers_do.md` の Pages デプロイ先を `dist/client` に修正（Vite の `build.outDir` と一致させた）
+- `docs/online_workers_do.md` に「テストプレイ（手元）」「本番の固定リンクの出し方」「更新手順（UI/APIどっちをデプロイするか）」を追記
+- `docs/requirements.md` に運用ドキュメント（`docs/online_workers_do.md`）へのリンクを追加
+- 本番デプロイで `KV namespace ... not found` が出る問題に対応
+  - `workers/wrangler.toml` の `env.production` に DO bindings を追加（envは `durable_objects` を継承しない）
+  - `KV_CARDS` は任意機能なので、デフォルトでは binding を外してデプロイできるようにした（`/api/cards` は未設定なら 501 を返す）
+- WSL から `wrangler` を呼ぶと Windows 側の global `wrangler` を掴んで `workerd` が壊れる場合があるため、ドキュメントのコマンドは基本 `npx wrangler ...` に統一する方針を追記
+- 本番デプロイで `free plan ... new_sqlite_classes migration`（code:10097）が出る問題に対応
+  - `workers/wrangler.toml` の Durable Objects migrations を `new_sqlite_classes` に変更
+  - `docs/online_workers_do.md` に注意点を追記
+- Pages の固定リンク/プレビューURLの違いと、`--branch master` 付きのデプロイコマンドを `docs/online_workers_do.md` に追記
+- バトル画面の「再接続」ボタンを押した後に再接続ループが発生しないよう、再接続トリガー（nonce）でWS接続Effectを再実行するように調整
+- WS移行後にCPUの行動が「即時すぎる」印象になりやすかったため、CPU手番開始直後は最低待ち時間（デフォルト 2000ms）を入れてから行動するように調整（`GameEngine.runCpuIfNeeded()`）
+- オンライン構成メモ（`docs/online_workers_do.md`）に「状態更新は WebSocket で配信（定期ポーリングしない）」を追記
+
+## 2026-02-04
+### Done
+- `vite.config.ts` の env 読み込みを `loadEnv(mode, ...)` に統一（`.env.development` 等の反映を安定化）。
+- 開発時の接続先を `http://localhost:4000/api`（wrangler dev）直結に寄せた（Vite の WS proxy 経由で `write EPIPE` / `1006` 切断が起きる環境があるため）。
+- 内部メモを更新：`docs/online_workers_do.md`。
+- WS の接続ガード（refで「同じIDなら接続しない」）が React StrictMode の二重マウントと相性が悪く、初回接続が即 close → 2回目が接続しない、で「読み込み中」になる問題があったため撤去した。
+- WS ping 送信時に `readyState` を確認するようにし、切断済みの WS に ping を投げて `WebSocket is already in CLOSING or CLOSED state.` が出る問題を抑制した。
+- WS の再接続で「古い WebSocket の close/error が新しい接続を巻き込む」問題があり、接続が落ち着かず `WebSocket is closed before the connection is established` が出ることがあった。`Lobby.tsx` / `LobbyRoom.tsx` / `Match.tsx` で「今の ws か？」判定（`wsRef.current === ws`）を入れ、再接続タイマーの多重登録も防ぐようにした。
+- CPU が2ターン目以降止まることがあったため、Workers/DO 環境では `setTimeout` ではなく DO Alarm で CPU ステップを回すようにした（`GameEngine.cpuScheduleFn` → `RoomDO.alarm()`）。
+- ローカル実行（wrangler dev）で Alarm が安定しないケースがあったため、CPUスケジューラは `setTimeout` も併用して冗長化した（二重実行しないようにガードあり）。
+- Durable Object が一時停止/再生成されるとメモリ上のタイマーが消え、CPU が「CPU手番のまま止まる」ことがある。`RoomDO.load()` 直後に `engine.kickCpuScheduling()` を呼んで、復元後にCPUスケジューリングを再開するようにした。
+- 対戦生成（`RoomDO.initMatch()`）で `cpuScheduleFn` を渡していなかったため、CPUの次アクションがエンジン内 `setTimeout` に依存してしまい、DOの一時停止後にCPUが止まる原因になっていた。`initMatch()` でも `cpuScheduleFn` を注入してDO側スケジューラへ寄せた。
+- 観戦（別PC/Cloudflare Tunnel）で接続できないケースがあった。開発時に `API_BASE=http://localhost:4000/api` を固定すると、観戦側PCの `localhost:4000` を見に行ってしまうため。`src/client/config/env.ts` の devデフォルトを「localhostで開いた時だけ 4000 直結、それ以外は `/api`」に自動切替するようにした。
+- 観戦時に「操作権がない」がエラーに見えやすかったため、バトル画面の表示文言を「観戦中（操作不可）」に変更した。
+- ロビー参加時に WS が瞬断すると `lobbyJoined` の受信を取りこぼし、参加はできているのに playerId を保存できず、ゲーム開始後に観戦扱いになることがあった。`LobbyRoom.tsx` で `lobby` 更新を受け取った時に「自分の名前が lobby.players に存在するなら playerId を確定する」フォールバックを追加して解消した。
+- `LobbyRoom.tsx` のWS messageハンドラが `playerId` をクロージャで保持しており、参加後に `playerId` が更新されても `state` メッセージ処理側が古い `playerId=null` を見続ける問題があった。その結果、ゲーム開始時に `rememberMatchPlayer()` が実行されず観戦扱いになる。`playerIdRef` を導入し、WSハンドラ内では ref から参照するように修正した。
+
 ## 2026-02-03
 ### Done
 - Workers + Durable Objects（WebSocket）構成の下準備を進行（`workers/`）。
@@ -32,6 +204,13 @@
 - 内部メモを更新：`docs/online_workers_do.md`（ローカル起動手順、エンドポイント修正）。
 - `workers/` を「RoomDO + /api/rooms」構成に更新（`wrangler.toml`, `RoomDO`, `GET /api/cards` の追加）。
 - フロントの接続先切替用に `VITE_API_BASE` を導入（`.env.development`, `.env.production`）。
+- 互換エンドポイントを追加：`/api/health`, `/api/catalog/*`, `/api/lobbies`（移行途中の404を抑制）。
+- 互換エンドポイントを拡張：`/api/matches` / `solo` / 各種アクション（`draw`, `play`, `endTurn`, `roleAttack`, `roleAction`, `resolvePrompt`, `rescueBra`）を RoomDO に転送して既存フロント互換を維持。
+- `workers` の `npm run typecheck` が通るように DO 側の呼び出し型（`roleAttack` の引数）を修正。
+- 文字化けしていた内部メモを復旧：`docs/online_workers_do.md` を UTF-8 で書き直し。
+- Workers移行に合わせてロビーを socket.io 依存から外し、`/api/lobbies/*` を RoomDO によるRESTで動くように最小実装。
+- クライアントのロビー画面（`src/client/pages/LobbyRoom.tsx`）を socket.io-client なしで動くように置き換え（REST + polling）。
+- ロビー一覧を今まで通り表示できるようにするため、`LobbyIndexDO` を追加し `GET /api/lobbies` が一覧を返すようにした。
 
 ## 2026-01-29
 ### Done
@@ -318,19 +497,6 @@
 
 ---
 
-## 2026-02-03
-### Done
-- Workers + Durable Objects（DO）でオンライン化するための最小骨格を追加（内部用）。
-  - `workers/` を追加し、Worker 側に `/api/match/create` と `/api/match/:id/ws` を用意。
-  - `MatchDO` を追加し、WebSocket 接続管理＋プレイヤー一覧の同期（`matchState` 配信）まで実装。
-  - 無料枠運用を想定し、ポーリングではなく「WS常時接続 + イベント駆動」へ寄せる方針を明文化。
-  - 詳細メモ：`docs/online_workers_do.md`
-
-### Notes
-- これは highroll の Node/soket.io をそのまま移植するものではなく、Workers/DO 向けに通信方式を標準 WebSocket（JSON）へ置き換える前提の土台。
-
----
-
 ## 2026-01-28
 ### Done
 - 新ロールを追加
@@ -368,3 +534,93 @@
   - 「ジャブ」：接触通常３ダメージに変更（接触攻撃として扱う）。
 - 不具合修正
   - 防御系の割り込み（thresholdPrevent / damageIntercept）が、炎上などの継続ダメージにも反応してしまうケースがあったため、デフォルトではロール/カードダメージのみ対象に修正した（必要なら `sources` で明示）。
+
+---
+
+## 2026-02-03
+### Done
+- Workers ロビーの「作りっぱなし対策」を追加
+  - LobbyIndexDO に TTL（24時間）を導入し、`/list` 時に古いロビーを自動 prune するようにした。
+- Workers ロビーに「退出（leave）」を追加
+  - waiting 中のみ退出可能（試合中の退出は未対応）。
+  - ロビーが空になった場合は内部状態を削除し、一覧からも削除する。
+- Workers ロビーに「観戦（spectator）」を追加
+  - ロビー参加後に観戦へ切り替え可能（ホストは不可）。
+  - 観戦中はロール選択/準備OK不可、ゲーム開始時は参加プレイヤーから除外される。
+- Workers ロビーに「CPU追加」を追加
+  - ロビー作成後にホストが追加できる（強さ: EASY/NORMAL/HARD）。
+- UI（LobbyRoom）
+  - 退出がサーバー反映されるように変更（leave API を呼ぶ）。
+  - 観戦切替ボタンを追加し、観戦中はロール選択/準備を無効化。
+  - ホスト向けに CPU 追加 UI（人数/強さ）を追加。
+- ロビー開始条件を「ホスト以外が全員準備OK」へ変更（観戦も準備OKを押せる）
+- ロビーが 404 になった場合（開始後にロビー情報を破棄しているケース）でも、ロビーページから自動で `/match/:id` に遷移するようにした（観戦者がバトル画面を見られるようにするため）
+- ホームから既存ロビーに参加したとき、操作プレイヤーIDの保存形式が Workers 側のレスポンス（`{ playerId }`）と一致しておらず操作権が消える問題を修正（`playerId` / `player.id` の両対応にした）
+- `npm run dev:cf` 中に Vite が `workers/.wrangler` の SQLite 一時ファイル監視で落ちる（EIO）ことがあったため、Vite の watch 対象から `workers/.wrangler` を除外した
+- ロビー画面（LobbyRoom）の更新も WebSocket 購読に変更（dev時のみWS未接続ならポーリングフォールバック）
+
+---
+
+## 2026-02-04
+### Done
+- ロビー/マッチの「操作系」も WebSocket 経由に移行（購読だけでなく送信も）
+  - `src/shared/protocol.ts` に `ActionPayload` を追加し、`t:"action"` の payload を型で定義した。
+  - Workers（RoomDO）の `/ws` で `t:"action"` を解釈し、ロビー/マッチの各操作を実行できるようにした。
+    - Lobby: ready / role / spectator / cpu / settings / start / leave
+    - Match: draw / play / endTurn / roleAttack / roleAction / resolvePrompt / rescueBra
+  - フロント側（`LobbyRoom` / `Match`）は、可能なら WS で `t:"action"` を送るようにし、WS未接続時のみ従来のHTTP APIにフォールバックするようにした。
+- 道化（`jester_random`）のスピン演出を、ログ検知（`useEffect`）側の処理に寄せた
+  - WS経由でもHTTP経由でも同じタイミングで表示できるようにするため（HTTPレスポンスに依存しない）。
+- 「ホーム（ロビー一覧）」も WebSocket を基本に変更
+  - `GET /api/lobbies/ws` を追加し、LobbyIndexDO の `/ws` を中継するようにした。
+  - ホーム（`src/client/pages/Lobby.tsx`）は `t:"lobbies"` を購読してロビー一覧を更新する（HTTP更新は開発用フォールバックのみ）。
+  - ロビー作成も `t:"action" -> { k:"lobbies/create" }` で行い、`t:"lobbyCreated"` で遷移＆操作権（playerId）を保存する。
+- ロビー参加も WebSocket を基本に変更
+  - ホームの「参加」は `sessionStorage` に参加情報を一時保存して `/lobby/:id` に遷移し、ロビー画面側で `t:"action" -> { k:"lobby/join" }` を送って参加する。
+  - `t:"lobbyJoined"` で `playerId` を保存し、ロビー内の操作権が維持されるようにした。
+- LobbyIndex の更新を RoomDO 側でも行うようにした
+  - WS経由の参加/退出/開始/CPU追加/設定変更でも一覧が更新されるように、RoomDO から LobbyIndexDO に `/upsert` `/remove` を best-effort で呼ぶ。
+- 「自動マッチング」も WebSocket 経由に移行
+  - LobbyIndexDO の WS（`/api/lobbies/ws`）に `matchmaking/enqueue` / `matchmaking/cancel` / `matchmaking/watch` を追加した。
+  - 2人揃ったら Workers 側で `matchId` を作成し、`RoomDO /init?start=1` でマッチを初期化して即開始する。
+  - ホーム（`Lobby.tsx`）はポーリングをやめて `t:"matchmakingStatus"` を購読し、成立時に `playerId` を保存して `/match/:id` に遷移する。
+- 「WSのみ」運用へ寄せた（HTTPフォールバック/ポーリング撤廃）
+  - ロビー画面（`LobbyRoom.tsx`）
+    - `fetchLobby` による初回取得と dev 用 2 秒ポーリングを削除し、WS購読のみで表示を更新する。
+    - 参加/準備/ロール/観戦/CPU/設定/開始/退出は WS（`t:"action"`）のみで送信する。
+  - バトル画面（`Match.tsx`）
+    - `getMatch` による初回取得と dev 用 2 秒ポーリングを削除し、WS購読のみで表示を更新する。
+    - ドロー/カード使用/ロール攻撃/ターン終了/ロールアクション/割り込み/救済は WS（`t:"action"`）のみで送信する。
+    - 「手動更新」は「再接続」に置き換えた（WSを閉じて自動再接続させる）。
+  - ホーム（`Lobby.tsx`）のロビー作成は WS 成功時のみ動作するようにし、HTTPフォールバックを削除した。
+  - ホーム（`Lobby.tsx`）
+    - `/health` や `/api/catalog/*` へのHTTPアクセスを撤廃し、ロール/デッキはローカルの静的カタログから読み込むようにした。
+    - ソロ即マッチも WS（`matches/soloCpu`）で開始し、`soloMatchCreated` で `/match/:id` に遷移するようにした（HTTPソロ作成を撤廃）。
+- ロビー画面（`LobbyRoom.tsx`）
+    - ロール一覧取得のHTTP（`/api/catalog/roles`）を撤廃し、ローカルの静的カタログから読み込むようにした。
+- Workers の WebSocket 入口を安定化
+    - `/api/lobbies/ws` `/api/lobbies/:id/ws` `/api/rooms/:id/ws`（互換: `/api/matches/:id/ws`）は、DO stub の `fetch()` をそのまま返す方式に変更した（WS中継で WebSocketPair を作る方式は、初期メッセージが落ちたり即切断することがあった）。
+  - `docs/online_workers_do.md` を UTF-8 で書き直し（WS前提の手順・エンドポイント整理）
+  - ローカル開発の接続先を調整
+    - Vite の WS proxy が `write EPIPE` で不安定になることがあったため、`.env.development` の `VITE_API_BASE` を `http://127.0.0.1:4000/api` に変更し、ブラウザ→`:4000` に直接WS接続するようにした。
+
+## 2026-02-08
+- `docs/patch_notes_public.md` の v0.6.5〜v0.6.10 の並びと、各バージョンの内容対応を整理した（順序が崩れていたため）。
+- バトル画面のアビリティUIを圧縮
+  - アビリティ名をボタン化し、説明文はホバー時のツールチップで表示するようにした。
+- バトル画面の状態異常表示を「アイコン＋数字」に統一
+  - 名称と説明はホバー時のツールチップで確認できるようにした。
+- バトル画面のレイアウトを微調整
+  - 手札のカード表示を少し圧縮し、プレイヤー情報の表示領域は少し広げて固定高さにした（1画面に収まりやすく）。
+- 手札の「カードID入力」「入力カードをプレイ」を削除した（デバッグ用途のため）。
+
+## 2026-02-10
+- カードの `kind`（`skill` / `install`）は、表示上「スキル / 設置」に置き換えるようにした。
+- 手札カードのツールチップを整理
+  - 呪い/血の紋様/カード本文の順序を統一し、呪い説明とカード本文の間に改行を入れて区切りを分かりやすくした。
+- マッチ画面上部のレイアウトを調整
+  - 左側に「現在の手番」「山札/捨て札」、右側に共通行動ボタンをまとめて配置した。
+  - 「1枚ドロー」ボタンの表記から Bra 消費表示を外した。
+- プレイヤー情報の固定高さを微調整（少し縮めた）。
+- ［複製］が複製したロールのパッシブ（role abilities）が発動しない問題を修正。
+- マッチ画面ヘッダーの再接続ボタン付近に出ていた小さい「手番」「山札枚数」表示を削除（情報の重複を解消）。

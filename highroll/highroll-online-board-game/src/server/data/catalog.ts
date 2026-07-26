@@ -66,7 +66,9 @@ export const getRolesCatalog = (): Role[] => {
                 merged.set(role.id, {
                     ...existing,
                     ...role,
-                    params: role.params ?? existing.params,
+                    // roles.json を最終的なバランス定義として優先する
+                    
+                    params: existing.params ?? role.params,
                     tags: role.tags ?? existing.tags,
                     text: existing.text ?? role.text,
                     detailText: (existing as any).detailText ?? (role as any).detailText,

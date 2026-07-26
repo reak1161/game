@@ -154,6 +154,19 @@ export async function resolvePrompt(matchId: string, playerId: string, accepted:
   return (await res.json()) as { state: GameState };
 }
 
+export async function resolveInfoDraw(matchId: string, playerId: string, cardId: string): Promise<{ state: GameState }> {
+  const res = await fetch(withApiBase(`/api/matches/${matchId}/resolveInfoDraw`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ playerId, cardId }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to resolve info draw: ${res.status}`);
+  }
+  return (await res.json()) as { state: GameState };
+}
+
 export async function rescueBra(matchId: string, playerId: string): Promise<{ state: GameState }> {
   const res = await fetch(withApiBase(`/api/matches/${matchId}/rescueBra`), {
     method: 'POST',
