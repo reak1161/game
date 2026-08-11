@@ -9,7 +9,7 @@
 - パッチノートの書き方（内部用）は `docs/patch_notes_rules.md` を参照。
 - クライアント / サーバー URL は `src/client/config/api.ts`（`withApiBase`, `SOCKET_URL`）と `.env`（`VITE_API_URL`, `VITE_SERVER_URL`）で切り替え。変更時は Vite を再起動する。
 - サーバー（`npm run dev:server`）はポート 4000 固定。`EADDRINUSE` が出たら既存の Node プロセスを停止する。
-- `npm run dev` でクライアントとサーバーを同時起動。WSL では `/mnt/c/.../highroll-online-board-game` で実行し、Windows 側と二重起動しないようにする。
+- `npm run dev` でクライアントとサーバーを同時起動。WSL では `/mnt/c/.../game/highroll` で実行し、Windows 側と二重起動しないようにする。
 - `npm run typecheck` は CJS 出力のため `import.meta` を直接扱えない。将来的に ESM 化するか `define` で注入する。
 - dev:client が落ちる場合は Node のバージョンが v24 系に戻っていないか確認する（`node -v`）。推奨は LTS（v22 または v20）。
 - nvm 利用時は以下で LTS を固定する:
@@ -18,7 +18,7 @@
   - `node -v`
 
 ### オンライン確認（Quick Tunnel）手順
-1. WSL の `game/highroll/highroll-online-board-game` で `npm run dev` を起動する。
+1. WSL の `game/highroll` で `npm run dev` を起動する。
 2. 別ターミナルで `curl http://127.0.0.1:5173` を確認し、HTML が返ることを確認する。
 3. 同じ WSL で `cloudflared tunnel --url http://localhost:5173` を実行し、表示された `trycloudflare.com` の URL を開く。
 4. 画面が開いたら `/api` や `/socket.io` が同一トンネルで到達する（API 用の別トンネルは不要）。

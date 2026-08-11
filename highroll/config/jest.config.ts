@@ -1,6 +1,7 @@
 import type { Config } from 'jest';
 
 const config: Config = {
+  rootDir: '..',
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],

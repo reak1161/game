@@ -4174,3 +4174,5 @@ export function chooseRoundBuff(currentState: LocalGameState, optionIndex: numbe
   prepareNextRound(state);
   return withUiState(state);
 }
+
+export * from "./ai";

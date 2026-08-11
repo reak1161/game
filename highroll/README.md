@@ -1,19 +1,29 @@
-# High Roll (ハイロール) — VSCode/Codex スケルトン
+# High Roll
 
-## セットアップ
+オンライン対戦に対応したオリジナルボードゲームです。
+
+## 開発
+
 ```bash
-cd hiroll
-npm i
+npm install
 npm run dev
 ```
-> 初回は `npm i` の後に「実行 → 構成の追加」で `Node: Dev (tsx)` を選べます（`.vscode` も同梱済み）。
 
-## 主要ファイル
-- `docs/requirements_design.md` … 要件定義書 + 設計書（.md）
-- `data/roles.json` / `data/roles_compiled.json` / `data/rules.json`
-- `src/shared/types.ts` … 共有型
-- `src/server/index.ts` … JSONを読み込んで起動確認
+- クライアント: http://localhost:5173
+- ローカルAPI: http://localhost:4000
+- Cloudflare Workersを使う開発環境: `npm run dev:cf`
 
-## 次の手順
-- `data/cards.json` と `data/decklist.default_60.json` を埋める
-- サーバに `market.ts` / `rules.ts` / `abilities.ts` を追加実装（設計書参照）
+## 確認
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm --prefix workers run typecheck
+```
+
+## Cloudflareへのデプロイ
+
+WorkerとPagesは既存のCloudflareプロジェクトへCLIから手動でデプロイします。詳しい手順は
+[`docs/online_workers_do.md`](docs/online_workers_do.md)を参照してください。
+

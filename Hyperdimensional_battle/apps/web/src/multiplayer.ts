@@ -1,4 +1,5 @@
 export type MultiRoomPhase = "lobby" | "match";
+export type AiLevel = "easy" | "normal" | "expert";
 
 export type MultiRoomPlayer = {
   playerId: string;
@@ -7,6 +8,8 @@ export type MultiRoomPlayer = {
   roleId: string | null;
   joinedAt: string;
   lastSeenAt: string;
+  isAi?: boolean;
+  aiLevel?: AiLevel;
 };
 
 export type MultiRoomState = {
@@ -163,6 +166,15 @@ export async function startRoomMatch(roomId: string, playerId: string) {
     method: "POST",
     headers: createJsonHeaders(),
     body: JSON.stringify({ playerId })
+  });
+  return parseRoomResponse(response);
+}
+
+export async function addRoomAi(roomId: string, playerId: string, level: AiLevel, roleId = "role_simple") {
+  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/rooms/${roomId}/ai`, {
+    method: "POST",
+    headers: createJsonHeaders(),
+    body: JSON.stringify({ playerId, level, roleId })
   });
   return parseRoomResponse(response);
 }

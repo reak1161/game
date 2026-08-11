@@ -41,6 +41,7 @@ import {
   type RoundBuffDefinition
 } from "@hyperdimensional-battle/shared";
 import {
+  addRoomAi,
   fetchRoomWorkerHealth,
   getOrCreateMultiPlayerId,
   joinRoom,
@@ -3132,6 +3133,16 @@ export function App() {
     }
   };
 
+  const addDebugAi = async () => {
+    try {
+      const nextState = await addRoomAi(lobbyId, multiPlayerId, "expert", selectedRoleId);
+      setMultiRoomState(nextState);
+      setMultiConnectionError(null);
+    } catch (caught) {
+      setMultiConnectionError(caught instanceof Error ? caught.message : "AIの追加に失敗しました。");
+    }
+  };
+
   const leaveCurrentRoom = async () => {
     try {
       await leaveRoom(lobbyId, multiPlayerId);
@@ -3494,6 +3505,11 @@ export function App() {
               <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>
                 退出
               </button>
+              {isMultiHost ? (
+                <button type="button" className="secondary-button" onClick={() => void addDebugAi()}>
+                  デバッグAI（最上位）を追加
+                </button>
+              ) : null}
               <button type="button" className="primary-button" disabled={!canStartMultiMatch} onClick={openMatchPlaceholder}>
                 マッチ開始
               </button>

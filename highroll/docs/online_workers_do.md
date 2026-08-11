@@ -1,6 +1,6 @@
 # Highroll Cloudflare 運用メモ
 
-`highroll-online-board-game` の Cloudflare Workers + Durable Objects + Pages 構成の実行、確認、本番更新手順をまとめる。
+`highroll` の Cloudflare Workers + Durable Objects + Pages 構成の実行、確認、本番更新手順をまとめる。
 
 ## 構成
 - API: Cloudflare Workers + Durable Objects
@@ -29,7 +29,7 @@ npx wrangler whoami
 リポジトリ直下:
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+cd /mnt/c/Users/reak1/programming/game/highroll
 npm install
 npm --prefix workers install
 ```
@@ -38,19 +38,19 @@ npm --prefix workers install
 UI と API をまとめて起動:
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+cd /mnt/c/Users/reak1/programming/game/highroll
 npm run dev:cf
 ```
 
 必要に応じて個別起動:
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+cd /mnt/c/Users/reak1/programming/game/highroll/workers
 npm run dev -- --port 4000
 ```
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+cd /mnt/c/Users/reak1/programming/game/highroll
 npm run dev:client
 ```
 
@@ -68,14 +68,14 @@ npm run dev:client
 ### API だけ変更したとき
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+cd /mnt/c/Users/reak1/programming/game/highroll/workers
 npx wrangler deploy --env production
 ```
 
 ### UI だけ変更したとき
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+cd /mnt/c/Users/reak1/programming/game/highroll
 npm run build:client
 npx --yes wrangler@4.62.0 pages deploy dist/client --project-name highroll-ui --branch master --commit-dirty=true --skip-caching
 ```
@@ -85,12 +85,12 @@ npx --yes wrangler@4.62.0 pages deploy dist/client --project-name highroll-ui --
 - その後で UI を更新する
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+cd /mnt/c/Users/reak1/programming/game/highroll/workers
 npx wrangler deploy --env production
 ```
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+cd /mnt/c/Users/reak1/programming/game/highroll
 npm run build:client
 npx --yes wrangler@4.62.0 pages deploy dist/client --project-name highroll-ui --branch master --commit-dirty=true --skip-caching
 ```
@@ -120,7 +120,7 @@ API 側では WebSocket 接続時に `Origin` を検証している。
 変更後は API を再デプロイする:
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game/workers
+cd /mnt/c/Users/reak1/programming/game/highroll/workers
 npx wrangler deploy --env production
 ```
 
@@ -134,7 +134,7 @@ npx wrangler deploy --env production
 対処:
 
 ```sh
-cd /mnt/c/Users/reak1/programming/game/highroll/highroll-online-board-game
+cd /mnt/c/Users/reak1/programming/game/highroll
 which node
 which npm
 npm install

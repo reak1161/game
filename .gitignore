@@ -1,12 +1,17 @@
-# Generated files inside the nested Highroll project
-highroll/highroll-online-board-game/node_modules/
-highroll/highroll-online-board-game/dist/
-highroll/highroll-online-board-game/.wrangler/
-highroll/highroll-online-board-game/workers/node_modules/
-highroll/highroll-online-board-game/workers/.wrangler/
+# Generated files inside the Highroll project
+highroll/node_modules/
+highroll/dist/
+highroll/.wrangler/
+highroll/workers/node_modules/
+highroll/workers/.wrangler/
 
 # Local environment files for Highroll
-highroll/highroll-online-board-game/.env
-highroll/highroll-online-board-game/.env.local
-highroll/highroll-online-board-game/.env.development
-highroll/highroll-online-board-game/.env.production
+highroll/.env
+highroll/.env.local
+highroll/.env.development
+highroll/.env.production
+
+# Bakudan Bomber local/generated files
+bakudan_bomber/node_modules/
+bakudan_bomber/.wrangler/
+bakudan_bomber/.wrangler-dev.*.log

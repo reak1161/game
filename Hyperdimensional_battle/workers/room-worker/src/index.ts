@@ -4,6 +4,7 @@ export interface Env {
 }
 
 type MultiRoomPhase = "lobby" | "match";
+type AiLevel = "easy" | "normal" | "expert";
 
 type RoomPlayer = {
   playerId: string;
@@ -12,6 +13,8 @@ type RoomPlayer = {
   roleId: string | null;
   joinedAt: string;
   lastSeenAt: string;
+  isAi?: boolean;
+  aiLevel?: AiLevel;
 };
 
 type RoomState = {
@@ -182,7 +185,7 @@ export default {
       return createJsonResponse({ ok: true, runtime: "worker" }, request, env);
     }
 
-    const roomMatch = url.pathname.match(/^\/rooms\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})(?:\/(join|player|leave|start|ws))?$/);
+    const roomMatch = url.pathname.match(/^\/rooms\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})(?:\/(join|player|leave|start|ai|ws))?$/);
     if (roomMatch) {
       const roomId = roomMatch[1];
       if (!ROOM_ID_PATTERN.test(roomId)) {
@@ -269,6 +272,8 @@ export class RoomDurableObject {
         return createJsonResponse(await this.handleLeave(roomId, payload), request, this.env);
       case "start":
         return createJsonResponse(await this.handleStart(roomId, payload), request, this.env);
+      case "ai":
+        return createJsonResponse(await this.handleAddAi(roomId, payload), request, this.env);
       default:
         return createTextResponse("Not Found", request, this.env, { status: 404 });
     }
@@ -425,6 +430,40 @@ export class RoomDurableObject {
     }
     state.phase = "match";
     appendRoomLog(state, "マッチを開始しました。");
+    return this.saveState(state);
+  }
+
+  private async handleAddAi(roomId: string, payload: Record<string, unknown>) {
+    const playerId = typeof payload.playerId === "string" ? payload.playerId : "";
+    const level: AiLevel =
+      payload.level === "easy" || payload.level === "normal" || payload.level === "expert"
+        ? payload.level
+        : "normal";
+    if (!playerId) {
+      throw new Error("playerId is required");
+    }
+
+    const state = await this.getState(roomId);
+    if (state.phase !== "lobby") {
+      throw new Error("AI can only be added in the lobby");
+    }
+    if (state.hostPlayerId !== playerId) {
+      throw new Error("only host can add AI players");
+    }
+
+    const now = new Date().toISOString();
+    const aiNumber = state.players.filter((player) => player.isAi).length + 1;
+    state.players.push({
+      playerId: `ai_${crypto.randomUUID()}`,
+      displayName: `AI ${aiNumber} (${level})`,
+      ready: true,
+      roleId: typeof payload.roleId === "string" ? payload.roleId : "role_simple",
+      joinedAt: now,
+      lastSeenAt: now,
+      isAi: true,
+      aiLevel: level
+    });
+    appendRoomLog(state, `AI ${aiNumber} (${level}) を追加しました。`);
     return this.saveState(state);
   }
 }

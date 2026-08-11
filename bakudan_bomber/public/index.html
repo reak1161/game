@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ばくだんぼんばー</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section id="onlineLobby" class="lobby-shell">
+    <div class="lobby-card">
+      <p class="eyebrow">ONLINE ROOM</p>
+      <h1>ばくだんぼんばー</h1>
+      <p class="lobby-lead">名前と参加コードで、別の端末から同じルームに集まれます。</p>
+      <label class="field-label">プレイヤー名<input id="playerName" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
+      <div class="lobby-actions">
+        <button id="createRoomButton" class="button">ルームを作る</button>
+        <span>または</span>
+        <input id="roomCodeInput" class="code-input" maxlength="6" placeholder="参加コード" aria-label="参加コード">
+        <button id="joinRoomButton" class="button secondary">参加する</button>
+      </div>
+      <p id="lobbyMessage" class="lobby-message" aria-live="polite"></p>
+      <div id="roomPanel" class="room-panel" hidden>
+        <div><span class="label">参加コード</span><strong id="roomCodeLabel" class="room-code"></strong></div>
+        <ul id="roomPlayers" class="room-players"></ul>
+        <button id="startOnlineButton" class="button" hidden>ゲームを開始</button>
+      </div>
+      <button id="localPlayButton" class="text-button">1人で5人分をテストする</button>
+    </div>
+  </section>
+  <main class="game-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">BOMB &amp; FUSE CARD GAME</p>
+        <h1>ばくだんぼんばー</h1>
+      </div>
+      <div class="top-actions">
+        <button id="helpButton" class="button secondary">あそびかた</button>
+        <button id="resetButton" class="button danger">はじめから</button>
+      </div>
+    </header>
+
+    <section id="statusBar" class="status-bar" aria-live="polite"></section>
+    <section id="opponents" class="opponents" aria-label="ほかのプレイヤー"></section>
+
+    <section class="table-center">
+      <div class="pile-area">
+        <button id="deckPile" class="pile deck" aria-haspopup="dialog"></button>
+        <div id="discardPile" class="pile discard"></div>
+      </div>
+      <div class="round-panel">
+        <span class="label">ラウンド</span>
+        <strong id="roundNumber">1</strong>
+        <span class="label">ラウンドイベント</span>
+        <strong id="roundEvent">準備中</strong>
+      </div>
+      <ol id="gameLog" class="game-log" aria-label="ゲームログ"></ol>
+    </section>
+
+    <section id="selfArea" class="self-area"></section>
+    <section id="actionPanel" class="action-panel" aria-label="ターンの行動"></section>
+  </main>
+
+  <dialog id="choiceDialog">
+    <form method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">SELECT</p>
+          <h2 id="dialogTitle">選んでください</h2>
+        </div>
+      </div>
+      <div id="dialogContent" class="dialog-content"></div>
+    </form>
+  </dialog>
+
+  <dialog id="helpDialog">
+    <form method="dialog">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">HOW TO PLAY</p><h2>あそびかた</h2></div>
+        <button class="icon-button" value="close" aria-label="閉じる">×</button>
+      </div>
+      <div class="help-copy">
+        <p>最後まで生き残ったプレイヤーの勝ちです。各ターンに、5種類から行動を1つ選びます。</p>
+        <dl>
+          <dt>ばくだんカード</dt><dd>選んだプレイヤーの前に爆弾を置きます。</dd>
+          <dt>導火線カード</dt><dd>爆弾の導火線を1段長くします。</dd>
+          <dt>着火カード</dt><dd>爆弾の一番上に火をつけます。</dd>
+          <dt>通常ダメージ</dt><dd>通常の爆発で受けるダメージです。ライフが0になると敗北します。</dd>
+        </dl>
+        <p>自分の行動が終わるたび、自分の前にある着火中の導火線が1段燃え進みます。爆弾本体まで火が届くと爆発します。</p>
+        <p>全員が1回ずつ行動するとラウンドが終了し、7種類からランダムにラウンドイベントが1つ発生します。</p>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="deckDialog">
+    <form method="dialog">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">DECK GUIDE</p><h2>山札一覧</h2></div>
+        <button class="icon-button" value="close" aria-label="閉じる">×</button>
+      </div>
+      <div id="deckDialogContent" class="deck-dialog-content"></div>
+    </form>
+  </dialog>
+
+  <script src="online.js"></script>
+</body>
+</html>
