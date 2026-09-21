@@ -107,6 +107,8 @@ type InfoDrawContext = {
     log?: PendingInfoDraw['log'];
 };
 
+// GameEngine is the authoritative match state machine.
+// Card effects, role abilities, turn order, and CPU actions are all resolved here.
 export class GameEngine {
     private state: GameState;
     private readonly roleMap: Map<string, Role>;
@@ -126,6 +128,8 @@ export class GameEngine {
 
     private transientCardEffectBonus = new Map<string, number>();
 
+    // CPU turns are scheduled either by local timers or by the surrounding
+    // Durable Object scheduler, depending on the runtime.
     private scheduleCpuStep(): void {
         if (this.cpuScheduleFn) {
             const delay = Math.max(0, this.cpuNextAt - Date.now());

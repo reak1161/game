@@ -1129,6 +1129,15 @@
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
 }
 
+/* Overlay icons are repeated here so mojibake in older lines does not leak into UI. */
+.cursedHandOverlay::after {
+  content: '🪄';
+}
+
+.bloodPatternOverlay::after {
+  content: '🩸';
+}
+
 /* Match main layout (fixed-size blocks) */
 .mainColumn {
   min-width: 0;

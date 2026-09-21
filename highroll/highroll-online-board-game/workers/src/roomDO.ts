@@ -2,6 +2,7 @@
 import { buildDeckCards, getCardsCatalog, getRolesCatalog } from "./highrollCatalog";
 import type { CardDefinition, GameLogEntry, GameState, LobbySummary, Role, TeamColor } from "../../src/shared/types";
 import type { ClientMsg, ServerMsg } from "../../src/shared/protocol";
+import { LOBBY_ROOM_TTL_MS, MAX_PLAYERS, isValidName, jsonErrorResponse, jsonResponse, jsonText } from "./roomHttp";
 import { createSecurityHeaders, createTextResponse, isAllowedOrigin } from "./security";
 
 type Env = {
@@ -41,8 +42,6 @@ type RoomSocketAttachment = {
   playerId?: string;
 };
 
-const jsonText = (value: unknown) => JSON.stringify(value);
-
 type CpuLevel = "easy" | "normal" | "hard";
 type CreatePlayerInputNormalized = {
   name: string;
@@ -54,19 +53,14 @@ type CreatePlayerInputNormalized = {
 };
 type CreatePlayerInput = string | CreatePlayerInputNormalized;
 
-const NAME_REGEX = /^[0-9A-Za-z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+$/;
-const NAME_MAX_LENGTH = 8;
-const isValidName = (name: string): boolean =>
-  name.length > 0 && [...name].length <= NAME_MAX_LENGTH && NAME_REGEX.test(name);
-
-const MAX_PLAYERS = 6;
-const LOBBY_ROOM_TTL_MS = 60 * 60 * 1000;
-
 const normalizeCatalog = (): { roles: Role[]; cards: CardDefinition[] } => ({
   roles: getRolesCatalog(),
   cards: getCardsCatalog(),
 });
 
+// RoomDO owns a single lobby / match lifecycle.
+// It restores state from storage, proxies API actions into the engine,
+// and fans masked state updates out to connected WebSocket clients.
 export class RoomDO implements DurableObject {
   private readonly ctx: DurableObjectState;
   private sockets = new Set<WebSocket>();
@@ -1057,32 +1051,28 @@ export class RoomDO implements DurableObject {
         return;
       }
 
-      this.safeSend(ws, { t: "error", message: `譛ｪ蟇ｾ蠢懊・action縺ｧ縺・ ${k}` });
+      this.safeSend(ws, { t: "error", message: `未対応のactionです: ${k}` });
     } catch (e) {
       this.safeSend(ws, { t: "error", message: (e as Error).message });
     }
   }
 
+  // The HTTP surface is intentionally thin: validate input, delegate to the
+  // engine, persist the authoritative state, then broadcast the new snapshot.
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const roomId = url.searchParams.get("roomId") ?? this.state.id.toString();
     await this.load();
 
     if (this.deletedAt !== null) {
-      return new Response(jsonText({ message: "deleted" }), {
-        status: 404,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+      return jsonErrorResponse("deleted", 404);
     }
 
     await this.ensureRoom(roomId);
     await this.maybeExpireLobbyRoom();
 
     if (this.deletedAt !== null) {
-      return new Response(jsonText({ message: "deleted" }), {
-        status: 404,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+      return jsonErrorResponse("deleted", 404);
     }
 
     // --- REST (compat / transitional) ---
@@ -1095,26 +1085,26 @@ export class RoomDO implements DurableObject {
         const password = String(body?.password ?? "").trim() || undefined;
         const payload = await this.initLobby(roomId, deckId, lobbyName, ownerName, password);
         this.broadcastState();
-        return new Response(jsonText(payload), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse(payload);
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
     if (url.pathname === "/lobby" && request.method === "GET") {
       if (!this.lobby) {
-        return new Response(jsonText({ message: "not_found" }), { status: 404, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse("not_found", 404);
       }
-      return new Response(jsonText({ lobby: this.lobbyDetail() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+      return jsonResponse({ lobby: this.lobbyDetail() });
     }
 
     if (url.pathname === "/lobby/join" && request.method === "POST") {
       try {
         const body = (await request.json().catch(() => null)) as { name?: string; password?: string; roleId?: string } | null;
         const result = await this.joinLobby(String(body?.name ?? ""), body?.password, body?.roleId);
-        return new Response(jsonText({ lobby: result.lobby, playerId: result.playerId }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: result.lobby, playerId: result.playerId });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1130,9 +1120,9 @@ export class RoomDO implements DurableObject {
         await this.persist();
         this.broadcastState();
         await this.upsertLobbyIndex();
-        return new Response(jsonText({ lobby: this.lobbyDetail() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: this.lobbyDetail() });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1146,9 +1136,9 @@ export class RoomDO implements DurableObject {
         await this.persist();
         this.broadcastState();
         await this.upsertLobbyIndex();
-        return new Response(jsonText({ lobby: this.lobbyDetail() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: this.lobbyDetail() });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1158,9 +1148,9 @@ export class RoomDO implements DurableObject {
         const playerId = String(body?.playerId ?? "");
         if (!playerId || typeof body?.isSpectator !== "boolean") throw new Error("playerId and isSpectator are required.");
         const updated = await this.setSpectator(playerId, Boolean(body?.isSpectator));
-        return new Response(jsonText({ lobby: updated }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: updated });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1170,9 +1160,9 @@ export class RoomDO implements DurableObject {
         const playerId = String(body?.playerId ?? "");
         if (!playerId) throw new Error("playerId is required.");
         const result = await this.leaveLobby(playerId);
-        return new Response(jsonText(result), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse(result);
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1184,9 +1174,9 @@ export class RoomDO implements DurableObject {
         const cpuCount = typeof body?.cpuCount === "number" && Number.isFinite(body.cpuCount) ? body.cpuCount : 1;
         const cpuLevel: CpuLevel = body?.cpuLevel === "easy" || body?.cpuLevel === "hard" ? body.cpuLevel : "normal";
         const updated = await this.addCpuPlayers(playerId, cpuCount, cpuLevel);
-        return new Response(jsonText({ lobby: updated }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: updated });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1221,9 +1211,9 @@ export class RoomDO implements DurableObject {
         await this.persist();
         this.broadcastState();
         await this.upsertLobbyIndex();
-        return new Response(jsonText({ lobby: this.lobbyDetail() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: this.lobbyDetail() });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1245,9 +1235,9 @@ export class RoomDO implements DurableObject {
         await this.persist();
         this.broadcastState();
         await this.upsertLobbyIndex();
-        return new Response(jsonText({ lobby: this.lobbyDetail() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ lobby: this.lobbyDetail() });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1290,9 +1280,9 @@ export class RoomDO implements DurableObject {
         nextEngine.start();
         await this.persist();
         this.broadcastState();
-        return new Response(jsonText({ matchId: roomId }), { headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonResponse({ matchId: roomId });
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
@@ -1309,15 +1299,12 @@ export class RoomDO implements DurableObject {
           engine.start();
           await this.persist();
         } catch (e) {
-          return new Response(jsonText({ message: (e as Error).message }), {
-            status: 400,
-            headers: { "content-type": "application/json; charset=utf-8" },
-          });
+          return jsonErrorResponse((e as Error).message);
         }
       }
 
       this.broadcastState();
-      return new Response(jsonText({ state: this.requireEngine().getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+      return jsonResponse({ state: this.requireEngine().getState() });
     }
 
     if (url.pathname === "/solo" && request.method === "POST") {
@@ -1327,17 +1314,14 @@ export class RoomDO implements DurableObject {
       const roleId = (body?.roleId ?? "").trim();
       const cpuLevel = body?.cpuLevel === "easy" || body?.cpuLevel === "hard" || body?.cpuLevel === "normal" ? body.cpuLevel : "normal";
       if (name && !isValidName(name)) {
-        return new Response(jsonText({ message: "invalid_name" }), {
-          status: 400,
-          headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonErrorResponse("invalid_name");
       }
       if (!roleId) {
-        return new Response(jsonText({ message: "roleId is required." }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse("roleId is required.");
       }
       const result = await this.initSolo(roomId, deckId, name || "Player", roleId, cpuLevel);
       this.broadcastState();
-      return new Response(jsonText(result), { headers: { "content-type": "application/json; charset=utf-8" } });
+      return jsonResponse(result);
     }
 
     if (this.engine && request.method === "POST") {
@@ -1351,7 +1335,7 @@ export class RoomDO implements DurableObject {
             engine.drawCardsAsAction(playerId, typeof count === "number" ? count : 1);
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/play": {
             const { playerId, cardId, targets, choices, handIndex } = body ?? {};
@@ -1359,7 +1343,7 @@ export class RoomDO implements DurableObject {
             engine.playCard(playerId, cardId, { targets, choices, handIndex });
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/endTurn": {
             const { playerId } = body ?? {};
@@ -1367,7 +1351,7 @@ export class RoomDO implements DurableObject {
             engine.endTurn(playerId);
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/roleAttack": {
             const { playerId, targetId, struggle } = body ?? {};
@@ -1375,7 +1359,7 @@ export class RoomDO implements DurableObject {
             engine.roleAttack(playerId, targetId, { struggle: Boolean(struggle) });
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/roleAction": {
             const { playerId, actionId, targetId, choices } = body ?? {};
@@ -1383,7 +1367,7 @@ export class RoomDO implements DurableObject {
             engine.roleAction(playerId, actionId, { targetId, choices });
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/resolvePrompt": {
             const { playerId, accepted } = body ?? {};
@@ -1391,7 +1375,7 @@ export class RoomDO implements DurableObject {
             engine.resolvePendingPrompt(playerId, Boolean(accepted));
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/resolveInfoDraw": {
             const { playerId, cardId } = body ?? {};
@@ -1399,7 +1383,7 @@ export class RoomDO implements DurableObject {
             engine.resolveInfoDraw(playerId, cardId);
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
           case "/rescueBra": {
             const { playerId } = body ?? {};
@@ -1407,19 +1391,17 @@ export class RoomDO implements DurableObject {
             engine.rescueBra(playerId);
             await this.persist();
             this.broadcastState();
-            return new Response(jsonText({ state: engine.getState() }), { headers: { "content-type": "application/json; charset=utf-8" } });
+            return jsonResponse({ state: engine.getState() });
           }
         }
       } catch (e) {
-        return new Response(jsonText({ message: (e as Error).message }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
+        return jsonErrorResponse((e as Error).message);
       }
     }
 
     if (url.pathname === "/state" && request.method === "GET") {
       const engine = this.requireEngine();
-      return new Response(jsonText(engine.getState()), {
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+      return jsonResponse(engine.getState());
     }
 
     if (url.pathname === "/ws") {
