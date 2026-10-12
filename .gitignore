@@ -1,3 +1,12 @@
+# Private environment files (all projects)
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+!.env.example
+!.env.*.example
+!.dev.vars.example
+
 # Generated files inside the nested Highroll project
 highroll/highroll-online-board-game/node_modules/
 highroll/highroll-online-board-game/dist/
