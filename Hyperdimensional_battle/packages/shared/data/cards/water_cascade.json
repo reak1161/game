@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動: 両隣が水属性なら、一時魔法{{×3}}。その後ダメージを与える。",
+  "text": "発動: 両隣が水属性なら、一時魔法{{×5}}。その後ダメージを与える。",
   "effects": [
     {
       "id": "water_cascade_activate",
@@ -19,7 +19,7 @@
       "operations": [
         {
           "kind": "multiply_temp_magic",
-          "value": 3
+          "value": 5
         },
         {
           "kind": "deal_damage_from_temp_magic"

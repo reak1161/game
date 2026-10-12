@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動: 次のラウンドの開始時、基礎ステータス{{+100}}",
+  "text": "発動: 次のラウンドの開始時、基礎ステータス{{+200}}",
   "effects": [
     {
       "id": "wind_summer_furin_activate",
@@ -16,7 +16,7 @@
       "operations": [
         {
           "kind": "schedule_add_base_both_at_next_round_start",
-          "value": 100
+          "value": 200
         }
       ]
     }

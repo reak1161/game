@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Game Parts — 組み合わせ例</title>
+  <script src="motions.js" defer></script><script src="game-parts.js" defer></script><script src="example.js" defer></script>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-width:1050px;background:#eceef0;color:#30343a;font-family:'Segoe UI','Yu Gothic UI',sans-serif}main{max-width:1100px;padding:34px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}header h1{font-size:15px;font-weight:500;margin:0}button{cursor:pointer;font:inherit;background:none;border:1px solid #a8afb9;color:inherit;padding:8px 17px;font-size:12px}.meters{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:25px 0}pf-slots{margin:26px 0}pf-command{margin:23px 0}pf-hand{margin-top:30px}footer{font-size:11px;color:#6b727d;margin-top:26px}#message{min-height:20px;font-size:12px;margin:18px 0 0}
+  </style>
+</head>
+<body><main>
+  <header><h1>部品の組み合わせ</h1><button id="reset">リセット</button></header>
+  <pf-turns id="turns" theme="arena"></pf-turns>
+  <div class="meters"><pf-meter id="player" theme="arena"></pf-meter><pf-meter id="enemy" theme="arena"></pf-meter></div>
+  <pf-slots id="field" theme="arena"></pf-slots>
+  <pf-hand id="hand" theme="arena"></pf-hand>
+  <pf-command id="commands" theme="arena"></pf-command>
+  <p id="message" role="status"></p>
+  <footer>5つの部品をexample.jsで接続したローカルの操作例です。</footer>
+</main></body>
+</html>

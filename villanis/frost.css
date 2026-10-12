@@ -1,0 +1,25 @@
+/* VILLANIS visual identity: glacial blue, moonlit silver, and thawing amber. */
+:root{--paper:#e0eef4;--muted:#93acbc;--mint:#a7d8e9;--red:#db99b0;--line:#b7ddef26}
+body{background:#071321}
+.screen{background:linear-gradient(90deg,#061322f7 0%,#081724ed 28%,#09192b75 52%,#08172600 80%)}
+.brand-symbol{font-size:28px}.brand,.edition{color:#a0c1d1}
+h1{color:#f1f6f8;letter-spacing:-5px;text-shadow:0 0 50px #87cde025}h1 span{color:#aecede}
+.subtitle{color:#bbd9e5;letter-spacing:7px}.subtitle i{background:#9dccdd55}
+.lead{font-size:21px;letter-spacing:2px}.description{color:#91aaba}
+.role{background:#102337c4;border-color:#a6cddd29}.role.selected{border-color:#b4e1f08c;background:linear-gradient(120deg,#80c7e12c,#a8dcec08)}
+.role.selected:after{background:#b5e6f4}.role small{color:#95b8cc}.role strong{color:#d9eaf0}.role b{color:#83a4b6}
+.hunter-icon{color:#c2c4e7}.role-icon{font-size:30px}
+.start{background:#b8dbe8;color:#102537;box-shadow:0 0 35px #70b7d010}.start:hover{background:#d0edf4}
+.menu-actions,.menu-actions button,footer button{color:#9eb6c6}.scene-caption>span{color:#a0c9da}.scene-caption p{color:#9db9c8}footer{color:#799aac}
+.hud-top,.bottom-hud{text-shadow:0 2px 7px #020b15}.hud-tools button{background:#102437cc}
+#hud{background:linear-gradient(#061321c4,transparent 22%,transparent 74%,#061321c4)}
+.portrait{background:#132d41c7;border-color:#a7d3e34a}.teammate{color:#c0d4df}.teammate small{color:#96adbc}.teammate.hurt .portrait{color:#e5aec1;border-color:#c287a888}
+.notice{background:#142b3be8}.chase{color:#e5bbdd}.stamina{background:#a6d1e02b}.stamina i{background:#b3deee}.player-panel>span{color:#b2cddc}
+#action-track{background:#abcdda30}#skill{background:#0e2335ed}.skill-zone{background:#d9f2ff}.skill-track b{background:#e3b1ce}
+.map-wrap{background:#0a1b2bc9}.map-wrap span{color:#a3bfcb}.keybar{background:#071728be;color:#a1b8c6}kbd{color:#c2dcea;border-color:#a4c9dc55}
+dialog{background:#102437fa;border-color:#a6d5ec4a}dialog::backdrop{background:#020a15d9}dialog p,.guide-tip{color:#adc3d0}.secondary{color:#c1d6e1}
+#result-stats{color:#9ebdcc}
+.grain{opacity:.025}#world{outline:none}.scene-caption{right:4vw;bottom:100px}.view-info{position:absolute;right:30px;bottom:86px;text-align:right;text-shadow:0 2px 8px #020714}.view-info>span{font:9px monospace;letter-spacing:2px;color:#aacddd}.view-info>strong{display:block;font:25px monospace;letter-spacing:3px;margin:10px 0}.view-info>small{font-size:10px;color:#a9c2d0}#map-panel{position:absolute;right:0;bottom:100px}#danger-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,#a4376890 100%);opacity:0;pointer-events:none}#crosshair{position:absolute;top:50%;left:50%;width:4px;height:4px;background:#e6f7ffb0;border-radius:50%;box-shadow:0 0 3px #001426;transform:translate(-50%,-50%)}#crosshair.hunter{width:15px;height:15px;background:transparent;border:1px solid #deeffa80;border-radius:50%}#crosshair.hunter:after{content:"";position:absolute;inset:5px;background:#d8edff;border-radius:50%}#capture-mouse{position:absolute;left:50%;top:65%;transform:translate(-50%,-50%);padding:16px 25px;background:#0c233bdc;border:1px solid #a8d5e971;color:#dcf0fa;letter-spacing:2px;font-size:13px}#capture-mouse span{display:block;font-size:9px;margin-top:9px;color:#8faebe;letter-spacing:1px}.sensitivity-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#b6cedd;margin:20px 0}.sensitivity-label input{width:50%;accent-color:#a6d6e5}#render-error{font-size:12px;color:#e5bdca;line-height:1.8}.interaction{bottom:30px}#hud .chase{top:155px}.keybar{font-size:9px;gap:14px}.team{top:145px}.teammate{background:#07152738;padding:3px 8px 3px 0}.objective strong{background:#07162525;padding:3px 10px}
+@media(max-width:800px){.screen{background:linear-gradient(90deg,#081626f3,#08182ba0)}}
+@media(max-height:760px){.lead{font-size:18px}}
+@media(max-height:630px){.screen{overflow:auto}.intro{position:relative;top:auto;transform:none;margin:25px 0 70px}.screen footer{position:relative;left:0;right:0;bottom:0}.brand{position:relative}.scene-caption{bottom:60px}.description{display:none}h1{font-size:64px}.lead{font-size:16px;margin:12px 0}.role-label{margin-top:12px}.menu-actions{margin-top:12px}}

@@ -104,6 +104,7 @@ import roleBalance from "../data/roles/role_balance.json";
 import roleBlaze from "../data/roles/role_blaze.json";
 import roleCharge from "../data/roles/role_charge.json";
 import roleDolphin from "../data/roles/role_dolphin.json";
+import roleEnergy from "../data/roles/role_energy.json";
 import roleFinale from "../data/roles/role_finale.json";
 import roleSimple from "../data/roles/role_simple.json";
 
@@ -234,4 +235,4 @@ function normalizeCard(definition: CardDefinition): CardDefinition {
 
 export const sampleCards: CardDefinition[] = rawCards.map((card) => normalizeCard(card as CardDefinition));
 
-export const sampleRoles: RoleDefinition[] = [roleBalance, roleBlaze, roleCharge, roleDolphin, roleFinale, roleSimple] as RoleDefinition[];
+export const sampleRoles: RoleDefinition[] = [roleBalance, roleBlaze, roleCharge, roleDolphin, roleEnergy, roleFinale, roleSimple] as RoleDefinition[];

@@ -6,7 +6,7 @@
   "timings": [
     "consume"
   ],
-  "text": "消費: 自分の場のカード1枚につき、基礎攻撃{{+30}}",
+  "text": "消費: 自分の場のカード1枚につき、基礎攻撃{{+40}}",
   "effects": [
     {
       "id": "water_taki_shugyo_consume",
@@ -16,7 +16,7 @@
       "operations": [
         {
           "kind": "add_base_attack_per_ally_field_card_count",
-          "value": 30
+          "value": 40
         }
       ]
     }

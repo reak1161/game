@@ -6,7 +6,7 @@
   "timings": [
     "placed"
   ],
-  "text": "設置: 同じ属性のカードが3回以上連続で発動するたび、基礎ステータス{{+20}}",
+  "text": "設置: 同じ属性のカードが2回以上連続で発動するたび、基礎ステータス{{+20}}。連続するたびこのカードの数値{{×2}}、途切れるとリセット（このカードの効果による補正のみリセット）",
   "effects": [
     {
       "id": "none_super_chain_placed",
@@ -16,12 +16,16 @@
       },
       "condition": {
         "kind": "same_attribute_chain_at_least",
-        "value": 3
+        "value": 2
       },
       "operations": [
         {
           "kind": "add_base_both",
           "value": 20
+        },
+        {
+          "kind": "multiply_self_chain_numeric_value",
+          "value": 2
         }
       ]
     }
@@ -33,6 +37,13 @@
       "occurrence": 1,
       "writtenValueKind": "normal",
       "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "none_super_chain_placed",
+      "operationIndex": 1,
+      "occurrence": 2,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
     }
   ],
   "tags": [

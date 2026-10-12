@@ -65,6 +65,7 @@ export type OperationDefinition =
   | { kind: "multiply_base_both_if_last_destroy_succeeded"; value: number }
   | { kind: "multiply_pending_damage"; value: number }
   | { kind: "multiply_self_numeric_counters"; value: number }
+  | { kind: "multiply_self_chain_numeric_value"; value: number }
   | { kind: "multiply_temp_attack_per_last_invalidated_count"; value: number }
   | { kind: "multiply_temp_magic_per_last_destroy_count"; value: number }
   | { kind: "multiply_temp_magic_per_connected_attribute_count"; attribute: Attribute; value: number }
@@ -123,7 +124,7 @@ export type OperationDefinition =
   | { kind: "set_pending_damage_to_zero" }
   | { kind: "multiply_final_attack"; value: number }
   | { kind: "set_final_attack_to_zero" }
-  | { kind: "gamble_total_score_double_or_zero" }
+  | { kind: "gamble_total_score_double_or_zero"; value: number }
   | { kind: "deal_damage_from_ally_field_definition_count_multiplier"; definitionId: string; value: number }
   | { kind: "set_round_placement_limit"; value: number }
   | { kind: "add_base_magic_per_last_removed_enchant_count"; value: number }
@@ -143,6 +144,9 @@ export type CardTextValueBinding = {
   effectId: string;
   operationIndex: number;
   operationPath?: number[];
+  operationValueKey?: string;
+  literalValue?: number;
+  preserveWrittenValue?: boolean;
   occurrence: number;
   writtenValueKind?: "normal" | "probability" | "enchant" | "special";
   affectsValueKind?: "normal" | "probability" | "enchant" | "special";
@@ -223,10 +227,37 @@ export type EngineLogEntry = {
   meta?: Record<string, unknown>;
 };
 
+export type ReplayScore = { scoreThisRound: number; totalScore: number };
+
 export type ReplayEvent =
   | { type: "ROUND_START"; round: number }
-  | { type: "CARD_ACTIVATED"; playerId: string; instanceId: string; attribute: Attribute; chainCount: number }
-  | { type: "STATUS_CHANGED"; playerId: string; baseAttack: number; baseMagic: number; tempAttack: number; tempMagic: number }
+  | {
+      type: "CARD_ACTIVATED";
+      playerId: string;
+      instanceId: string;
+      attribute: Attribute;
+      chainCount: number;
+      isAdditional?: boolean;
+      activationKind?: "additional" | "reactivation";
+      activationSourceName?: string;
+    }
+  | {
+      type: "ADDITIONAL_ACTIVATION_ANNOUNCED";
+      playerId: string;
+      instanceId: string;
+      attribute: Attribute;
+      activationKind: "additional" | "reactivation";
+      activationSourceName?: string;
+    }
+  | {
+      type: "CHANCE_ROLL_RESULT";
+      playerId: string;
+      instanceId: string;
+      attribute: Attribute;
+      succeeded: boolean;
+    }
+  | { type: "MULTI_HIT_STARTED"; playerId: string; instanceId: string; attribute: Attribute; count: number }
+  | { type: "STATUS_CHANGED"; playerId: string; baseAttack: number; baseMagic: number; tempAttack: number; tempMagic: number; score?: ReplayScore }
   | { type: "CARD_CREATED"; playerId: string; instanceId: string; definitionId: string; fieldIndex: number }
   | {
       type: "CARD_REVIVED";
@@ -246,8 +277,8 @@ export type ReplayEvent =
     }
   | { type: "CARD_INVALIDATED"; playerId: string; instanceId: string }
   | { type: "ENCHANT_APPLIED"; playerId: string; instanceId: string; enchantId: string }
-  | { type: "DAMAGE_DEALT"; playerId: string; amount: number; source: string }
-  | { type: "FINAL_ATTACK"; playerId: string; amount: number }
+  | { type: "DAMAGE_DEALT"; playerId: string; amount: number; source: string; sourceInstanceId?: string; attribute?: Attribute; score?: ReplayScore }
+  | { type: "FINAL_ATTACK"; playerId: string; amount: number; score?: ReplayScore }
   | { type: "ROUND_END"; round: number };
 
 export type PlayerState = {

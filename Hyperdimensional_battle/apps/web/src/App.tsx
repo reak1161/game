@@ -7,20 +7,27 @@ import {
   useState,
   type CSSProperties,
   type DragEvent as ReactDragEvent,
+  type FocusEvent as ReactFocusEvent,
   type MouseEvent as ReactMouseEvent,
   type MutableRefObject,
-  type ReactNode
+  type ReactNode,
+  type WheelEvent as ReactWheelEvent
 } from "react";
 import {
+  applyAiRoundDecision,
+  applyAiRoundDecisionWithFrames,
   applyMulliganOnly,
   chooseRoundBuff,
   createLocalGame,
   finalizeRound,
   getCardDefinitionMap,
   getCurrentResolutionCard,
+  getCurrentResolutionTargetCandidateIds,
   getCurrentResolutionTargetKeys,
+  hasCurrentResolutionActivationEffect,
   getRoleDefinitionMap,
   getTokenPlacementSelectionKey,
+  planAiRound,
   resolvePendingFinalAction,
   resolveNextCard,
   rerollRoundBuffChoice,
@@ -42,6 +49,9 @@ import {
 } from "@hyperdimensional-battle/shared";
 import {
   addRoomAi,
+  fetchReplay,
+  saveReplay,
+  fetchRoomState,
   fetchRoomWorkerHealth,
   getOrCreateMultiPlayerId,
   joinRoom,
@@ -49,9 +59,13 @@ import {
   loadStoredMultiPlayerName,
   openRoomSocket,
   resolveRoomWorkerBaseUrl,
+  returnRoomToLobby,
   saveMultiPlayerName,
   startRoomMatch,
+  submitMatchAction,
+  type AiLevel,
   type MultiRoomState,
+  type ReplayRecord,
   updateRoomPlayer
 } from "./multiplayer";
 import thunderElectricIllustration from "./assets/card-illustrations/thunder_electric.png";
@@ -61,13 +75,84 @@ import thunderSpeedOfLightIllustration from "./assets/card-illustrations/thunder
 import thunderStaticIllustration from "./assets/card-illustrations/thunder_static.png";
 import thunderVoltageIllustration from "./assets/card-illustrations/thunder_voltage.png";
 import thunderVortexIllustration from "./assets/card-illustrations/thunder_vortex.png";
+import roundBuffFreezingWindImage from "./assets/round-buffs/round_buff_freezing_wind.png";
+import roundBuffMirrorImage from "./assets/round-buffs/round_buff_mirror.png";
+import roundBuffTailwindRushImage from "./assets/round-buffs/round_buff_tailwind_rush.png";
+import roundBuffVoltessimoImage from "./assets/round-buffs/round_buff_voltessimo.png";
+import { AnimatedScore, useBattleFeedback } from "./BattleFeedback";
+import { buildBattlePresentation, isSilentReplayStep, type BattlePresentationEvent } from "./battle-presentation";
 
 const cardMap = getCardDefinitionMap(sampleCards);
 const roleMap = getRoleDefinitionMap(sampleRoles);
 const cardNameToDefinitionIdMap = Object.fromEntries(sampleCards.map((card) => [card.name, card.id] as const));
+const roundBuffNameMap = Object.fromEntries(sampleRoundBuffs.map((buff) => [buff.name, buff] as const));
 const AUTO_RESOLVE_DELAY_MS = 650;
+const MIN_AUTO_RESOLVE_DELAY_MS = 50;
+const ACTIVATION_ACCELERATION_SCALE = 24;
+const ACTIVATION_ACCELERATION_POWER = 1.7;
 const DOLPHIN_DUPLICATE_PLACEHOLDER_ID = "dolphin_duplicate_preview";
 const AUDIO_VOLUME_STORAGE_KEY = "hyperdimensional_battle_audio_volume";
+
+const aiLevelLabels: Record<AiLevel, string> = {
+  easy: "かんたん",
+  normal: "ふつう",
+  advanced: "上級",
+  expert: "最上位"
+};
+
+function getActivationCadenceDelayMs(activationCount: number) {
+  const normalizedCount = Math.max(0, activationCount) / ACTIVATION_ACCELERATION_SCALE;
+  const remainingSlowdown = Math.exp(-(normalizedCount ** ACTIVATION_ACCELERATION_POWER));
+  return Math.round(
+    MIN_AUTO_RESOLVE_DELAY_MS + (AUTO_RESOLVE_DELAY_MS - MIN_AUTO_RESOLVE_DELAY_MS) * remainingSlowdown
+  );
+}
+
+function getReplayRoundActivationCount(frame: LocalGameState) {
+  let count = 0;
+  for (let index = frame.replayEvents.length - 1; index >= 0; index -= 1) {
+    const event = frame.replayEvents[index];
+    if (event?.type === "ROUND_START") {
+      break;
+    }
+    if (event?.type === "CARD_ACTIVATED") {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function resolveMatchPhaseLabel(phase: LocalGameState["phase"]) {
+  if (phase === "input") return "配置中";
+  if (phase === "round_end") return "強化選択";
+  return "対戦終了";
+}
+
+function formatReplayTimestamp(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds - minutes * 60;
+  return `${String(minutes).padStart(2, "0")}:${remaining.toFixed(1).padStart(4, "0")}`;
+}
+
+function resolveReplayTimelineLabel(frame: LocalGameState, previousFrame: LocalGameState | undefined) {
+  if (!previousFrame || previousFrame.round !== frame.round) return "ラウンド開始";
+  const newEvents = frame.replayEvents.slice(previousFrame.replayEvents.length);
+  const event = newEvents.at(-1);
+  if (event?.type === "CARD_ACTIVATED") return "カード発動";
+  if (event?.type === "ADDITIONAL_ACTIVATION_ANNOUNCED") {
+    return event.activationKind === "reactivation" ? "再発動" : "追加発動";
+  }
+  if (event?.type === "CHANCE_ROLL_RESULT") return event.succeeded ? "抽選成功" : "抽選失敗";
+  if (event?.type === "MULTI_HIT_STARTED") return `${event.count}回攻撃`;
+  if (event?.type === "DAMAGE_DEALT") return `ダメージ ${formatDisplayNumber(event.amount)}`;
+  if (event?.type === "FINAL_ATTACK") return `最終攻撃 ${formatDisplayNumber(event.amount)}`;
+  if (event?.type === "CARD_DESTROYED") return `${event.name}を破壊`;
+  if (event?.type === "CARD_REVIVED") return `${event.name}が復活`;
+  if (event?.type === "ROUND_END") return "ラウンド終了";
+  if (frame.pendingRoundBuffChoice) return "ラウンドバフ選択";
+  if (frame.phase === "finished") return "ゲーム終了";
+  return "効果処理";
+}
 const cardIllustrationMap: Partial<Record<string, string>> = {
   thunder_electric: thunderElectricIllustration,
   thunder_overcharge: thunderOverchargeIllustration,
@@ -76,6 +161,12 @@ const cardIllustrationMap: Partial<Record<string, string>> = {
   thunder_static: thunderStaticIllustration,
   thunder_voltage: thunderVoltageIllustration,
   thunder_vortex: thunderVortexIllustration
+};
+const roundBuffImageMap: Partial<Record<string, string>> = {
+  round_buff_freezing_wind: roundBuffFreezingWindImage,
+  round_buff_mirror: roundBuffMirrorImage,
+  round_buff_tailwind_rush: roundBuffTailwindRushImage,
+  round_buff_voltessimo: roundBuffVoltessimoImage
 };
 
 type InputStep = "mulligan" | "placement" | "resolving";
@@ -109,7 +200,7 @@ type ParticleBurst = {
   kind: ParticleKind;
   sprites: ParticleSprite[];
 };
-type FloatingTextTone = "red" | "purple";
+type FloatingTextTone = "red" | "purple" | "cyan" | "gold";
 type FloatingText = {
   id: string;
   x: number;
@@ -175,7 +266,7 @@ type TokenPlacementRequirement = {
   count: number;
 };
 type RoleFilter = "all" | "attack" | "magic" | "restricted" | "open";
-type AppScreen = "home" | "solo_setup" | "solo_battle" | "multi_lobby" | "multi_match" | "ranking";
+type AppScreen = "home" | "solo_setup" | "solo_battle" | "multi_lobby" | "multi_match" | "ranking" | "replay";
 type RoundBuffPresentation = RoundBuffDefinition & {
   instanceId: string;
 };
@@ -183,10 +274,13 @@ type LogGroup = {
   key: string;
   title: string | null;
   kind: "card" | "system-global" | "system-shared";
+  cardType: CardType | null;
   entries: EngineLogEntry[];
+  activationKind?: "normal" | "additional" | "reactivation";
+  activationSourceName?: string | null;
 };
 
-type UtilityIconKind = "settings" | "catalog" | "help";
+type UtilityIconKind = "settings" | "catalog" | "round-buffs" | "help";
 type SoloRankingEntry = {
   gameId: string;
   seed: string;
@@ -194,14 +288,18 @@ type SoloRankingEntry = {
   roleName: string;
   totalScore: number;
   completedAt: string;
+  replayCode?: string;
+  replayGame?: LocalGameState;
+  replayFrames?: LocalGameState[];
 };
+type PreparedReplay = ReplayRecord & { game: LocalGameState; frames: LocalGameState[] };
 
 type MultiConnectionState = "idle" | "connecting" | "connected" | "error";
 
 const STATUS_KEYS = ["baseAttack", "tempAttack", "baseMagic", "tempMagic", "scoreThisRound", "totalScore"] as const;
 type StatusKey = (typeof STATUS_KEYS)[number];
 const ATTRIBUTE_ORDER: Attribute[] = ["none", "fire", "water", "ice", "wind", "thunder", "earth", "dark"];
-const ACTIVATION_TONE_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+const ACTIVATION_TONE_STEPS = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33];
 const SOLO_RANKING_STORAGE_KEY = "hyperdimensional_battle_solo_rankings";
 const DESTROY_MOTION_FRAGMENTS = [
   { left: 0, top: 0, width: 34, height: 24, tx: -28, ty: -34, rotate: -18 },
@@ -239,6 +337,13 @@ function renderUtilityIcon(kind: UtilityIconKind) {
           <rect x="4" y="5" width="6.5" height="14" rx="1.3" fill="none" stroke="currentColor" strokeWidth="1.8" />
           <rect x="13.5" y="5" width="6.5" height="14" rx="1.3" fill="none" stroke="currentColor" strokeWidth="1.8" />
           <path d="M12 6.5v11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case "round-buffs":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="utility-icon">
+          <path d="M12 2.8l1.7 5.5 5.5 1.7-5.5 1.7-1.7 5.5-1.7-5.5L4.8 10l5.5-1.7z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          <path d="M18.2 15.2l.8 2.3 2.2.8-2.2.8-.8 2.2-.8-2.2-2.3-.8 2.3-.8z" fill="currentColor" />
         </svg>
       );
     case "help":
@@ -309,6 +414,17 @@ function sanitizeRouteToken(value: string | undefined | null, fallback: string) 
   return normalized.length > 0 ? normalized : fallback;
 }
 
+function sanitizeReplayCode(value: string | undefined | null) {
+  if (!value) return "";
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    decoded = value;
+  }
+  return decoded.trim().replace(/[^0-9A-Za-z_~-]/g, "").slice(0, 160);
+}
+
 function sanitizePlayerNameInput(value: string) {
   return value
     .normalize("NFKC")
@@ -339,6 +455,13 @@ function parseAppRoute() {
   }
 
   const [, head, tail] = window.location.pathname.split("/");
+  if (head === "replay") {
+    return {
+      screen: "replay" as AppScreen,
+      soloSeed: createDefaultSoloSeed(),
+      lobbyId: createDefaultLobbyId()
+    };
+  }
   if (head === "solo") {
     return {
       screen: "solo_setup" as AppScreen,
@@ -375,7 +498,7 @@ function parseAppRoute() {
   };
 }
 
-function buildAppPath(screen: AppScreen, options?: { soloSeed?: string; lobbyId?: string }) {
+function buildAppPath(screen: AppScreen, options?: { soloSeed?: string; lobbyId?: string; replayCode?: string }) {
   switch (screen) {
     case "solo_setup":
     case "solo_battle":
@@ -386,6 +509,8 @@ function buildAppPath(screen: AppScreen, options?: { soloSeed?: string; lobbyId?
       return `/match/${sanitizeRouteToken(options?.lobbyId, createDefaultLobbyId())}`;
     case "ranking":
       return "/ranking";
+    case "replay":
+      return `/replay/${encodeURIComponent(sanitizeReplayCode(options?.replayCode))}`;
     case "home":
     default:
       return "/";
@@ -412,13 +537,87 @@ function saveSoloRankings(entries: SoloRankingEntry[]) {
   if (typeof window === "undefined") {
     return;
   }
-  window.localStorage.setItem(SOLO_RANKING_STORAGE_KEY, JSON.stringify(entries));
+  const persistedEntries = entries.map(({ replayFrames: _replayFrames, ...entry }) => entry);
+  window.localStorage.setItem(SOLO_RANKING_STORAGE_KEY, JSON.stringify(persistedEntries));
+}
+
+function buildRemoteReplayFrames(replay: ReplayRecord) {
+  if (replay.frames?.length) return replay.frames;
+  if (replay.game) return [replay.game];
+  let current = replay.initialGame
+    ? structuredClone(replay.initialGame)
+    : createLocalGame({
+        roleId: replay.roleId ?? "role_simple",
+        cards: sampleCards,
+        roles: sampleRoles,
+        roundBuffs: sampleRoundBuffs,
+        seed: replay.gameSeed ?? replay.seed
+      });
+  const frames = [structuredClone(current)];
+  const stringArray = (value: unknown) =>
+    Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
+  for (const command of replay.commands ?? []) {
+    const payload = command.payload;
+    switch (command.action) {
+      case "mulligan":
+        current = applyMulliganOnly(current, stringArray(payload.instanceIds));
+        break;
+      case "start_resolution":
+        current = startRoundResolution(current, stringArray(payload.orderedFieldIds));
+        break;
+      case "resolve_next":
+        current = resolveNextCard(
+          current,
+          payload.targetSelections && typeof payload.targetSelections === "object"
+            ? (payload.targetSelections as Record<string, string>)
+            : {}
+        );
+        break;
+      case "resolve_final":
+        current = resolvePendingFinalAction(
+          current,
+          typeof payload.sourceInstanceId === "string" ? payload.sourceInstanceId : "",
+          typeof payload.insertIndex === "number" ? payload.insertIndex : 0
+        );
+        break;
+      case "finalize_round":
+        current = finalizeRound(current, stringArray(payload.discardIds));
+        break;
+      case "reroll_buff":
+        current = rerollRoundBuffChoice(current);
+        break;
+      case "choose_buff":
+        current = chooseRoundBuff(current, typeof payload.optionIndex === "number" ? payload.optionIndex : -1);
+        break;
+      case "ai_round": {
+        const requestedLevel = payload.level === "easy"
+          ? "easy"
+          : payload.level === "advanced" || payload.level === "expert"
+            ? "advanced"
+            : "normal";
+        const roundResult = applyAiRoundDecisionWithFrames(current, planAiRound(current, requestedLevel));
+        current = roundResult.state;
+        frames.push(...roundResult.frames);
+        if (current.phase === "round_end" && !current.pendingFinalAction) {
+          current = finalizeRound(current, current.players[0]!.field.slice(0, 2).map((card) => card.instanceId));
+          frames.push(structuredClone(current));
+          if (current.pendingRoundBuffChoice) current = chooseRoundBuff(current, 0);
+          frames.push(structuredClone(current));
+        }
+        continue;
+      }
+      default:
+        continue;
+    }
+    frames.push(structuredClone(current));
+  }
+  return frames;
 }
 
 function getTargetOperations(card: CardDefinition) {
   return card.effects.flatMap((effect) =>
     effect.operations.flatMap((operation) =>
-      "target" in operation && operation.target
+      "target" in operation && operation.target === "one_ally_field_card"
         ? [
             {
               key: operation.kind,
@@ -556,8 +755,17 @@ function getRoundBuffDrawWeightBonus(buffIds: string[], attribute: Attribute) {
   if (attribute === "thunder") {
     return getEffectiveRoundBuffCount(buffIds, "round_buff_voltessimo");
   }
+  if (attribute === "ice") {
+    return getEffectiveRoundBuffCount(buffIds, "round_buff_freezing_wind");
+  }
   if (attribute === "wind") {
     return getEffectiveRoundBuffCount(buffIds, "round_buff_tailwind_rush");
+  }
+  if (attribute === "dark") {
+    return getEffectiveRoundBuffCount(buffIds, "round_buff_halloween_trick");
+  }
+  if (attribute === "fire") {
+    return getEffectiveRoundBuffCount(buffIds, "round_buff_flame_reaction");
   }
   return 0;
 }
@@ -570,6 +778,12 @@ function extractLogGroupTitle(entry: EngineLogEntry) {
   const colonMatch = entry.message.match(/^([^:]+):\s*/);
   if (colonMatch) {
     return colonMatch[1] ?? null;
+  }
+  const skippedCardMatch = entry.message.match(
+    /^(.+?)\s+は(?:封印中|無効化されている|破壊済み)の?ためスキップしました。$/
+  );
+  if (skippedCardMatch) {
+    return skippedCardMatch[1] ?? null;
   }
   const damageMatch = entry.message.match(/^(.+?)\s+が\s+/);
   return damageMatch?.[1] ?? null;
@@ -615,10 +829,29 @@ function buildLogGroups(entries: EngineLogEntry[]) {
   const groups: LogGroup[] = [];
 
   for (const entry of entries) {
-    if (entry.code === "CARD_ACTIVATED_DONE") {
+    if (entry.code === "CARD_ACTIVATED_DONE" || entry.code === "ADDITIONAL_ACTIVATION_QUEUED") {
       continue;
     }
     if (entry.code === "ENCHANT_APPLIED") {
+      continue;
+    }
+    if (entry.code === "CARD_ACTIVATION_STARTED") {
+      const title = extractLogGroupTitle(entry);
+      const definitionId = title ? cardNameToDefinitionIdMap[title] : null;
+      const activationKind =
+        entry.meta?.activationKind === "additional" || entry.meta?.activationKind === "reactivation"
+          ? entry.meta.activationKind
+          : "normal";
+      groups.push({
+        key: `group_${entry.id}`,
+        title,
+        kind: "card",
+        cardType: definitionId ? cardMap[definitionId]?.type ?? null : null,
+        entries: [],
+        activationKind,
+        activationSourceName:
+          typeof entry.meta?.activationSourceName === "string" ? entry.meta.activationSourceName : null
+      });
       continue;
     }
     const kind = getLogGroupKind(entry);
@@ -627,11 +860,14 @@ function buildLogGroups(entries: EngineLogEntry[]) {
         key: `group_${entry.id}`,
         title: null,
         kind,
+        cardType: null,
         entries: [entry]
       });
       continue;
     }
     const title = extractLogGroupTitle(entry);
+    const definitionId = title ? cardNameToDefinitionIdMap[title] : null;
+    const cardType = definitionId ? cardMap[definitionId]?.type ?? null : null;
     const currentGroup = groups[groups.length - 1];
     if (title && currentGroup?.kind === "card" && currentGroup.title === title) {
       currentGroup.entries.push(entry);
@@ -642,6 +878,7 @@ function buildLogGroups(entries: EngineLogEntry[]) {
       key: `group_${entry.id}`,
       title,
       kind: "card",
+      cardType,
       entries: [entry]
     });
   }
@@ -653,7 +890,58 @@ function trimGroupedLogMessage(message: string, title: string | null) {
   if (!title) {
     return message;
   }
-  return message.replace(new RegExp(`^${escapeRegExp(title)}[:：]\\s?`), "");
+  return message
+    .replace(new RegExp(`^${escapeRegExp(title)}[:：]\\s?`), "")
+    .replace(new RegExp(`^${escapeRegExp(title)}\\s+は\\s*`), "");
+}
+
+function renderLogGroupLabel(group: LogGroup) {
+  if (!group.title) {
+    return null;
+  }
+  const badgeLabel =
+    group.activationKind === "reactivation"
+      ? "再発動"
+      : group.activationKind === "additional"
+        ? `追加発動${group.activationSourceName ? `：${group.activationSourceName}` : ""}`
+        : null;
+  const sourceDefinitionId = group.activationSourceName
+    ? cardNameToDefinitionIdMap[group.activationSourceName]
+    : undefined;
+  const sourceCard = sourceDefinitionId ? cardMap[sourceDefinitionId] : undefined;
+  const sourceRoundBuff = group.activationSourceName ? roundBuffNameMap[group.activationSourceName] : undefined;
+  return (
+    <div className="log-group-label">
+      <span>{group.title}</span>
+      {badgeLabel ? (
+        <button type="button" className={`log-activation-badge is-${group.activationKind}`}>
+          {badgeLabel}
+          <span className="log-activation-reason-popup" role="tooltip">
+            <strong>{group.activationSourceName ?? group.title}</strong>
+            {sourceCard ? (
+              <span className="card-text-body">
+                {renderCardTextWithAdjustedNumbers(sourceCard.text, null, { definitionId: sourceCard.id })}
+              </span>
+            ) : sourceRoundBuff ? (
+              <span>{sourceRoundBuff.description}</span>
+            ) : null}
+          </span>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function getLogEntryClassName(entry: EngineLogEntry, group: LogGroup) {
+  const classes = ["log-entry", `log-${entry.level}`];
+  if (group.kind !== "card") {
+    classes.push("log-entry-system");
+  } else if (entry.meta?.sourceKind === "enchant") {
+    classes.push("log-entry-enchant");
+  } else if (entry.code === "DAMAGE_DEALT" && group.cardType) {
+    classes.push(`log-entry-damage-${group.cardType}`);
+  }
+  return classes.join(" ");
 }
 
 function escapeRegExp(value: string) {
@@ -743,10 +1031,12 @@ function getCardNumericMultiplier(card: CardInstance | null | undefined) {
   const multiplier = card.derived?.numericValueMultiplier;
   const roundBuffMultiplier = card.derived?.roundBuffNumericValueMultiplier;
   const fieldTransformMultiplier = card.derived?.fieldTransformNumericValueMultiplier;
+  const chainMultiplier = card.derived?.chainNumericValueMultiplier;
   return (
     (typeof multiplier === "number" ? multiplier : 1) *
     (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1) *
-    (typeof fieldTransformMultiplier === "number" ? fieldTransformMultiplier : 1)
+    (typeof fieldTransformMultiplier === "number" ? fieldTransformMultiplier : 1) *
+    (typeof chainMultiplier === "number" ? chainMultiplier : 1)
   );
 }
 
@@ -763,11 +1053,45 @@ function getCardProbabilityValueMultiplier(card: CardInstance | null | undefined
     return 1;
   }
   const multiplier = card.derived?.probabilityValueMultiplier;
-  return typeof multiplier === "number" ? multiplier : 1;
+  const roundBuffMultiplier = card.derived?.roundBuffProbabilityValueMultiplier;
+  return (typeof multiplier === "number" ? multiplier : 1) *
+    (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1);
 }
 
 function formatCardTextNumber(value: number) {
   return formatDisplayNumber(value);
+}
+
+type CardTextValueKind = "normal" | "probability" | "enchant" | "special";
+
+const cardTextValueKindTooltips: Record<CardTextValueKind, string> = {
+  normal: "通常数値：カード数値への補正で変動します",
+  probability: "確率数値：確率への補正で変動します",
+  enchant: "エンチャント数値：エンチャントへの補正で変動します",
+  special: "特殊値：原則として補正では変動しない固定値です"
+};
+
+function getCardTextValueKindTooltip(kind?: CardTextValueKind) {
+  return kind ? cardTextValueKindTooltips[kind] : "変動数値";
+}
+
+function alignCardTextValueTooltip(event: ReactMouseEvent<HTMLSpanElement> | ReactFocusEvent<HTMLSpanElement>) {
+  const element = event.currentTarget;
+  const rect = element.getBoundingClientRect();
+  const catalogCard = element.closest<HTMLElement>(".catalog-card");
+  const boundary = catalogCard?.getBoundingClientRect();
+  const boundaryLeft = boundary ? boundary.left + 8 : 8;
+  const boundaryRight = boundary ? boundary.right - 8 : window.innerWidth - 8;
+  const availableWidth = Math.max(1, boundaryRight - boundaryLeft);
+  const tooltipWidth = Math.min(260, availableWidth);
+  const anchorCenter = rect.left + rect.width / 2;
+  const centeredLeft = anchorCenter - tooltipWidth / 2;
+  const clampedLeft = Math.min(
+    Math.max(centeredLeft, boundaryLeft),
+    Math.max(boundaryLeft, boundaryRight - tooltipWidth)
+  );
+  element.style.setProperty("--card-value-tooltip-width", `${tooltipWidth}px`);
+  element.style.setProperty("--card-value-tooltip-shift-x", `${clampedLeft - centeredLeft}px`);
 }
 
 function formatMarkedCardTextNumber(template: string, value: number) {
@@ -828,6 +1152,7 @@ function renderPlainNumericAdjustedTextSegmentSafe(
       value: string;
       change: "none" | "up" | "down";
       kind: "normal" | "probability" | "enchant" | "special";
+      preserveWrittenValue?: boolean;
     }
   >,
   occurrenceStart: number
@@ -858,6 +1183,10 @@ function renderPlainNumericAdjustedTextSegmentSafe(
       parts.push(
         <span
           key={`value_${occurrence}`}
+          tabIndex={0}
+          onMouseEnter={alignCardTextValueTooltip}
+          onFocus={alignCardTextValueTooltip}
+          data-value-kind-label={getCardTextValueKindTooltip(replacement.kind)}
           className={`card-text-value-chip${
             replacement.change === "up"
               ? " card-text-value-modified-up"
@@ -892,6 +1221,7 @@ function renderNumericAdjustedTextSegmentSafe(
       value: string;
       change: "none" | "up" | "down";
       kind: "normal" | "probability" | "enchant" | "special";
+      preserveWrittenValue?: boolean;
     }
   >,
   occurrenceStart: number
@@ -917,6 +1247,10 @@ function renderNumericAdjustedTextSegmentSafe(
     parts.push(
       <span
         key={`marked_value_${occurrence}_${markerStart}`}
+        tabIndex={0}
+        onMouseEnter={alignCardTextValueTooltip}
+        onFocus={alignCardTextValueTooltip}
+        data-value-kind-label={getCardTextValueKindTooltip(replacement?.kind)}
         className={`card-text-value-chip${
           replacement?.change === "up"
             ? " card-text-value-modified-up"
@@ -925,7 +1259,11 @@ function renderNumericAdjustedTextSegmentSafe(
               : ""
         }${replacement ? ` card-text-value-kind-${replacement.kind}` : ""}`}
       >
-        {replacement ? formatMarkedProbabilityAwareTextNumber(markerValue, Number(replacement.value)) : markerValue}
+        {replacement
+          ? replacement.preserveWrittenValue
+            ? markerValue
+            : formatMarkedProbabilityAwareTextNumber(markerValue, Number(replacement.value))
+          : markerValue}
       </span>
     );
     occurrence += 1;
@@ -972,6 +1310,7 @@ function renderCardTextLine(
       value: string;
       change: "none" | "up" | "down";
       kind: "normal" | "probability" | "enchant" | "special";
+      preserveWrittenValue?: boolean;
     }
   >,
   occurrenceStart: number,
@@ -997,7 +1336,7 @@ function renderCardTextLine(
     if (referenceStart > lastIndex) {
       const segment = line.slice(lastIndex, referenceStart);
       const rendered = renderNumericAdjustedTextSegmentSafe(segment, replacements, occurrence);
-      parts.push(...rendered.parts);
+      parts.push(<Fragment key={`segment_${lastIndex}`}>{rendered.parts}</Fragment>);
       occurrence = rendered.nextOccurrence;
     }
 
@@ -1031,7 +1370,7 @@ function renderCardTextLine(
 
   if (lastIndex < line.length) {
     const rendered = renderNumericAdjustedTextSegmentSafe(line.slice(lastIndex), replacements, occurrence);
-    parts.push(...rendered.parts);
+    parts.push(<Fragment key={`segment_${lastIndex}`}>{rendered.parts}</Fragment>);
     occurrence = rendered.nextOccurrence;
   }
 
@@ -1046,6 +1385,7 @@ function renderPlainNumericAdjustedTextSegment(
       value: string;
       change: "none" | "up" | "down";
       kind: "normal" | "probability" | "enchant" | "special";
+      preserveWrittenValue?: boolean;
     }
   >,
   occurrenceStart: number
@@ -1076,6 +1416,10 @@ function renderPlainNumericAdjustedTextSegment(
       parts.push(
         <span
           key={`value_${occurrence}`}
+          tabIndex={0}
+          onMouseEnter={alignCardTextValueTooltip}
+          onFocus={alignCardTextValueTooltip}
+          data-value-kind-label={getCardTextValueKindTooltip(replacement.kind)}
           className={`card-text-value-chip${
             replacement.change === "up"
               ? " card-text-value-modified-up"
@@ -1110,6 +1454,7 @@ function renderNumericAdjustedTextSegment(
       value: string;
       change: "none" | "up" | "down";
       kind: "normal" | "probability" | "enchant" | "special";
+      preserveWrittenValue?: boolean;
     }
   >,
   occurrenceStart: number
@@ -1135,6 +1480,10 @@ function renderNumericAdjustedTextSegment(
     parts.push(
       <span
         key={`marked_value_${occurrence}_${markerStart}`}
+        tabIndex={0}
+        onMouseEnter={alignCardTextValueTooltip}
+        onFocus={alignCardTextValueTooltip}
+        data-value-kind-label={getCardTextValueKindTooltip(replacement?.kind)}
         className={`card-text-value-chip${
           replacement?.change === "up"
             ? " card-text-value-modified-up"
@@ -1143,7 +1492,11 @@ function renderNumericAdjustedTextSegment(
               : ""
         }${replacement ? ` card-text-value-kind-${replacement.kind}` : ""}`}
       >
-        {replacement ? formatMarkedCardTextNumber(markerValue, Number(replacement.value)) : markerValue}
+        {replacement
+          ? replacement.preserveWrittenValue
+            ? markerValue
+            : formatMarkedCardTextNumber(markerValue, Number(replacement.value))
+          : markerValue}
       </span>
     );
     occurrence += 1;
@@ -1167,6 +1520,7 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
       value: string;
       change: "none" | "up" | "down";
       kind: "normal" | "probability" | "enchant" | "special";
+      preserveWrittenValue?: boolean;
     }
   >();
   const definition = card ? cardMap[card.definitionId] : options?.definitionId ? cardMap[options.definitionId] : undefined;
@@ -1192,10 +1546,13 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
       operation = nextOperation;
       currentOperationList = "operations" in nextOperation && Array.isArray(nextOperation.operations) ? nextOperation.operations : undefined;
     }
-    if (!operation || !("value" in operation) || typeof operation.value !== "number") {
+    const operationValue = operation && binding.operationValueKey
+      ? (operation as Record<string, unknown>)[binding.operationValueKey]
+      : operation?.value;
+    const originalValue = binding.literalValue ?? operationValue;
+    if (typeof originalValue !== "number") {
       continue;
     }
-    const originalValue = operation.value;
     const adjustedValue = (() => {
       const writtenKind = binding.writtenValueKind ?? "normal";
       if (writtenKind === "enchant") {
@@ -1213,7 +1570,8 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
     replacements.set(binding.occurrence, {
       value: formatCardTextNumber(adjustedValue),
       change,
-      kind: binding.writtenValueKind ?? "normal"
+      kind: binding.writtenValueKind ?? "normal",
+      preserveWrittenValue: binding.preserveWrittenValue
     });
   }
 
@@ -1222,7 +1580,7 @@ function renderCardTextWithAdjustedNumbers(text: string, card?: CardInstance | n
   const lines = formattedText.split("\n");
   lines.forEach((line, index) => {
     const rendered = renderCardTextLine(line, replacements, occurrence, options);
-    parts.push(...rendered.parts);
+    parts.push(<Fragment key={`line_${index}`}>{rendered.parts}</Fragment>);
     occurrence = rendered.nextOccurrence;
 
     if (sealProgress && line.startsWith("封印:")) {
@@ -1435,11 +1793,31 @@ export function App() {
   const [multiWorkerHealth, setMultiWorkerHealth] = useState<string>("idle");
   const [multiPlayerId] = useState(() => getOrCreateMultiPlayerId());
   const [multiPlayerName, setMultiPlayerName] = useState(() => loadStoredMultiPlayerName());
+  const [multiViewPlayerId, setMultiViewPlayerId] = useState(() => getOrCreateMultiPlayerId());
+  const [replayCodeInput, setReplayCodeInput] = useState(() =>
+    typeof window === "undefined" ? "" : sanitizeReplayCode(window.location.pathname.split("/")[2])
+  );
+  const [activeReplay, setActiveReplay] = useState<PreparedReplay | null>(null);
+  const [replayFrameIndex, setReplayFrameIndex] = useState(0);
+  const [isReplayPlaying, setIsReplayPlaying] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState(sampleRoles[0]?.id ?? "");
+  const [selectedAiLevel, setSelectedAiLevel] = useState<AiLevel>("normal");
+  const [selectedAiRoleId, setSelectedAiRoleId] = useState(sampleRoles[0]?.id ?? "");
+  const [isGeneratingSoloAiReplay, setIsGeneratingSoloAiReplay] = useState(false);
+  const [soloAiReplayProgress, setSoloAiReplayProgress] = useState<{
+    round: number;
+    completedRounds: number;
+    message: string;
+    processedPlans?: number;
+    totalPlans?: number;
+    explorationPercent?: number;
+  } | null>(null);
   const [game, setGame] = useState<LocalGameState | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isCardCatalogOpen, setIsCardCatalogOpen] = useState(false);
+  const [isRoundBuffCatalogOpen, setIsRoundBuffCatalogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRoundBuffListOpen, setIsRoundBuffListOpen] = useState(false);
   const [audioVolume, setAudioVolume] = useState(() => getInitialAudioVolume());
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [cardSearchText, setCardSearchText] = useState("");
@@ -1460,6 +1838,7 @@ export function App() {
   const [draggedDolphinDuplicateId, setDraggedDolphinDuplicateId] = useState<string | null>(null);
   const [dolphinDuplicatePreviewIndex, setDolphinDuplicatePreviewIndex] = useState<number | null>(null);
   const [roundEndDiscardIds, setRoundEndDiscardIds] = useState<string[]>([]);
+  const [isRoundBuffSubmitting, setIsRoundBuffSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<HoveredCardState | null>(null);
   const [hoveredTooltipDetailDefinitionId, setHoveredTooltipDetailDefinitionId] = useState<string | null>(null);
@@ -1479,7 +1858,9 @@ export function App() {
   const particleTimeoutIdsRef = useRef<number[]>([]);
   const floatingTimeoutIdsRef = useRef<number[]>([]);
   const replayStepTimeoutRef = useRef<number | null>(null);
-  const replayQueueRef = useRef<ReplayEvent[]>([]);
+  const replayQueueRef = useRef<BattlePresentationEvent[]>([]);
+  const queuedScoreRef = useRef({ scoreThisRound: 0, totalScore: 0 });
+  const replayUserPausedRef = useRef(false);
   const replayProcessingRef = useRef(false);
   const gameRef = useRef<LocalGameState | null>(null);
   const statusPanelRef = useRef<HTMLElement | null>(null);
@@ -1489,11 +1870,24 @@ export function App() {
   const hoverTooltipRef = useRef<HTMLDivElement | null>(null);
   const dragScrollVelocityRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const battleFrameRef = useRef<HTMLDivElement | null>(null);
   const activationToneCountRef = useRef(0);
   const savedRankingGameIdsRef = useRef(new Set<string>());
+  const soloReplayFramesRef = useRef<LocalGameState[]>([]);
+  const initialReplayLoadedRef = useRef(false);
   const multiSocketRef = useRef<WebSocket | null>(null);
 
   const player = game?.players[0] ?? null;
+  const battleFeedback = useBattleFeedback({
+    identity: `${game?.gameId ?? ""}:${player?.playerId ?? ""}`,
+    volume: audioVolume,
+    audio: audioContextRef,
+    fieldCards: fieldCardRefs,
+    definitionId: (instanceId) => player ? [...player.field, ...player.hand, ...player.discard, ...player.removed, ...player.deck]
+      .find((card) => card.instanceId === instanceId)?.definitionId : undefined,
+    scoreAnchor: () => statusBlockRefs.current.get("scoreThisRound"),
+    frame: battleFrameRef
+  });
   const latestHoveredCard = useMemo(() => {
     if (!hoveredCard) {
       return null;
@@ -1505,9 +1899,30 @@ export function App() {
       hoveredCard.card
     );
   }, [hoveredCard, player]);
+  const isSpectatingMultiPlayer = appScreen === "multi_match" && multiViewPlayerId !== multiPlayerId;
+  const isReplayBattle = appScreen === "replay";
+  const isReadOnlyBattle = isSpectatingMultiPlayer || isReplayBattle;
+  const replayTimeline = useMemo(() => {
+    const frames = activeReplay?.frames ?? [];
+    const roundStartIndexes = new Map<number, number>();
+    return frames.map((frame, index) => {
+      if (!roundStartIndexes.has(frame.round)) roundStartIndexes.set(frame.round, index);
+      const roundStartIndex = roundStartIndexes.get(frame.round) ?? index;
+      const framePlayer = frame.players[0];
+      return {
+        index,
+        round: frame.round,
+        elapsedSeconds: index * 0.9,
+        roundElapsedSeconds: (index - roundStartIndex) * 0.9,
+        scoreThisRound: framePlayer?.scoreThisRound ?? 0,
+        totalScore: framePlayer?.totalScore ?? 0,
+        label: resolveReplayTimelineLabel(frame, frames[index - 1])
+      };
+    });
+  }, [activeReplay]);
   const pendingDolphinFinalAction =
-    game?.pendingFinalAction?.kind === "dolphin_duplicate" ? game.pendingFinalAction : null;
-  const pendingRoundBuffChoice = game?.pendingRoundBuffChoice ?? null;
+    !isReadOnlyBattle && game?.pendingFinalAction?.kind === "dolphin_duplicate" ? game.pendingFinalAction : null;
+  const pendingRoundBuffChoice = !isReadOnlyBattle ? game?.pendingRoundBuffChoice ?? null : null;
   const activeRoleId = game ? player?.roleId ?? selectedRoleId : selectedRoleId;
   const activeRole = roleMap[activeRoleId];
   const selectedRole = roleMap[selectedRoleId];
@@ -1520,7 +1935,23 @@ export function App() {
   const sharedMultiSeed = multiRoomState?.seed || multiSeed;
   const multiRoomLogEntries = useMemo(() => (multiRoomState?.log ? [...multiRoomState.log].reverse() : []), [multiRoomState?.log]);
   const allMultiPlayersReady = multiPlayers.length > 0 && multiPlayers.every((entry) => entry.ready);
-  const canStartMultiMatch = Boolean(isMultiHost && multiPlayers.length >= 2 && allMultiPlayersReady);
+  const allMultiPlayersHaveRoles = multiPlayers.length > 0 && multiPlayers.every((entry) => Boolean(entry.roleId));
+  const canStartMultiMatch = Boolean(isMultiHost && multiPlayers.length >= 2 && allMultiPlayersReady && allMultiPlayersHaveRoles);
+  const isMultiMatchFinished = Boolean(
+    multiRoomState?.matchPlayers?.length && multiRoomState.matchPlayers.every((entry) => entry.phase === "finished")
+  );
+  const isMultiBattle = appScreen === "multi_match";
+  const applyRemoteMatchAction = async (action: string, payload: Record<string, unknown> = {}) => {
+    if (isReadOnlyBattle) {
+      throw new Error("観戦・リプレイ中は操作できません。");
+    }
+    const nextState = await submitMatchAction(lobbyId, { playerId: multiPlayerId, action, ...payload });
+    setMultiRoomState(nextState);
+    if (nextState.game) {
+      setGame(nextState.game);
+    }
+    return nextState;
+  };
   const roundBuffCatalog = game?.roundBuffCatalog ?? sampleRoundBuffs;
   const roundBuffMap = useMemo(
     () => Object.fromEntries(roundBuffCatalog.map((buff) => [buff.id, buff] as const)),
@@ -1540,6 +1971,16 @@ export function App() {
     [player?.selectedRoundBuffs, roundBuffMap]
   );
   const selectedRoundBuffIds = useMemo(() => selectedRoundBuffs.map((buff) => buff.id), [selectedRoundBuffs]);
+  const groupedSelectedRoundBuffs = useMemo(
+    () =>
+      selectedRoundBuffs.reduce<Array<RoundBuffPresentation & { count: number }>>((groups, buff) => {
+        const existing = groups.find((entry) => entry.id === buff.id);
+        if (existing) existing.count += 1;
+        else groups.push({ ...buff, count: 1 });
+        return groups;
+      }, []),
+    [selectedRoundBuffs]
+  );
   const restrictedTypes = activeRole?.restrictions?.disallowCardTypes ?? [];
   const filteredRoles = useMemo(() => {
     return sampleRoles.filter((role) => {
@@ -1559,10 +2000,17 @@ export function App() {
     });
   }, [roleFilter]);
   const placementLimit = (player?.roundPlacementLimit ?? 5) + getRoundBuffPlacementLimitBonus(selectedRoundBuffIds);
-  const navigateToScreen = (nextScreen: AppScreen, options?: { soloSeed?: string; lobbyId?: string; replace?: boolean }) => {
+  const navigateToScreen = (
+    nextScreen: AppScreen,
+    options?: { soloSeed?: string; lobbyId?: string; replayCode?: string; replace?: boolean }
+  ) => {
     const nextSoloSeed = options?.soloSeed ? sanitizeRouteToken(options.soloSeed, createDefaultSoloSeed()) : soloSeed;
     const nextLobbyId = options?.lobbyId ? sanitizeRouteToken(options.lobbyId, createDefaultLobbyId()) : lobbyId;
-    const nextPath = buildAppPath(nextScreen, { soloSeed: nextSoloSeed, lobbyId: nextLobbyId });
+    const nextPath = buildAppPath(nextScreen, {
+      soloSeed: nextSoloSeed,
+      lobbyId: nextLobbyId,
+      replayCode: options?.replayCode
+    });
     if (typeof window !== "undefined") {
       const method = options?.replace ? "replaceState" : "pushState";
       window.history[method](null, "", nextPath);
@@ -1641,6 +2089,23 @@ export function App() {
   }, [game]);
 
   useEffect(() => {
+    lastProcessedReplayIndexRef.current = 0;
+    lastProcessedLogIndexRef.current = 0;
+    replayQueueRef.current = [];
+    replayProcessingRef.current = false;
+    lastActivationRef.current = null;
+    activationToneCountRef.current = 0;
+    queuedScoreRef.current = { scoreThisRound: 0, totalScore: 0 };
+    if (replayStepTimeoutRef.current !== null) {
+      window.clearTimeout(replayStepTimeoutRef.current);
+      replayStepTimeoutRef.current = null;
+    }
+    setParticleBursts([]);
+    setFloatingTexts([]);
+    setCardMotionOverlays([]);
+  }, [game?.gameId, player?.playerId]);
+
+  useEffect(() => {
     if (game?.phase === "input" && player) {
       setInputStep("mulligan");
       setMulliganIds([]);
@@ -1667,6 +2132,9 @@ export function App() {
         window.clearTimeout(timeoutId);
       }
       floatingTimeoutIdsRef.current = [];
+      if (replayStepTimeoutRef.current !== null) {
+        window.clearTimeout(replayStepTimeoutRef.current);
+      }
       if (autoScrollFrameRef.current !== null) {
         window.cancelAnimationFrame(autoScrollFrameRef.current);
       }
@@ -1700,7 +2168,14 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (!game || game.phase !== "finished" || savedRankingGameIdsRef.current.has(game.gameId)) {
+    if (appScreen !== "solo_battle" || !game) return;
+    if (soloReplayFramesRef.current.at(-1) !== game) {
+      soloReplayFramesRef.current = [...soloReplayFramesRef.current, structuredClone(game)];
+    }
+  }, [appScreen, game]);
+
+  useEffect(() => {
+    if (appScreen !== "solo_battle" || !game || game.phase !== "finished" || savedRankingGameIdsRef.current.has(game.gameId)) {
       return;
     }
 
@@ -1711,15 +2186,19 @@ export function App() {
       roleId: game.players[0]?.roleId ?? "",
       roleName: role?.name ?? game.players[0]?.roleId ?? "不明",
       totalScore: game.players[0]?.totalScore ?? 0,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
+      replayCode: `${game.rngSeed}~solo~${createRandomRouteToken(8)}`,
+      replayGame: game,
+      replayFrames: soloReplayFramesRef.current
     };
     const nextEntries = [...soloRankings.filter((current) => current.gameId !== game.gameId), entry].sort(
       (left, right) => right.totalScore - left.totalScore || right.completedAt.localeCompare(left.completedAt)
     );
     savedRankingGameIdsRef.current.add(game.gameId);
-    setSoloRankings(nextEntries);
-    saveSoloRankings(nextEntries);
-  }, [game, soloRankings]);
+    const limitedEntries = nextEntries.slice(0, 10);
+    setSoloRankings(limitedEntries);
+    saveSoloRankings(limitedEntries);
+  }, [appScreen, game, soloRankings]);
 
   useEffect(() => {
     saveMultiPlayerName(multiPlayerName);
@@ -1785,7 +2264,14 @@ export function App() {
         if (cancelled) {
           return;
         }
-        setMultiRoomState(joined);
+        let roomState = joined;
+        if (joined.phase === "match") {
+          roomState = await fetchRoomState(lobbyId, multiPlayerId, multiViewPlayerId);
+          if (roomState.game) {
+            setGame(roomState.game);
+          }
+        }
+        setMultiRoomState(roomState);
         if (joined.seed) {
           setMultiSeed(joined.seed);
         }
@@ -1803,6 +2289,16 @@ export function App() {
             }
             if (appScreen === "multi_lobby" && nextState.phase === "match") {
               navigateToScreen("multi_match", { lobbyId, replace: true });
+            }
+            if (nextState.phase === "match") {
+              void fetchRoomState(lobbyId, multiPlayerId, multiViewPlayerId).then((privateState) => {
+                if (!cancelled) {
+                  setMultiRoomState(privateState);
+                  if (privateState.game) {
+                    setGame(privateState.game);
+                  }
+                }
+              });
             }
             if (appScreen === "multi_match" && nextState.phase === "lobby") {
               navigateToScreen("multi_lobby", { lobbyId, replace: true });
@@ -1845,55 +2341,94 @@ export function App() {
       multiSocketRef.current?.close();
       multiSocketRef.current = null;
     };
-  }, [appScreen, lobbyId, multiPlayerId, multiPlayerName, multiSeed, multiWorkerUrl]);
+  }, [appScreen, lobbyId, multiPlayerId, multiPlayerName, multiSeed, multiViewPlayerId, multiWorkerUrl]);
 
   useEffect(() => {
-    const primeAudio = () => {
+    const primeAudio = async () => {
       if (audioVolume <= 0) {
         return;
       }
-      if (!audioContextRef.current) {
+      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
         audioContextRef.current = new window.AudioContext();
       }
-      if (audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume().catch(() => undefined);
+      if (audioContextRef.current.state !== "running") {
+        await audioContextRef.current.resume().catch(() => undefined);
       }
     };
 
-    window.addEventListener("pointerdown", primeAudio);
+    const handlePrimeAudio = () => { void primeAudio(); };
+    window.addEventListener("pointerdown", handlePrimeAudio);
+    window.addEventListener("keydown", handlePrimeAudio);
     return () => {
-      window.removeEventListener("pointerdown", primeAudio);
+      window.removeEventListener("pointerdown", handlePrimeAudio);
+      window.removeEventListener("keydown", handlePrimeAudio);
     };
   }, [audioVolume]);
 
-  const playActivationTone = (attribute: Attribute) => {
+  const playActivationTone = async (attribute: Attribute) => {
     if (audioVolume <= 0 || typeof window === "undefined") {
       return;
     }
 
-    if (!audioContextRef.current) {
+    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
       audioContextRef.current = new window.AudioContext();
     }
     const audioContext = audioContextRef.current;
-    if (audioContext.state === "suspended") {
-      audioContext.resume().catch(() => undefined);
+    if (audioContext.state !== "running") {
+      await audioContext.resume().catch(() => undefined);
+    }
+    if (audioContext.state !== "running") {
+      return;
     }
     const semitone =
       ACTIVATION_TONE_STEPS[Math.min(activationToneCountRef.current, ACTIVATION_TONE_STEPS.length - 1)] ?? 0;
     const baseFrequency = 261.63;
     const frequency = baseFrequency * 2 ** (semitone / 12);
+    const startAt = audioContext.currentTime + 0.004;
+    const peakGain = Math.max(0.0001, audioVolume / 900);
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, audioVolume / 2200), audioContext.currentTime + 0.02);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22);
+    oscillator.type = attribute === "water" || attribute === "ice" ? "sine" : "triangle";
+    oscillator.frequency.setValueAtTime(frequency, startAt);
+    gainNode.gain.setValueAtTime(0.0001, startAt);
+    gainNode.gain.exponentialRampToValueAtTime(peakGain, startAt + 0.008);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.15);
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.24);
+    oscillator.onended = () => { oscillator.disconnect(); gainNode.disconnect(); };
+    oscillator.start(startAt);
+    oscillator.stop(startAt + 0.17);
+  };
+
+  const playCueTone = async (kind: "additional" | "reactivation" | "chance-failed") => {
+    if (audioVolume <= 0 || typeof window === "undefined") return;
+    if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+      audioContextRef.current = new window.AudioContext();
+    }
+    const audioContext = audioContextRef.current;
+    if (audioContext.state !== "running") {
+      await audioContext.resume().catch(() => undefined);
+    }
+    if (audioContext.state !== "running") return;
+
+    const startAt = audioContext.currentTime + 0.004;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const isFailure = kind === "chance-failed";
+    const startFrequency = isFailure ? 190 : kind === "reactivation" ? 440 : 560;
+    const endFrequency = isFailure ? 125 : kind === "reactivation" ? 660 : 820;
+    const duration = isFailure ? 0.14 : 0.12;
+    oscillator.type = isFailure ? "sawtooth" : "sine";
+    oscillator.frequency.setValueAtTime(startFrequency, startAt);
+    oscillator.frequency.exponentialRampToValueAtTime(endFrequency, startAt + duration);
+    gainNode.gain.setValueAtTime(0.0001, startAt);
+    gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, audioVolume / (isFailure ? 1500 : 1100)), startAt + 0.006);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration + 0.02);
   };
 
   useEffect(() => {
@@ -1934,7 +2469,13 @@ export function App() {
 
     const newEvents = game.replayEvents.slice(lastProcessedReplayIndexRef.current);
     const newLogs = game.log.slice(lastProcessedLogIndexRef.current);
+    const targetScore = { scoreThisRound: game.players[0].scoreThisRound, totalScore: game.players[0].totalScore };
     if (newEvents.length === 0 && newLogs.length === 0) {
+      if (!replayProcessingRef.current) battleFeedback.syncScore(targetScore);
+      else if (targetScore.scoreThisRound !== queuedScoreRef.current.scoreThisRound || targetScore.totalScore !== queuedScoreRef.current.totalScore) {
+        replayQueueRef.current.push({ type: "SCORE_SYNC", score: targetScore });
+      }
+      queuedScoreRef.current = targetScore;
       return;
     }
 
@@ -1965,7 +2506,7 @@ export function App() {
         kind,
         sprites: createParticleSprites(attribute, kind)
       };
-      setParticleBursts((current) => [...current, burst]);
+      setParticleBursts((current) => [...current.slice(-15), burst]);
       const timeoutId = window.setTimeout(() => {
         setParticleBursts((current) => current.filter((entry) => entry.id !== burstId));
         particleTimeoutIdsRef.current = particleTimeoutIdsRef.current.filter((entry) => entry !== timeoutId);
@@ -1982,7 +2523,7 @@ export function App() {
     ) => {
       const floatingId = `floating_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       setFloatingTexts((current) => [
-        ...current,
+        ...current.slice(-23),
         {
           id: floatingId,
           x: anchor.x + (offset?.x ?? 0),
@@ -2011,8 +2552,8 @@ export function App() {
       };
     };
 
-    const getCardAnchor = () => {
-      const activeInstanceId = lastActivationRef.current?.instanceId;
+    const getCardAnchor = (targetInstanceId?: string) => {
+      const activeInstanceId = targetInstanceId ?? lastActivationRef.current?.instanceId;
       const rect = activeInstanceId ? fieldCardRefs.current.get(activeInstanceId)?.getBoundingClientRect() : null;
       if (!rect) {
         const fallback = getViewportFallbackPosition();
@@ -2035,8 +2576,9 @@ export function App() {
       const fieldElement = fieldCardRefs.current.get(event.instanceId);
       const fieldRect = fieldElement?.getBoundingClientRect();
       const overlayId = `${motion}_${event.instanceId}_${Date.now()}`;
-      const cardWidth = 116;
-      const cardHeight = 174;
+      const sampleRect = fieldRect ?? fieldCardRefs.current.values().next().value?.getBoundingClientRect();
+      const cardWidth = sampleRect?.width ?? 116;
+      const cardHeight = sampleRect?.height ?? 174;
       const cardGap = 2;
       const left =
         fieldRect?.left !== undefined
@@ -2072,8 +2614,15 @@ export function App() {
       const step = () => {
         const event = replayQueueRef.current.shift();
         if (!event) {
+          battleFeedback.finish();
           replayProcessingRef.current = false;
           replayStepTimeoutRef.current = null;
+          return;
+        }
+
+        if (event.type === "SCORE_SYNC") {
+          battleFeedback.syncScore(event.score);
+          replayStepTimeoutRef.current = window.setTimeout(step, 0);
           return;
         }
 
@@ -2087,6 +2636,7 @@ export function App() {
           }
 
           for (const destroyEvent of destroyEvents) {
+            battleFeedback.present(destroyEvent);
             handleReplayEventParticle(destroyEvent, spawnBurst, lastActivationRef);
             spawnCardMotionOverlay(destroyEvent, "destroy");
           }
@@ -2095,11 +2645,41 @@ export function App() {
           return;
         }
 
-        handleReplayEventParticle(event, spawnBurst, lastActivationRef);
+        if (event.type !== "DAMAGE_DEALT" && event.type !== "FINAL_ATTACK") {
+          handleReplayEventParticle(event, spawnBurst, lastActivationRef);
+        }
+        const impactDelay = battleFeedback.present(event, {
+          launch: () => handleReplayEventParticle(event, spawnBurst, lastActivationRef),
+          impact: (multiHit) => {
+            if (!multiHit && (event.type === "DAMAGE_DEALT" || event.type === "FINAL_ATTACK")) {
+              spawnFloatingText(event.type === "FINAL_ATTACK" ? "gold" : "red",
+                `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
+            }
+          }
+        });
+
+        if (event.type === "ROUND_START") {
+          activationToneCountRef.current = 0;
+        }
 
         if (event.type === "CARD_ACTIVATED") {
-          playActivationTone(event.attribute);
+          void playActivationTone(event.attribute);
           activationToneCountRef.current += 1;
+        }
+
+        if (event.type === "ADDITIONAL_ACTIVATION_ANNOUNCED") {
+          void playCueTone(event.activationKind);
+          spawnFloatingText(
+            event.activationKind === "reactivation" ? "purple" : "cyan",
+            event.activationKind === "reactivation" ? "再発動！" : "追加発動！",
+            getCardAnchor(event.instanceId),
+            "card",
+            { y: -42 }
+          );
+        }
+
+        if (event.type === "CHANCE_ROLL_RESULT" && !event.succeeded) {
+          void playCueTone("chance-failed");
         }
 
         if (event.type === "CARD_REVIVED") {
@@ -2142,29 +2722,45 @@ export function App() {
           };
         }
 
-        if (event.type === "DAMAGE_DEALT") {
-          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
-          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
-        }
-
-        if (event.type === "FINAL_ATTACK") {
-          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("scoreThisRound"), "status");
-          spawnFloatingText("red", `+${formatDisplayNumber(event.amount)}`, getStatusAnchor("totalScore"), "status");
-        }
-
+        const nextActivationIndex = replayQueueRef.current.findIndex(
+          (queuedEvent) => queuedEvent.type === "CARD_ACTIVATED" || queuedEvent.type === "FINAL_ATTACK"
+        );
+        const eventsInCurrentActivation =
+          nextActivationIndex < 0 ? replayQueueRef.current : replayQueueRef.current.slice(0, nextActivationIndex);
+        const hasFollowingHit =
+          event.type === "DAMAGE_DEALT" &&
+          eventsInCurrentActivation.some(
+            (queuedEvent) => queuedEvent.type === "DAMAGE_DEALT" && queuedEvent.source === event.source
+          );
+        const immediatelyPrecedesActivation = nextActivationIndex === 0;
         const delay =
-          event.type === "CARD_REVIVED"
+          event.type === "FINAL_ATTACK"
+            ? 650
+            : event.type === "CARD_REVIVED"
             ? 380
             : event.type === "CARD_ACTIVATED"
-              ? 90
+              ? immediatelyPrecedesActivation
+                ? getActivationCadenceDelayMs(activationToneCountRef.current)
+                : 90
+              : event.type === "ADDITIONAL_ACTIVATION_ANNOUNCED"
+                ? getActivationCadenceDelayMs(activationToneCountRef.current)
+              : event.type === "CHANCE_ROLL_RESULT" && !event.succeeded
+                ? 120
+              : event.type === "MULTI_HIT_STARTED"
+                ? 140
+              : hasFollowingHit
+                ? Math.max(150, Math.min(220, getActivationCadenceDelayMs(activationToneCountRef.current)))
+              : immediatelyPrecedesActivation
+                ? getActivationCadenceDelayMs(activationToneCountRef.current)
               : 0;
-        replayStepTimeoutRef.current = window.setTimeout(step, delay);
+        replayStepTimeoutRef.current = window.setTimeout(step, Math.max(delay, impactDelay));
       };
 
       step();
     };
 
-    replayQueueRef.current.push(...newEvents);
+    replayQueueRef.current.push(...buildBattlePresentation(newEvents, queuedScoreRef.current, targetScore, game.players[0].playerId));
+    queuedScoreRef.current = targetScore;
     processReplayQueue();
 
     for (const entry of newLogs) {
@@ -2242,6 +2838,8 @@ export function App() {
     );
   }, [draggedCard, player]);
 
+  // HTML Drag and Drop cancels when its source node is removed from the DOM.
+  // Keep the dragged field card rendered (visually collapsed by CSS) until drop.
   const placementBaseCards = useMemo(() => previewCards, [previewCards]);
 
   const currentResolutionCard = useMemo(() => (game ? getCurrentResolutionCard(game) : null), [game]);
@@ -2313,8 +2911,9 @@ export function App() {
     if (!player || !currentResolutionCard) {
       return [];
     }
-    return player.field;
-  }, [player, currentResolutionCard]);
+    const candidateIds = new Set(getCurrentResolutionTargetCandidateIds(game!));
+    return player.field.filter((card) => candidateIds.has(card.instanceId));
+  }, [game, player, currentResolutionCard]);
 
   const visibleHandCards = useMemo(() => {
     if (!player) {
@@ -2437,24 +3036,32 @@ export function App() {
   }, [connectedFieldGroups, inputStep, player?.field.length]);
 
   useEffect(() => {
-    if (!game?.pendingResolution) {
+    if (!game?.pendingResolution || isReadOnlyBattle) {
       return;
     }
 
     if (!currentResolutionCard) {
-      const timeoutId = window.setTimeout(() => {
+      const advance = async () => {
+        if (replayProcessingRef.current) {
+          timeoutId = window.setTimeout(() => void advance(), 32);
+          return;
+        }
         const currentGame = gameRef.current;
         if (!currentGame) {
           return;
         }
         try {
-          const nextState = resolveNextCard(currentGame, {});
+          const nextState = isMultiBattle
+            ? (await applyRemoteMatchAction("resolve_next", { targetSelections: {} })).game
+            : resolveNextCard(currentGame, {});
+          if (!nextState) return;
           setGame(nextState);
           setError(null);
         } catch (submitError) {
           setError(submitError instanceof Error ? submitError.message : "Failed to auto-resolve card effect.");
         }
-      }, AUTO_RESOLVE_DELAY_MS);
+      };
+      let timeoutId = window.setTimeout(() => void advance(), 0);
 
       return () => {
         window.clearTimeout(timeoutId);
@@ -2467,24 +3074,33 @@ export function App() {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
+    const advance = async () => {
+      if (replayProcessingRef.current) {
+        timeoutId = window.setTimeout(() => void advance(), 32);
+        return;
+      }
       const currentGame = gameRef.current;
       if (!currentGame) {
         return;
       }
       try {
-        const nextState = resolveNextCard(currentGame, {});
+        const nextState = isMultiBattle
+          ? (await applyRemoteMatchAction("resolve_next", { targetSelections: {} })).game
+          : resolveNextCard(currentGame, {});
+        if (!nextState) return;
         setGame(nextState);
         setError(null);
       } catch (submitError) {
         setError(submitError instanceof Error ? submitError.message : "Failed to auto-resolve card effect.");
       }
-    }, AUTO_RESOLVE_DELAY_MS);
+    };
+    const delay = hasCurrentResolutionActivationEffect(game) ? getActivationCadenceDelayMs(game.pendingResolution.activationCount) : 0;
+    let timeoutId = window.setTimeout(() => void advance(), delay);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [game, currentResolutionCard, currentTokenPlacementRequirement]);
+  }, [game, currentResolutionCard, currentTokenPlacementRequirement, isReadOnlyBattle]);
 
   useEffect(() => {
     setCurrentTargets({});
@@ -2521,6 +3137,7 @@ export function App() {
   const startGame = () => {
     const normalizedSeed = sanitizeRouteToken(soloSeed, createDefaultSoloSeed());
     setSoloSeed(normalizedSeed);
+    soloReplayFramesRef.current = [];
     setGame(
       createLocalGame({
         roleId: selectedRoleId,
@@ -2533,13 +3150,108 @@ export function App() {
     navigateToScreen("solo_battle", { soloSeed: normalizedSeed, replace: true });
   };
 
+  const watchSoloAiReplay = async () => {
+    const normalizedSeed = sanitizeRouteToken(soloSeed, createDefaultSoloSeed());
+    setSoloSeed(normalizedSeed);
+    setIsGeneratingSoloAiReplay(true);
+    setSoloAiReplayProgress({ round: 1, completedRounds: 0, message: "第1ラウンドの手を考えています…" });
+    setError(null);
+
+    try {
+      const code = `${normalizedSeed}~solo-ai~${createRandomRouteToken(8)}`;
+      let replayOpened = false;
+      const streamReplayFrames = (aiGame: LocalGameState, frames: LocalGameState[]) => {
+        const replay: PreparedReplay = {
+          code,
+          roomId: "solo",
+          seed: normalizedSeed,
+          playerId: aiGame.players[0]?.playerId ?? "solo-ai",
+          displayName: `AI（${aiLevelLabels[selectedAiLevel]}）`,
+          completedAt: new Date().toISOString(),
+          roleId: selectedRoleId,
+          gameSeed: aiGame.rngSeed,
+          initialGame: frames[0],
+          game: aiGame,
+          frames
+        };
+
+        if (!replayOpened) {
+          replayOpened = true;
+          replayUserPausedRef.current = false;
+          setReplayCodeInput(code);
+          setActiveReplay(replay);
+          setReplayFrameIndex(0);
+          lastProcessedReplayIndexRef.current = 0;
+          replayQueueRef.current = [];
+          replayProcessingRef.current = false;
+          setGame(frames[0] ?? aiGame);
+          navigateToScreen("replay", { replayCode: code });
+        } else {
+          setActiveReplay((current) => current ? { ...current, game: aiGame, frames } : replay);
+        }
+        if (!replayUserPausedRef.current) setIsReplayPlaying(true);
+      };
+      const worker = new Worker(new URL("./soloAiReplay.worker.ts", import.meta.url), { type: "module" });
+      const { game: aiGame, frames } = await new Promise<{ game: LocalGameState; frames: LocalGameState[] }>((resolve, reject) => {
+        worker.addEventListener("message", (event: MessageEvent<{
+          type?: "progress" | "round_complete" | "complete";
+          round?: number;
+          completedRounds?: number;
+          processedPlans?: number;
+          totalPlans?: number;
+          explorationPercent?: number;
+          message?: string;
+          game?: LocalGameState;
+          frames?: LocalGameState[];
+          error?: string;
+        }>) => {
+          if (event.data.type === "progress") {
+            setSoloAiReplayProgress({
+              round: event.data.round ?? 1,
+              completedRounds: event.data.completedRounds ?? 0,
+              message: event.data.message ?? "AIが対局を進めています…",
+              processedPlans: event.data.processedPlans,
+              totalPlans: event.data.totalPlans,
+              explorationPercent: event.data.explorationPercent
+            });
+            return;
+          }
+          if (event.data.type === "round_complete") {
+            if (!event.data.game || !event.data.frames) {
+              reject(new Error("AIリプレイのラウンド生成結果が不正です。"));
+              return;
+            }
+            streamReplayFrames(event.data.game, event.data.frames);
+            return;
+          }
+          if (event.data.error || !event.data.game || !event.data.frames) {
+            reject(new Error(event.data.error ?? "AIリプレイの生成結果が不正です。"));
+            return;
+          }
+          resolve({ game: event.data.game, frames: event.data.frames });
+        });
+        worker.addEventListener("error", () => reject(new Error("AIリプレイのバックグラウンド生成に失敗しました。")), { once: true });
+        worker.postMessage({ roleId: selectedRoleId, seed: normalizedSeed, level: selectedAiLevel });
+      }).finally(() => worker.terminate());
+
+      streamReplayFrames(aiGame, frames);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "AIリプレイを生成できませんでした。");
+    } finally {
+      setIsGeneratingSoloAiReplay(false);
+      setSoloAiReplayProgress(null);
+    }
+  };
+
   const actionFocusCard = currentResolutionCard ?? dolphinDuplicateSourceCard ?? null;
   const actionFocusDefinition = actionFocusCard ? cardMap[actionFocusCard.definitionId] : null;
+  const awaitingTargetInstanceId = !isReadOnlyBattle && !battleFeedback.activeInstanceId &&
+    (currentResolutionOperations.length > 0 || currentTokenPlacementRequirement) ? currentResolutionCard?.instanceId : null;
 
   const renderFieldCard = (card: CardInstance, options?: { isDragOriginPlaceholder?: boolean }) => (
     <div
       key={card.instanceId}
-      className={`card-chip ${options?.isDragOriginPlaceholder ? "is-drag-origin-placeholder" : ""} ${card.isInvalidated ? "is-invalidated" : ""} ${currentResolutionCard?.instanceId === card.instanceId ? "is-resolving" : ""} ${
+      className={`card-chip ${options?.isDragOriginPlaceholder ? "is-drag-origin-placeholder" : ""} ${card.isInvalidated ? "is-invalidated" : ""} ${battleFeedback.activeInstanceId === card.instanceId ? "is-resolving" : ""} ${awaitingTargetInstanceId === card.instanceId ? "is-awaiting-target" : ""} ${
         selectedTargetInstanceIds.has(card.instanceId) ||
         (game?.phase === "round_end" && roundEndDiscardIds.includes(card.instanceId)) ||
         (!!pendingDolphinFinalAction && dolphinDuplicateSourceId === card.instanceId)
@@ -2552,8 +3264,14 @@ export function App() {
         currentSelectableTargets.some((target) => target.instanceId === card.instanceId)
           ? "is-targetable"
           : ""
+      } ${
+        game?.phase === "round_end" && !pendingRoundBuffChoice && !pendingDolphinFinalAction
+          ? "is-next-action-card"
+          : ""
       }`}
       data-attribute={resolveVisualAttribute(card.attribute)}
+      data-card-instance-id={card.instanceId}
+      data-card-definition-id={card.definitionId}
       ref={(element) => setFieldCardRef(card.instanceId, element)}
       onMouseEnter={(event) => showCardTooltip(card, event.currentTarget)}
       onMouseLeave={hideCardTooltip}
@@ -2578,6 +3296,7 @@ export function App() {
       ) : (
         <>
           {renderCardIllustration(card.definitionId, card.name)}
+          {battleFeedback.cardFeedback(card.instanceId)}
           <div className="card-title-row">
             <span>{card.name}</span>
           </div>
@@ -2597,13 +3316,15 @@ export function App() {
     );
   };
 
-  const confirmMulligan = () => {
+  const confirmMulligan = async () => {
     if (!game) {
       return;
     }
 
     try {
-      const nextState = mulliganIds.length > 0 ? applyMulliganOnly(game, mulliganIds) : game;
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("mulligan", { instanceIds: mulliganIds })).game ?? game
+        : mulliganIds.length > 0 ? applyMulliganOnly(game, mulliganIds) : game;
       setGame(nextState);
       setInputStep("placement");
       setMulliganIds([]);
@@ -2703,7 +3424,11 @@ export function App() {
     }
 
     const rowRect = event.currentTarget.getBoundingClientRect();
-    const lastCard = placementBaseCards[placementBaseCards.length - 1];
+    const visiblePlacementCards =
+      draggedCard.source === "field"
+        ? placementBaseCards.filter((card) => card.instanceId !== draggedCard.instanceId)
+        : placementBaseCards;
+    const lastCard = visiblePlacementCards[visiblePlacementCards.length - 1];
     const lastCardRect = lastCard ? fieldCardRefs.current.get(lastCard.instanceId)?.getBoundingClientRect() : null;
     if (!lastCardRect) {
       return;
@@ -2764,9 +3489,9 @@ export function App() {
         return current;
       }
 
-      const originalIndex = current.indexOf(draggedCard.instanceId);
       const withoutDragged = current.filter((instanceId) => instanceId !== draggedCard.instanceId);
       const next = [...withoutDragged];
+      const originalIndex = current.indexOf(draggedCard.instanceId);
       const adjustedDropIndex =
         draggedCard.source === "field" && originalIndex >= 0 && originalIndex < dropIndex ? dropIndex - 1 : dropIndex;
       next.splice(Math.max(0, Math.min(adjustedDropIndex, next.length)), 0, draggedCard.instanceId);
@@ -2779,13 +3504,15 @@ export function App() {
     setError(null);
   };
 
-  const beginResolution = () => {
+  const beginResolution = async () => {
     if (!game || !player) {
       return;
     }
 
     try {
-      const nextState = startRoundResolution(game, previewFieldOrder);
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("start_resolution", { orderedFieldIds: previewFieldOrder })).game ?? game
+        : startRoundResolution(game, previewFieldOrder);
       setGame(nextState);
       setInputStep("resolving");
       setCurrentTargets({});
@@ -2795,7 +3522,7 @@ export function App() {
     }
   };
 
-  const confirmCurrentTargetsAndResolve = () => {
+  const confirmCurrentTargetsAndResolve = async () => {
     if (!game || !currentResolutionCard) {
       return;
     }
@@ -2818,7 +3545,9 @@ export function App() {
             [currentTokenPlacementRequirement.selectionKey]: JSON.stringify(tokenPlacementOrder)
           }
         : currentTargets;
-      const nextState = resolveNextCard(game, nextTargets);
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("resolve_next", { targetSelections: nextTargets })).game ?? game
+        : resolveNextCard(game, nextTargets);
       setGame(nextState);
       setCurrentTargets({});
       setTokenPlacementOrder([]);
@@ -2849,7 +3578,7 @@ export function App() {
     setTokenPlacementPreviewIndex(tokenPlacementOrder.length);
   };
 
-  const handleTokenDropAt = (dropIndex: number) => {
+  const handleTokenDropAt = async (dropIndex: number) => {
     if (!draggedTokenId) {
       return;
     }
@@ -2866,10 +3595,13 @@ export function App() {
 
     if (nextAvailable.length === 0 && game && currentTokenPlacementRequirement) {
       try {
-        const nextState = resolveNextCard(game, {
+        const targetSelections = {
           ...currentTargets,
           [currentTokenPlacementRequirement.selectionKey]: JSON.stringify(nextOrder)
-        });
+        };
+        const nextState = isMultiBattle
+          ? (await applyRemoteMatchAction("resolve_next", { targetSelections })).game ?? game
+          : resolveNextCard(game, targetSelections);
         setGame(nextState);
         setCurrentTargets({});
         setTokenPlacementOrder([]);
@@ -2887,13 +3619,18 @@ export function App() {
     setDolphinDuplicatePreviewIndex(player?.field.length ?? 0);
   };
 
-  const handleDolphinDuplicateDropAt = (dropIndex: number) => {
+  const handleDolphinDuplicateDropAt = async (dropIndex: number) => {
     if (!draggedDolphinDuplicateId || !game || !dolphinDuplicateSourceId) {
       return;
     }
 
     try {
-      const nextState = resolvePendingFinalAction(game, dolphinDuplicateSourceId, dropIndex);
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("resolve_final", {
+            sourceInstanceId: dolphinDuplicateSourceId,
+            insertIndex: dropIndex
+          })).game ?? game
+        : resolvePendingFinalAction(game, dolphinDuplicateSourceId, dropIndex);
       setGame(nextState);
       setDolphinDuplicateSourceId(null);
       setDraggedDolphinDuplicateId(null);
@@ -2952,13 +3689,15 @@ export function App() {
     }
   };
 
-  const submitRoundEnd = () => {
+  const submitRoundEnd = async () => {
     if (!game) {
       return;
     }
 
     try {
-      const nextState = finalizeRound(game, roundEndDiscardIds);
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("finalize_round", { discardIds: roundEndDiscardIds })).game ?? game
+        : finalizeRound(game, roundEndDiscardIds);
       setGame(nextState);
       setRoundEndDiscardIds([]);
       setError(null);
@@ -2967,31 +3706,41 @@ export function App() {
     }
   };
 
-  const handleRoundBuffReroll = () => {
-    if (!game) {
+  const handleRoundBuffReroll = async () => {
+    if (!game || isRoundBuffSubmitting) {
       return;
     }
 
+    setIsRoundBuffSubmitting(true);
     try {
-      const nextState = rerollRoundBuffChoice(game);
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("reroll_buff")).game ?? game
+        : rerollRoundBuffChoice(game);
       setGame(nextState);
       setError(null);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Failed to reroll round buff.");
+    } finally {
+      setIsRoundBuffSubmitting(false);
     }
   };
 
-  const handleRoundBuffSelect = (optionIndex: number) => {
-    if (!game) {
+  const handleRoundBuffSelect = async (optionIndex: number) => {
+    if (!game || isRoundBuffSubmitting) {
       return;
     }
 
+    setIsRoundBuffSubmitting(true);
     try {
-      const nextState = chooseRoundBuff(game, optionIndex);
+      const nextState = isMultiBattle
+        ? (await applyRemoteMatchAction("choose_buff", { optionIndex })).game ?? game
+        : chooseRoundBuff(game, optionIndex);
       setGame(nextState);
       setError(null);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Failed to select round buff.");
+    } finally {
+      setIsRoundBuffSubmitting(false);
     }
   };
 
@@ -3078,6 +3827,7 @@ export function App() {
     setGame(null);
     setMultiSeed(createDefaultSoloSeed());
     setMultiConnectionError(null);
+    setMultiViewPlayerId(multiPlayerId);
     setMultiLobbyEntryId(nextLobbyId);
     navigateToScreen("multi_lobby", { lobbyId: nextLobbyId });
   };
@@ -3086,6 +3836,7 @@ export function App() {
     const nextLobbyId = sanitizeRouteToken(multiLobbyEntryId, createDefaultLobbyId());
     setGame(null);
     setMultiConnectionError(null);
+    setMultiViewPlayerId(multiPlayerId);
     setMultiLobbyEntryId(nextLobbyId);
     navigateToScreen("multi_lobby", { lobbyId: nextLobbyId });
   };
@@ -3108,6 +3859,146 @@ export function App() {
     navigateToScreen("ranking");
   };
 
+  const openReplayCode = async (rawCode: string) => {
+    const code = sanitizeReplayCode(rawCode);
+    if (!code) {
+      setError("リプレイコードを入力してください。");
+      return;
+    }
+    try {
+      const localEntry = soloRankings.find((entry) => entry.replayCode === code && entry.replayGame);
+      const loadedReplay: ReplayRecord = localEntry
+        ? {
+            code,
+            roomId: "solo",
+            seed: localEntry.seed,
+            playerId: localEntry.replayGame!.players[0]?.playerId ?? "solo",
+            displayName: localEntry.roleName,
+            completedAt: localEntry.completedAt,
+            game: localEntry.replayGame!,
+            frames: localEntry.replayFrames ?? [localEntry.replayGame!]
+          }
+        : await fetchReplay(code);
+      const frames = buildRemoteReplayFrames(loadedReplay);
+      const replay: PreparedReplay = {
+        ...loadedReplay,
+        frames,
+        game: frames.at(-1) ?? loadedReplay.game ?? (() => { throw new Error("リプレイデータが空です。"); })()
+      };
+      setReplayCodeInput(code);
+      setActiveReplay(replay);
+      setReplayFrameIndex(0);
+      replayUserPausedRef.current = true;
+      setIsReplayPlaying(false);
+      lastProcessedReplayIndexRef.current = 0;
+      lastProcessedLogIndexRef.current = 0;
+      replayQueueRef.current = [];
+      replayProcessingRef.current = false;
+      if (replayStepTimeoutRef.current !== null) {
+        window.clearTimeout(replayStepTimeoutRef.current);
+        replayStepTimeoutRef.current = null;
+      }
+      setGame(replay.frames[0] ?? replay.game);
+      setError(null);
+      navigateToScreen("replay", { replayCode: code });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "リプレイを読み込めませんでした。");
+    }
+  };
+
+  const retainActiveReplay = async () => {
+    if (!activeReplay || activeReplay.roomId === "solo") return;
+    try {
+      const saved = await saveReplay(activeReplay.code);
+      setActiveReplay((current) => current ? { ...current, ...saved } : current);
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "リプレイを保存できませんでした。");
+    }
+  };
+
+  const switchMultiView = async (playerId: string) => {
+    try {
+      const privateState = await fetchRoomState(lobbyId, multiPlayerId, playerId);
+      setMultiViewPlayerId(privateState.viewingPlayerId ?? playerId);
+      setMultiRoomState(privateState);
+      if (privateState.game) setGame(privateState.game);
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "観戦画面を開けませんでした。");
+    }
+  };
+
+  useEffect(() => {
+    if (appScreen !== "replay" || initialReplayLoadedRef.current || activeReplay) return;
+    const routeCode = typeof window === "undefined" ? "" : sanitizeReplayCode(window.location.pathname.split("/")[2]);
+    if (!routeCode) return;
+    initialReplayLoadedRef.current = true;
+    void openReplayCode(routeCode);
+  }, [activeReplay, appScreen]);
+
+  useEffect(() => {
+    if (!isReplayPlaying || !activeReplay) return;
+    if (replayFrameIndex >= activeReplay.frames.length - 1) {
+      setIsReplayPlaying(false);
+      return;
+    }
+    const currentFrame = activeReplay.frames[replayFrameIndex] ?? activeReplay.game;
+    const advance = () => {
+      if (replayProcessingRef.current) {
+        timeoutId = window.setTimeout(advance, 32);
+        return;
+      }
+      const nextIndex = replayFrameIndex + 1;
+      setReplayFrameIndex(nextIndex);
+      setGame(activeReplay.frames[nextIndex] ?? activeReplay.game);
+    };
+    const nextFrame = activeReplay.frames[replayFrameIndex + 1] ?? activeReplay.game;
+    const delay = isSilentReplayStep(currentFrame, nextFrame) ? 0 : getActivationCadenceDelayMs(getReplayRoundActivationCount(currentFrame));
+    let timeoutId = window.setTimeout(advance, delay);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeReplay, isReplayPlaying, replayFrameIndex]);
+
+  const showReplayFrame = (nextIndex: number) => {
+    if (!activeReplay) return;
+    const clampedIndex = Math.max(0, Math.min(activeReplay.frames.length - 1, nextIndex));
+    replayUserPausedRef.current = true;
+    setIsReplayPlaying(false);
+    const targetFrame = activeReplay.frames[clampedIndex] ?? activeReplay.game;
+    const isSingleStep = clampedIndex === replayFrameIndex + 1;
+    const countFrame = isSingleStep ? activeReplay.frames[replayFrameIndex] ?? targetFrame : targetFrame;
+    const activationCount = getReplayRoundActivationCount(countFrame);
+    const scoreFrame = isSingleStep ? activeReplay.frames[replayFrameIndex] ?? targetFrame : targetFrame;
+    const nextScore = { scoreThisRound: scoreFrame.players[0].scoreThisRound, totalScore: scoreFrame.players[0].totalScore };
+    battleFeedback.reset(activationCount, nextScore);
+    queuedScoreRef.current = nextScore;
+    activationToneCountRef.current = activationCount;
+    if (replayStepTimeoutRef.current !== null) {
+      window.clearTimeout(replayStepTimeoutRef.current);
+      replayStepTimeoutRef.current = null;
+    }
+    replayQueueRef.current = [];
+    replayProcessingRef.current = false;
+    setParticleBursts([]);
+    setFloatingTexts([]);
+    setCardMotionOverlays([]);
+    if (clampedIndex !== replayFrameIndex + 1) {
+      lastProcessedReplayIndexRef.current = targetFrame.replayEvents.length;
+      lastProcessedLogIndexRef.current = targetFrame.log.length;
+      replayQueueRef.current = [];
+    }
+    setReplayFrameIndex(clampedIndex);
+    setGame(activeReplay.frames[clampedIndex] ?? activeReplay.game);
+  };
+
+  const toggleReplayPlayback = () => {
+    setIsReplayPlaying((current) => {
+      const next = !current;
+      replayUserPausedRef.current = !next;
+      return next;
+    });
+  };
+
   const updateMultiLobbyDetails = async (patch: { ready?: boolean; roleId?: string | null; seed?: string; displayName?: string }) => {
     try {
       const nextState = await updateRoomPlayer(lobbyId, {
@@ -3123,8 +4014,9 @@ export function App() {
     }
   };
 
-  const openMatchPlaceholder = async () => {
+  const startMultiMatch = async () => {
     try {
+      setMultiViewPlayerId(multiPlayerId);
       const nextState = await startRoomMatch(lobbyId, multiPlayerId);
       setMultiRoomState(nextState);
       navigateToScreen("multi_match", { lobbyId });
@@ -3133,14 +4025,35 @@ export function App() {
     }
   };
 
-  const addDebugAi = async () => {
+  const addLobbyAi = async () => {
     try {
-      const nextState = await addRoomAi(lobbyId, multiPlayerId, "expert", selectedRoleId);
+      const nextState = await addRoomAi(lobbyId, multiPlayerId, selectedAiLevel, selectedAiRoleId);
       setMultiRoomState(nextState);
       setMultiConnectionError(null);
     } catch (caught) {
       setMultiConnectionError(caught instanceof Error ? caught.message : "AIの追加に失敗しました。");
     }
+  };
+
+  const returnFinishedMatchToLobby = async () => {
+    try {
+      const nextState = await returnRoomToLobby(lobbyId, multiPlayerId);
+      setMultiRoomState(nextState);
+      setGame(null);
+      navigateToScreen("multi_lobby", { lobbyId, replace: true });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "ロビーに戻れませんでした。");
+    }
+  };
+
+  const handleHorizontalCardWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    const row = event.currentTarget;
+    if (row.scrollWidth <= row.clientWidth || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    const canScrollLeft = event.deltaY < 0 && row.scrollLeft > 0;
+    const canScrollRight = event.deltaY > 0 && row.scrollLeft < row.scrollWidth - row.clientWidth - 1;
+    if (!canScrollLeft && !canScrollRight) return;
+    event.preventDefault();
+    row.scrollLeft += event.deltaY;
   };
 
   const leaveCurrentRoom = async () => {
@@ -3158,9 +4071,78 @@ export function App() {
     navigateToScreen("home");
   };
 
+  const currentTask = (() => {
+    if (!game || !player) return null;
+    if (isReplayBattle) {
+      return { key: "replay", text: `リプレイ：${activeReplay?.displayName ?? "プレイヤー"}`, ready: false, action: null } as const;
+    }
+    if (isSpectatingMultiPlayer) {
+      const viewedPlayer = multiPlayers.find((entry) => entry.playerId === multiViewPlayerId);
+      return { key: "spectating", text: `${viewedPlayer?.displayName ?? "プレイヤー"}を観戦中`, ready: false, action: null } as const;
+    }
+    if (game.phase === "finished" && isMultiBattle && isMultiHost && isMultiMatchFinished) {
+      return { key: "finished-lobby", text: "対戦終了　クリックして全員でロビーに戻る", ready: true, action: "lobby" } as const;
+    }
+    if (game.phase === "finished" && isMultiBattle && !isMultiMatchFinished) {
+      return { key: "finished-wait", text: "対戦終了　ほかのプレイヤーを待っています", ready: false, action: null } as const;
+    }
+    if (game.phase === "finished") return { key: "finished", text: "5ラウンド終了。最終得点を確認してください", ready: false, action: null } as const;
+    if (pendingRoundBuffChoice) return { key: "buff", text: "ラウンド強化を1つ選んでください", ready: false, action: null } as const;
+    if (pendingDolphinFinalAction) {
+      return dolphinDuplicateSourceCard
+        ? { key: "dolphin-place", text: "複製カードを場へ配置してください", ready: false, action: null } as const
+        : { key: "dolphin-source", text: "複製するカードを場から選んでください", ready: false, action: null } as const;
+    }
+    if (game.phase === "round_end") {
+      const required = Math.min(2, player.field.length);
+      return roundEndDiscardIds.length === required
+        ? { key: "round-discard-ready", text: "選択完了　クリックしてラウンド終了", ready: true, action: "round-end" } as const
+        : { key: "round-discard", text: `場から捨てるカードを選んでください　${roundEndDiscardIds.length} / ${required}`, ready: false, action: null } as const;
+    }
+    if (inputStep === "mulligan") return { key: "mulligan", text: `交換する手札を選択　${mulliganIds.length}枚選択中　クリックして配置へ`, ready: true, action: "mulligan" } as const;
+    if (inputStep === "placement") return { key: "placement", text: "配置と発動順を確認　クリックして発動開始", ready: true, action: "resolution" } as const;
+    if (currentTokenPlacementRequirement) return { key: "token", text: `${currentTokenPlacementRequirement.tokenName}を場へ配置してください`, ready: false, action: null } as const;
+    if (activeTargetOperation) {
+      const completed = currentResolutionOperations.filter((operation) => Boolean(currentTargets[operation.key])).length;
+      return { key: `target-${currentResolutionCard?.instanceId ?? "card"}`, text: `${activeTargetOperation.label}を選んでください　${completed} / ${currentResolutionOperations.length}`, ready: false, action: null } as const;
+    }
+    if (currentResolutionOperations.length > 0) return { key: "targets-ready", text: "対象選択完了　クリックして効果を解決", ready: true, action: "targets" } as const;
+    return null;
+  })();
+  const currentTaskText = currentTask?.text ?? null;
+  const requiredRoundEndDiscards = Math.min(2, player?.field.length ?? 0);
+  const isRoundEndSelectionReady =
+    game?.phase === "round_end" &&
+    !pendingRoundBuffChoice &&
+    !pendingDolphinFinalAction &&
+    roundEndDiscardIds.length === requiredRoundEndDiscards;
+  const areResolutionTargetsReady =
+    inputStep === "resolving" &&
+    currentResolutionOperations.length > 0 &&
+    currentResolutionOperations.every((operation) => Boolean(currentTargets[operation.key]));
+  const shouldHighlightField = Boolean(
+    game &&
+      ((game.phase === "input" && inputStep === "placement") ||
+        activeTargetOperation ||
+        currentTokenPlacementRequirement ||
+        pendingDolphinFinalAction ||
+        (game.phase === "round_end" && !pendingRoundBuffChoice && !isRoundEndSelectionReady))
+  );
+  const shouldHighlightHand = game?.phase === "input" && (inputStep === "mulligan" || inputStep === "placement");
+
+  const runCurrentTaskAction = () => {
+    switch (currentTask?.action) {
+      case "mulligan": void confirmMulligan(); break;
+      case "resolution": void beginResolution(); break;
+      case "targets": void confirmCurrentTargetsAndResolve(); break;
+      case "round-end": void submitRoundEnd(); break;
+      case "lobby": void returnFinishedMatchToLobby(); break;
+    }
+  };
+
   return (
-    <div className="app-shell">
-      {appScreen !== "solo_battle" ? (
+    <div className="app-shell" data-screen={appScreen}>
+      {appScreen !== "solo_battle" && appScreen !== "multi_match" && appScreen !== "replay" ? (
         <header className="topbar">
           <div>
             <p className="eyebrow">Hyperdimensional Battle</p>
@@ -3184,6 +4166,15 @@ export function App() {
               onClick={() => setIsCardCatalogOpen(true)}
             >
               {renderUtilityIcon("catalog")}
+            </button>
+            <button
+              type="button"
+              className="help-icon-button"
+              aria-label="ラウンドバフ一覧"
+              aria-expanded={isRoundBuffCatalogOpen}
+              onClick={() => setIsRoundBuffCatalogOpen(true)}
+            >
+              {renderUtilityIcon("round-buffs")}
             </button>
             <button
               type="button"
@@ -3225,9 +4216,9 @@ export function App() {
             <button type="button" className="mode-card" onClick={openMultiLobby}>
               <div className="mode-card-top">
                 <strong>マルチプレイ</strong>
-                <span className="role-card-badge">準備中</span>
+                <span className="role-card-badge">オンライン</span>
               </div>
-              <p>今後ここにルーム作成、参加、準備完了、同期まわりを追加します。</p>
+              <p>ルームを作成し、フレンドやAIと5ラウンド対戦を遊べます。</p>
             </button>
             <button type="button" className="mode-card" onClick={openRanking}>
               <div className="mode-card-top">
@@ -3240,7 +4231,7 @@ export function App() {
           <section className="multi-home-entry-panel">
             <div>
               <strong>既存ロビーに参加</strong>
-              <p>招待されたロビーIDを入力して参加します。マルチは別デプロイの worker が必要です。</p>
+              <p>招待されたルームIDを入力して、進行中のロビーへ参加します。</p>
             </div>
             <div className="multi-home-entry-row">
               <label className="solo-seed-input">
@@ -3260,7 +4251,7 @@ export function App() {
       ) : null}
 
       {appScreen === "solo_setup" ? (
-        <section className="panel intro-panel">
+        <section className="panel intro-panel solo-setup-panel">
           <div className="intro-header">
             <div>
               <h2>役職選択</h2>
@@ -3332,12 +4323,7 @@ export function App() {
                 ))}
               </div>
             </div>
-            <div
-              className="role-card-grid"
-              style={{
-                "--role-grid-columns": Math.max(1, Math.min(filteredRoles.length, 6))
-              } as CSSProperties}
-            >
+            <div className="role-card-grid" onWheel={handleHorizontalCardWheel}>
               {filteredRoles.map((role) => {
                 const isSelected = role.id === selectedRoleId;
                 const restrictions = role.restrictions?.disallowCardTypes ?? [];
@@ -3353,7 +4339,6 @@ export function App() {
                         <strong>{role.name}</strong>
                         <p>{getRoleTrendLabel(role.initialBaseAttack, role.initialBaseMagic)}</p>
                       </div>
-                      <span className="role-card-badge">{isSelected ? "選択中" : "選ぶ"}</span>
                     </div>
                     <div className="role-stat-grid role-stat-grid-compact">
                       <div>
@@ -3379,175 +4364,132 @@ export function App() {
               })}
             </div>
           </section>
-          <button className="primary-button" onClick={startGame}>
-            ゲーム開始
-          </button>
+          <div className="solo-start-actions">
+            <button className="primary-button" onClick={startGame} disabled={isGeneratingSoloAiReplay}>
+              ゲーム開始
+            </button>
+            <section className="solo-ai-replay-panel">
+              <div>
+                <strong>AIのプレイを観戦</strong>
+                <p>選択中の役職とシードで5ラウンドを自動プレイし、リプレイとして再生します。</p>
+              </div>
+              <div className="solo-ai-replay-controls">
+                <label>
+                  <span>AI難易度</span>
+                  <select value={selectedAiLevel} onChange={(event) => setSelectedAiLevel(event.target.value as AiLevel)} disabled={isGeneratingSoloAiReplay}>
+                    {(Object.keys(aiLevelLabels) as AiLevel[]).map((level) => (
+                      <option key={level} value={level}>{aiLevelLabels[level]}</option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="secondary-button" onClick={() => void watchSoloAiReplay()} disabled={isGeneratingSoloAiReplay}>
+                  {isGeneratingSoloAiReplay ? "AIが対局を生成中…" : "AIプレイを観戦"}
+                </button>
+              </div>
+              {isGeneratingSoloAiReplay && soloAiReplayProgress ? (
+                <div className="solo-ai-replay-progress" role="status" aria-live="polite">
+                  <div className="solo-ai-replay-progress-heading">
+                    <strong>{soloAiReplayProgress.message}</strong>
+                    <span>{soloAiReplayProgress.completedRounds} / 5 ラウンド完了</span>
+                  </div>
+                  <div className="solo-ai-replay-progress-track" aria-label="AI対局生成の進捗" aria-valuemin={0} aria-valuemax={5} aria-valuenow={soloAiReplayProgress.completedRounds} role="progressbar">
+                    <span style={{ width: `${(soloAiReplayProgress.completedRounds / 5) * 100}%` }} />
+                  </div>
+                  <small>現在：第{Math.min(soloAiReplayProgress.round, 5)}ラウンド</small>
+                  {typeof soloAiReplayProgress.explorationPercent === "number" ? (
+                    <>
+                      <div className="solo-ai-replay-progress-heading solo-ai-exploration-heading">
+                        <span>ラウンド内の配置探索</span>
+                        <strong>{soloAiReplayProgress.explorationPercent.toFixed(1)}%</strong>
+                      </div>
+                      <div className="solo-ai-replay-progress-track is-exploration" role="progressbar" aria-label="現在ラウンドの配置探索率" aria-valuemin={0} aria-valuemax={100} aria-valuenow={soloAiReplayProgress.explorationPercent}>
+                        <span style={{ width: `${soloAiReplayProgress.explorationPercent}%` }} />
+                      </div>
+                      <small>{formatDisplayNumber(soloAiReplayProgress.processedPlans ?? 0)} / {formatDisplayNumber(soloAiReplayProgress.totalPlans ?? 0)} 候補を調査</small>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+          </div>
         </section>
       ) : appScreen === "multi_lobby" ? (
         <section className="panel intro-panel multi-lobby-shell">
-          <div className="intro-header">
+          <div className="multi-lobby-hero">
             <div>
-              <h2>マルチロビー</h2>
-              <p>ルーム、シード、役職、準備状態を共有します。ホストが開始すると全員でマッチ画面へ移ります。</p>
+              <p className="selected-role-eyebrow">オンライン対戦</p>
+              <h2>ルーム {lobbyId}</h2>
+              <div className="selected-role-tags">
+                <span className={multiConnectionState === "connected" ? "is-online" : ""}>
+                  {multiConnectionState === "connected" ? "接続済み" : "再接続中"}
+                </span>
+                <span>{isMultiHost ? "あなたがホスト" : "ゲスト参加"}</span>
+                <span>{multiPlayers.length}人参加</span>
+              </div>
             </div>
-            <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>
-              ホームに戻る
-            </button>
+            <div className="multi-lobby-hero-actions">
+              <button type="button" className="secondary-button" onClick={() => void copyMultiInviteUrl()}>招待リンクをコピー</button>
+              <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>退出</button>
+            </div>
           </div>
-          <section className="selected-role-panel multi-room-panel">
-            <div className="selected-role-panel-top">
-              <div>
-                <p className="selected-role-eyebrow">ルーム情報</p>
-                <h3>オンライン対戦の準備</h3>
-              </div>
-              <span className="role-card-badge">{multiConnectionState === "connected" ? "接続中" : multiConnectionState}</span>
+          <section className="multi-lobby-settings" aria-label="ルーム設定">
+            <div>
+              <p className="selected-role-eyebrow">ルーム設定</p>
+              <strong>対戦シード</strong>
             </div>
-            <div className="selected-role-tags">
-              <span>ロビーID: {lobbyId}</span>
-              <span>参加人数: {multiPlayers.length}</span>
-              <span>{isMultiHost ? "ホスト" : "ゲスト"}</span>
-            </div>
-            <div className="selected-role-tags">
-              <span>worker: {multiWorkerUrl || "unresolved"}</span>
-              <span>health: {multiWorkerHealth}</span>
-            </div>
-            <div className="multi-lobby-share-row">
-              <span className="selected-role-description">招待リンク: {multiInviteUrl}</span>
-              <button type="button" className="secondary-button" onClick={() => void copyMultiInviteUrl()}>
-                リンクをコピー
-              </button>
-            </div>
-            <div className="multi-lobby-grid">
-              <label className="solo-seed-input">
-                <span>プレイヤー名</span>
-                <input
-                  type="text"
-                  value={multiPlayerName}
-                  maxLength={24}
-                  onChange={(event) => setMultiPlayerName(sanitizePlayerNameInput(event.target.value))}
-                  onBlur={() => void updateMultiLobbyDetails({ displayName: multiPlayerName })}
-                />
-              </label>
-              <label className="solo-seed-input">
-                <span>シード値</span>
-                <input
-                  type="text"
-                  value={sharedMultiSeed}
-                  disabled={!isMultiHost}
-                  onChange={(event) => {
-                    const nextSeed = sanitizeRouteToken(event.target.value, createDefaultSoloSeed());
-                    setMultiSeed(nextSeed);
-                  }}
-                  onBlur={() => {
-                    if (isMultiHost) {
-                      void updateMultiLobbyDetails({ seed: sanitizeRouteToken(multiSeed, createDefaultSoloSeed()) });
-                    }
-                  }}
-                />
-              </label>
-              <div className="multi-lobby-seed-actions">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={!isMultiHost}
-                  onClick={() => {
-                    const nextSeed = createDefaultSoloSeed();
-                    setMultiSeed(nextSeed);
-                    void updateMultiLobbyDetails({ seed: nextSeed });
-                  }}
-                >
-                  自動生成
-                </button>
-                <button
-                  type="button"
-                  className={currentMultiPlayer?.ready ? "secondary-button" : "primary-button"}
-                  onClick={() => void updateMultiLobbyDetails({ ready: !currentMultiPlayer?.ready })}
-                >
-                  {currentMultiPlayer?.ready ? "準備解除" : "準備完了"}
-                </button>
-              </div>
-            </div>
-            <label className="role-select">
-              <span>役職選択</span>
-              <select
-                value={currentMultiPlayer?.roleId ?? selectedRoleId}
-                onChange={(event) => {
-                  setSelectedRoleId(event.target.value);
-                  void updateMultiLobbyDetails({ roleId: event.target.value });
+            <label className="solo-seed-input">
+              <span>全プレイヤー共通</span>
+              <input
+                type="text"
+                value={sharedMultiSeed}
+                disabled={!isMultiHost}
+                onChange={(event) => setMultiSeed(sanitizeRouteToken(event.target.value, createDefaultSoloSeed()))}
+                onBlur={() => {
+                  if (isMultiHost) void updateMultiLobbyDetails({ seed: sanitizeRouteToken(multiSeed, createDefaultSoloSeed()) });
                 }}
-              >
-                {sampleRoles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
-            {multiConnectionError ? <p className="selected-role-description error-text">{multiConnectionError}</p> : null}
-            <div className="multi-player-list">
-              {multiPlayers.map((entry) => {
-                const role = entry.roleId ? roleMap[entry.roleId] : null;
-                return (
-                  <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
-                    <div className="multi-player-row-main">
-                      <strong>{renderMultiPlayerName(entry.displayName)}</strong>
-                      <div className="multi-player-row-tags">
-                        {entry.playerId === multiRoomState?.hostPlayerId ? <span>ホスト</span> : null}
-                        <span>{entry.ready ? "準備完了" : "準備中"}</span>
-                        <span>{role?.name ?? "役職未選択"}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="action-row">
-              <button type="button" className="secondary-button" onClick={leaveCurrentRoom}>
-                退出
-              </button>
-              {isMultiHost ? (
-                <button type="button" className="secondary-button" onClick={() => void addDebugAi()}>
-                  デバッグAI（最上位）を追加
-                </button>
-              ) : null}
-              <button type="button" className="primary-button" disabled={!canStartMultiMatch} onClick={openMatchPlaceholder}>
-                マッチ開始
-              </button>
-            </div>
-            {!canStartMultiMatch ? (
-              <p className="selected-role-description">
-                {isMultiHost
-                  ? "2人以上の参加と、全員の準備完了が必要です。"
-                  : "ホストがマッチ開始すると自動でマッチ画面へ移動します。"}
-              </p>
-            ) : null}
+            {isMultiHost ? <button type="button" className="secondary-button" onClick={() => { const nextSeed = createDefaultSoloSeed(); setMultiSeed(nextSeed); void updateMultiLobbyDetails({ seed: nextSeed }); }}>新しく生成</button> : null}
           </section>
-          <aside className="selected-role-panel multi-lobby-player-panel">
-            <div className="selected-role-panel-top">
-              <div>
-                <p className="selected-role-eyebrow">Players</p>
-                <h3>Joined Players</h3>
+          <div className="multi-lobby-content">
+            <section className="selected-role-panel multi-room-panel">
+              <div className="selected-role-panel-top"><div><p className="selected-role-eyebrow">役職選択</p><h3>使用する役職を選択</h3></div></div>
+              <div className="multi-role-grid">
+                {sampleRoles.map((role) => {
+                  const isSelected = currentMultiPlayer?.roleId === role.id;
+                  return <button key={role.id} type="button" className={`multi-role-card${isSelected ? " is-selected" : ""}`} onClick={() => { setSelectedRoleId(role.id); void updateMultiLobbyDetails({ roleId: role.id, ready: false }); }}>
+                    <strong>{role.name}</strong>
+                    <span>攻撃 {role.initialBaseAttack} ・ 魔法 {role.initialBaseMagic}</span>
+                    <small>{role.description}</small>
+                  </button>;
+                })}
               </div>
-              <span className="role-card-badge">{multiPlayers.length}</span>
-            </div>
-            <div className="multi-player-list">
-              {multiPlayers.map((entry) => {
-                const role = entry.roleId ? roleMap[entry.roleId] : null;
-                return (
-                  <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
-                    <div className="multi-player-row-main">
-                      <strong>{renderMultiPlayerName(entry.displayName)}</strong>
-                      <div className="multi-player-row-tags">
-                        {entry.playerId === multiRoomState?.hostPlayerId ? <span>Host</span> : null}
-                        <span>{entry.ready ? "Ready" : "Waiting"}</span>
-                        <span>{role?.name ?? "No Role"}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </aside>
+              <button type="button" className={currentMultiPlayer?.ready ? "secondary-button lobby-ready-button" : "primary-button lobby-ready-button"} disabled={!currentMultiPlayer?.roleId} onClick={() => void updateMultiLobbyDetails({ ready: !currentMultiPlayer?.ready })}>
+                {currentMultiPlayer?.ready ? "準備を取り消す" : "この役職で準備完了"}
+              </button>
+            </section>
+            <aside className="selected-role-panel multi-lobby-player-panel">
+              <div className="selected-role-panel-top"><div><p className="selected-role-eyebrow">参加者</p><h3>対戦メンバー</h3></div><span className="role-card-badge">{multiPlayers.length} / 8</span></div>
+              <div className="multi-player-list">
+                {multiPlayers.map((entry) => <div key={entry.playerId} className={`multi-player-row${entry.playerId === multiPlayerId ? " is-self" : ""}`}>
+                  <div className="multi-player-row-main"><strong>{renderMultiPlayerName(entry.displayName)}{entry.playerId === multiPlayerId ? "（あなた）" : ""}</strong><div className="multi-player-row-tags">
+                    {entry.playerId === multiRoomState?.hostPlayerId ? <span>ホスト</span> : null}
+                    {entry.isAi ? <span>AI・{aiLevelLabels[entry.aiLevel ?? "normal"]}</span> : null}
+                    <span>{entry.roleId ? roleMap[entry.roleId]?.name : "役職未選択"}</span><span>{entry.ready ? "準備完了" : "準備待ち"}</span>
+                  </div></div>
+                  {isMultiHost && entry.isAi ? <button type="button" className="text-button" onClick={() => void leaveRoom(lobbyId, entry.playerId).then(setMultiRoomState)}>削除</button> : null}
+                </div>)}
+              </div>
+              {isMultiHost ? <div className="multi-ai-panel"><strong>AIプレイヤーを追加</strong><div className="multi-ai-controls">
+                <select aria-label="AI難易度" value={selectedAiLevel} onChange={(event) => setSelectedAiLevel(event.target.value as AiLevel)}>{(Object.keys(aiLevelLabels) as AiLevel[]).map((level) => <option key={level} value={level}>{aiLevelLabels[level]}</option>)}</select>
+                <select aria-label="AIの役職" value={selectedAiRoleId} onChange={(event) => setSelectedAiRoleId(event.target.value)}>{sampleRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
+                <button type="button" className="secondary-button" onClick={() => void addLobbyAi()}>AIを追加</button>
+              </div></div> : null}
+              {multiConnectionError ? <p className="error-text">{multiConnectionError}</p> : null}
+              <button type="button" className="primary-button lobby-start-button" disabled={!canStartMultiMatch} onClick={startMultiMatch}>5ラウンド対戦を開始</button>
+              <p className="selected-role-description">{isMultiHost ? (canStartMultiMatch ? "全員の準備が整いました。" : "2人以上で役職を選び、全員が準備完了すると開始できます。") : "準備完了後、ホストの開始をお待ちください。"}</p>
+            </aside>
+          </div>
         </section>
       ) : false && appScreen === "multi_match" ? (
         <main className="battle-frame match-frame" data-mode="multi">
@@ -3691,12 +4633,12 @@ export function App() {
               <span>準備完了</span>
               <span>同期</span>
             </div>
-            <button type="button" className="primary-button" onClick={openMatchPlaceholder}>
+              <button type="button" className="primary-button" onClick={startMultiMatch}>
               /match/{lobbyId} を開く
             </button>
           </section>
         </section>
-      ) : appScreen === "multi_match" ? (
+      ) : false && appScreen === "multi_match" ? (
         <section className="panel intro-panel">
           <div className="intro-header">
             <div>
@@ -3720,7 +4662,7 @@ export function App() {
           </section>
         </section>
       ) : appScreen === "ranking" ? (
-        <section className="panel intro-panel">
+        <section className="panel intro-panel ranking-shell">
           <div className="intro-header">
             <div>
               <h2>ランキング</h2>
@@ -3738,6 +4680,18 @@ export function App() {
               </div>
               <span className="role-card-badge">{soloRankings.length} 件</span>
             </div>
+            <div className="replay-code-form">
+              <input
+                value={replayCodeInput}
+                onChange={(event) => setReplayCodeInput(sanitizeReplayCode(event.target.value))}
+                placeholder="リプレイコードを入力"
+                aria-label="リプレイコード"
+              />
+              <button type="button" className="primary-button" onClick={() => void openReplayCode(replayCodeInput)}>
+                リプレイを見る
+              </button>
+            </div>
+            {error ? <p className="error-text">{error}</p> : null}
             {soloRankings.length > 0 ? (
               <div className="ranking-list">
                 {soloRankings.map((entry, index) => (
@@ -3746,6 +4700,11 @@ export function App() {
                     <span>{entry.roleName}</span>
                     <span>seed: {entry.seed}</span>
                     <span>{formatDisplayNumber(entry.totalScore)}</span>
+                    {entry.replayCode && entry.replayGame ? (
+                      <button type="button" className="secondary-button" onClick={() => void openReplayCode(entry.replayCode!)}>
+                        リプレイ
+                      </button>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -3754,9 +4713,23 @@ export function App() {
             )}
           </section>
         </section>
-      ) : appScreen === "solo_battle" && game ? (
+      ) : (appScreen === "solo_battle" || appScreen === "multi_match" || appScreen === "replay") && game ? (
         <main className="battle-stage">
-          <div className="battle-frame">
+          <div ref={battleFrameRef} className={`battle-frame${isReadOnlyBattle ? " is-read-only" : ""}`}>
+            {currentTaskText && !isReadOnlyBattle ? (
+              <button
+                type="button"
+                className={`battle-task-guide${currentTask?.action ? " is-actionable" : ""}${currentTask?.ready ? " is-ready" : ""}`}
+                aria-live="polite"
+                disabled={!currentTask?.action}
+                onClick={runCurrentTaskAction}
+              >
+                <span>次の操作</span>
+                <strong>{currentTaskText}</strong>
+                {currentTask?.action ? <span className="battle-task-guide-arrow" aria-hidden="true">›</span> : null}
+              </button>
+            ) : null}
+            {error ? <p className="battle-task-error error-text" role="alert">{error}</p> : null}
             <div className="battle-top-row">
               <section className="panel status-panel" ref={statusPanelRef}>
                 <div className="status-hero">
@@ -3791,10 +4764,18 @@ export function App() {
                         {selectedRoundBuffs.length > 0 ? (
                           selectedRoundBuffs.map((buff) => (
                             <div key={buff.instanceId} className="round-buff-tooltip">
-                              <div className="round-buff-icon no-image">
-                                <strong>Noimage</strong>
-                                <small>{buff.name}</small>
-                              </div>
+                              <button
+                                type="button"
+                                className={`round-buff-icon${roundBuffImageMap[buff.iconAsset ?? buff.id] ? " has-image" : " no-image"}`}
+                                aria-label={`${buff.name}の効果を確認`}
+                                onClick={() => setIsRoundBuffListOpen(true)}
+                              >
+                                {roundBuffImageMap[buff.iconAsset ?? buff.id] ? (
+                                  <img src={roundBuffImageMap[buff.iconAsset ?? buff.id]} alt="" />
+                                ) : (
+                                  <><strong>Noimage</strong><small>{buff.name}</small></>
+                                )}
+                              </button>
                               <div className="round-buff-popup">
                                 <strong>{buff.name}</strong>
                                 <p>{buff.description}</p>
@@ -3824,6 +4805,15 @@ export function App() {
                             onClick={() => setIsCardCatalogOpen(true)}
                           >
                             {renderUtilityIcon("catalog")}
+                          </button>
+                          <button
+                            type="button"
+                            className="help-icon-button battle-icon-button"
+                            aria-label="ラウンドバフ一覧"
+                            aria-expanded={isRoundBuffCatalogOpen}
+                            onClick={() => setIsRoundBuffCatalogOpen(true)}
+                          >
+                            {renderUtilityIcon("round-buffs")}
                           </button>
                           <button
                             type="button"
@@ -3867,29 +4857,29 @@ export function App() {
                   </div>
                 </div>
                 <div className="status-grid">
-                  <div ref={(element) => setStatusBlockRef("baseAttack", element)}>
+                  <div className="status-stat-attack" ref={(element) => setStatusBlockRef("baseAttack", element)}>
                     <span>基礎攻撃</span>
                     <strong>{player ? formatDisplayNumber(player.baseAttack) : "-"}</strong>
                   </div>
-                  <div ref={(element) => setStatusBlockRef("baseMagic", element)}>
+                  <div className="status-stat-magic" ref={(element) => setStatusBlockRef("baseMagic", element)}>
                     <span>基礎魔法</span>
                     <strong>{player ? formatDisplayNumber(player.baseMagic) : "-"}</strong>
                   </div>
-                  <div ref={(element) => setStatusBlockRef("scoreThisRound", element)}>
+                  <div className="status-score" ref={(element) => setStatusBlockRef("scoreThisRound", element)}>
                     <span>ラウンド得点</span>
-                    <strong>{player ? formatDisplayNumber(player.scoreThisRound) : "-"}</strong>
+                    <AnimatedScore key={`round-${battleFeedback.scoreEpoch}`} value={battleFeedback.score.scoreThisRound} format={formatDisplayNumber} />
                   </div>
-                  <div ref={(element) => setStatusBlockRef("tempAttack", element)}>
+                  <div className="status-stat-attack" ref={(element) => setStatusBlockRef("tempAttack", element)}>
                     <span>一時攻撃</span>
                     <strong>{player ? formatDisplayNumber(player.tempAttack) : "-"}</strong>
                   </div>
-                  <div ref={(element) => setStatusBlockRef("tempMagic", element)}>
+                  <div className="status-stat-magic" ref={(element) => setStatusBlockRef("tempMagic", element)}>
                     <span>一時魔法</span>
                     <strong>{player ? formatDisplayNumber(player.tempMagic) : "-"}</strong>
                   </div>
-                  <div ref={(element) => setStatusBlockRef("totalScore", element)}>
+                  <div className="status-score status-score-total" ref={(element) => setStatusBlockRef("totalScore", element)}>
                     <span>合計得点</span>
-                    <strong>{player ? formatDisplayNumber(player.totalScore) : "-"}</strong>
+                    <AnimatedScore key={`total-${battleFeedback.scoreEpoch}`} value={battleFeedback.score.totalScore} format={formatDisplayNumber} />
                   </div>
                 </div>
                 {pendingDolphinFinalAction || currentTokenPlacementRequirement ? (
@@ -3953,7 +4943,7 @@ export function App() {
                 ) : null}
               </section>
 
-              <section className="panel action-panel action-panel-compact">
+              <section className="panel action-panel action-panel-compact" hidden aria-hidden="true">
                 {game.phase === "input" ? (
                   <>
                     <div className="control-meta-row">
@@ -4037,7 +5027,7 @@ export function App() {
                           <p className="action-copy-sub">発動を進めています。</p>
                         )}
                         {currentResolutionOperations.length > 0 && !currentTokenPlacementRequirement ? (
-                          <button className="primary-button" onClick={confirmCurrentTargetsAndResolve}>
+                          <button className={`primary-button${areResolutionTargetsReady ? " is-next-action-ready" : ""}`} onClick={confirmCurrentTargetsAndResolve}>
                             対象を確定して解決
                           </button>
                         ) : null}
@@ -4073,7 +5063,7 @@ export function App() {
                       <p>場から {Math.min(2, player?.field.length ?? 0)} 枚選んで捨ててください。</p>
                     </div>
                     <button
-                      className="primary-button"
+                      className={`primary-button${isRoundEndSelectionReady ? " is-next-action-ready" : ""}`}
                       disabled={roundEndDiscardIds.length !== Math.min(2, player?.field.length ?? 0)}
                       onClick={submitRoundEnd}
                     >
@@ -4082,15 +5072,30 @@ export function App() {
                   </>
                 ) : null}
 
-                {game.phase === "finished" ? <p className="action-copy-sub">5 ラウンド終了です。合計得点を確認してください。</p> : null}
+                {game.phase === "finished" ? (
+                  <div className="action-copy">
+                    <strong>5ラウンド終了</strong>
+                    <p>合計得点を確認してください。</p>
+                    {isMultiBattle && isMultiHost && isMultiMatchFinished ? <button type="button" className="primary-button" onClick={() => void returnFinishedMatchToLobby()}>全員でロビーに戻る</button> : null}
+                    {isMultiBattle && !isMultiHost && isMultiMatchFinished ? <p className="action-copy-sub">ホストがロビーへ戻すのを待っています。</p> : null}
+                    {isMultiBattle && !isMultiMatchFinished ? <p className="action-copy-sub">ほかのプレイヤーの終了を待っています。</p> : null}
+                  </div>
+                ) : null}
 
                 {error ? <p className="error-text">{error}</p> : null}
               </section>
             </div>
 
-            <section className="panel field-panel">
+            <section
+              className={`panel field-panel${shouldHighlightField ? " is-next-action-target" : ""}`}
+              onClickCapture={isReadOnlyBattle ? (event) => { event.preventDefault(); event.stopPropagation(); } : undefined}
+              onDragStartCapture={isReadOnlyBattle ? (event) => event.preventDefault() : undefined}
+            >
+              <div className="battle-row-heading"><h2>場</h2></div>
+              {battleFeedback.overlay}
               <div
                 className={`horizontal-card-row ${inputStep === "placement" ? "is-placement-row" : ""}`}
+                onWheel={handleHorizontalCardWheel}
                 ref={inputStep === "placement" ? placementRowRef : fieldRowRef}
                 onDragOver={
                   inputStep === "placement"
@@ -4329,9 +5334,15 @@ export function App() {
                 ) : null}
               </div>
             </section>
-            <section className="panel hand-panel">
+            <section
+              className={`panel hand-panel${shouldHighlightHand ? " is-next-action-target" : ""}`}
+              onClickCapture={isReadOnlyBattle ? (event) => { event.preventDefault(); event.stopPropagation(); } : undefined}
+              onDragStartCapture={isReadOnlyBattle ? (event) => event.preventDefault() : undefined}
+            >
+              <div className="battle-row-heading"><h2>手札</h2><span>{visibleHandCards.length}枚</span></div>
               <div
                 className={`horizontal-card-row ${canReturnPlacedCardToHand(player?.hand, draggedCard) ? "is-hand-return-target" : ""}`}
+                onWheel={handleHorizontalCardWheel}
                 onDragOver={game.phase === "input" && inputStep === "placement" ? handleHandReturnDragOver : undefined}
                 onDrop={
                   game.phase === "input" && inputStep === "placement"
@@ -4390,31 +5401,122 @@ export function App() {
                 })}
               </div>
             </section>
-            <aside className="log-drawer" aria-label="ターンログ">
-              <div className="log-drawer-handle">ログ</div>
-              <section className="panel log-panel">
-                <h2>ログ</h2>
-                <div className="log-scroll">
-                    {logGroups.map((group) => (
-                      <div key={group.key} className={`log-group log-group-${group.kind}`}>
-                        {group.title ? <div className="log-group-label">{group.title}</div> : null}
-                        <div className="log-group-entries">
-                          {group.entries.map((entry) => (
-                            <div
-                              key={entry.id}
-                              className={`log-entry log-${entry.level}${group.kind !== "card" ? " log-entry-system" : ""}${
-                                entry.code === "ADDITIONAL_ACTIVATION_QUEUED" ? " log-entry-additional-activation" : ""
-                              }`}
-                            >
-                              <p>{trimGroupedLogMessage(entry.message, group.title)}</p>
-                            </div>
-                          ))}
+            {isReplayBattle ? (
+              <>
+                <aside className="match-edge-drawer match-edge-drawer-log" aria-label="リプレイログ">
+                  <div className="match-edge-drawer-handle">ログ</div>
+                  <section className="panel match-edge-drawer-panel">
+                    <h2>ログ</h2>
+                    <div className="match-edge-drawer-scroll">
+                      {logGroups.map((group) => (
+                        <div key={group.key} className={`log-group log-group-${group.kind}${group.cardType ? ` log-group-card-${group.cardType}` : ""}`}>
+                          {renderLogGroupLabel(group)}
+                          <div className="log-group-entries">{group.entries.map((entry) => <div key={entry.id} className={getLogEntryClassName(entry, group)}><p>{trimGroupedLogMessage(entry.message, group.title)}</p></div>)}</div>
                         </div>
+                      ))}
+                    </div>
+                  </section>
+                </aside>
+                <aside className="match-edge-drawer match-edge-drawer-replay" aria-label="リプレイメニュー">
+                  <div className="match-edge-drawer-handle">リプレイ</div>
+                  <section className="panel match-edge-drawer-panel replay-edge-panel">
+                    <div className="replay-edge-heading">
+                      <div>
+                        <h2>リプレイ</h2>
+                        <small>{replayFrameIndex + 1} / {activeReplay?.frames.length ?? 1}</small>
                       </div>
-                    ))}
-                </div>
-              </section>
-            </aside>
+                      <div className="replay-edge-score">
+                        <span>ラウンド得点 <strong>{formatDisplayNumber(replayTimeline[replayFrameIndex]?.scoreThisRound ?? 0)}</strong></span>
+                        <span>合計得点 <strong>{formatDisplayNumber(replayTimeline[replayFrameIndex]?.totalScore ?? 0)}</strong></span>
+                      </div>
+                    </div>
+                    <div className="replay-viewer-controls replay-edge-controls">
+                      <button type="button" className="secondary-button" onClick={() => showReplayFrame(replayFrameIndex - 1)} disabled={replayFrameIndex <= 0}>前へ</button>
+                      <button type="button" className="primary-button" onClick={toggleReplayPlayback} disabled={!activeReplay || activeReplay.frames.length <= 1}>{isReplayPlaying ? "一時停止" : "再生"}</button>
+                      <button type="button" className="secondary-button" onClick={() => showReplayFrame(replayFrameIndex + 1)} disabled={!activeReplay || replayFrameIndex >= activeReplay.frames.length - 1}>次へ</button>
+                    </div>
+                    {isGeneratingSoloAiReplay && soloAiReplayProgress ? (
+                      <div className="replay-edge-generation">
+                        <strong>{soloAiReplayProgress.message}</strong>
+                        <span>{soloAiReplayProgress.completedRounds} / 5 完了{typeof soloAiReplayProgress.explorationPercent === "number" ? `・探索 ${soloAiReplayProgress.explorationPercent.toFixed(1)}%` : ""}</span>
+                      </div>
+                    ) : null}
+                    <div className="match-edge-drawer-scroll replay-timeline-scroll">
+                      {replayTimeline.map((entry, index) => (
+                        <Fragment key={`${entry.round}-${entry.index}`}>
+                          {index === 0 || replayTimeline[index - 1]?.round !== entry.round ? (
+                            <button type="button" className="replay-round-start" onClick={() => showReplayFrame(entry.index)}>
+                              <strong>第{entry.round}ラウンド</strong>
+                              <span>開始位置 {formatReplayTimestamp(entry.elapsedSeconds)}</span>
+                            </button>
+                          ) : null}
+                          <button type="button" className={`replay-timeline-entry${entry.index === replayFrameIndex ? " is-current" : ""}`} onClick={() => showReplayFrame(entry.index)}>
+                            <span className="replay-timeline-time">+{formatReplayTimestamp(entry.roundElapsedSeconds)}</span>
+                            <span className="replay-timeline-label">{entry.label}</span>
+                            <span className="replay-timeline-score">R {formatDisplayNumber(entry.scoreThisRound)} / 合計 {formatDisplayNumber(entry.totalScore)}</span>
+                          </button>
+                        </Fragment>
+                      ))}
+                    </div>
+                    <div className="replay-edge-footer">
+                      <small className="replay-code-compact">{activeReplay?.code ?? replayCodeInput}</small>
+                      {activeReplay && activeReplay.roomId !== "solo" && !activeReplay.rankingProtected ? (
+                        <button type="button" className="secondary-button" onClick={() => void retainActiveReplay()}>{activeReplay.savedAt ? "7日延長" : "7日間保存"}</button>
+                      ) : null}
+                      <button type="button" className="secondary-button" onClick={openRanking}>ランキングへ戻る</button>
+                    </div>
+                  </section>
+                </aside>
+              </>
+            ) : isMultiBattle ? (
+              <>
+                <aside className="match-edge-drawer match-edge-drawer-log" aria-label="対戦ログ">
+                  <div className="match-edge-drawer-handle">ログ</div>
+                  <section className="panel match-edge-drawer-panel">
+                    <h2>ログ</h2>
+                    <div className="match-edge-drawer-scroll">
+                      {logGroups.map((group) => (
+                        <div key={group.key} className={`log-group log-group-${group.kind}${group.cardType ? ` log-group-card-${group.cardType}` : ""}`}>
+                          {renderLogGroupLabel(group)}
+                          <div className="log-group-entries">{group.entries.map((entry) => <div key={entry.id} className={getLogEntryClassName(entry, group)}><p>{trimGroupedLogMessage(entry.message, group.title)}</p></div>)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </aside>
+                <aside className="match-edge-drawer match-edge-drawer-player" aria-label="プレイヤー一覧">
+                  <div className="match-edge-drawer-handle">プレイヤー</div>
+                  <section className="panel match-edge-drawer-panel">
+                    <h2>プレイヤー一覧</h2>
+                    <div className="match-edge-drawer-scroll">
+                      {[...(multiRoomState?.matchPlayers ?? [])].sort((a, b) => b.totalScore - a.totalScore).map((entry, index) => (
+                        <article key={entry.playerId} className={`match-player-card${entry.playerId === multiPlayerId ? " is-self" : ""}${entry.playerId === multiViewPlayerId ? " is-viewing" : ""}`}>
+                          <div className="match-player-card-top"><strong>{index + 1}位　{entry.displayName}</strong><span>{formatDisplayNumber(entry.totalScore)}点</span></div>
+                          <p>第{entry.round}ラウンド・{resolveMatchPhaseLabel(entry.phase)}</p>
+                          <p>今回の得点: {formatDisplayNumber(entry.scoreThisRound)}点</p>
+                          <button type="button" className="secondary-button match-spectate-button" onClick={() => void switchMultiView(entry.playerId)}>
+                            {entry.playerId === multiViewPlayerId ? "表示中" : entry.playerId === multiPlayerId ? "自分へ戻る" : "観戦する"}
+                          </button>
+                          {entry.replayCode ? (
+                            <button type="button" className="secondary-button match-spectate-button" onClick={() => void openReplayCode(entry.replayCode!)}>
+                              リプレイ
+                            </button>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                </aside>
+              </>
+            ) : (
+              <aside className="log-drawer" aria-label="ターンログ">
+                <div className="log-drawer-handle">ログ</div>
+                <section className="panel log-panel">
+                  <h2>ログ</h2>
+                  <div className="log-scroll">{logGroups.map((group) => <div key={group.key} className={`log-group log-group-${group.kind}${group.cardType ? ` log-group-card-${group.cardType}` : ""}`}>{renderLogGroupLabel(group)}<div className="log-group-entries">{group.entries.map((entry) => <div key={entry.id} className={getLogEntryClassName(entry, group)}><p>{trimGroupedLogMessage(entry.message, group.title)}</p></div>)}</div></div>)}</div>
+                </section>
+              </aside>
+            )}
           </div>
         </main>
       ) : null}
@@ -4524,12 +5626,18 @@ export function App() {
               <button
                 type="button"
                 className="secondary-button"
-                disabled={pendingRoundBuffChoice.rerollUsed}
+                disabled={pendingRoundBuffChoice.rerollUsed || isRoundBuffSubmitting}
                 onClick={handleRoundBuffReroll}
               >
                 {pendingRoundBuffChoice.rerollUsed ? "このラウンドはリロール済み" : "候補をリロール"}
               </button>
             </div>
+            {isRoundBuffSubmitting ? (
+              <div className="round-buff-submit-status" role="status" aria-live="polite">
+                <span className="round-buff-submit-spinner" aria-hidden="true" />
+                選択を反映しています…
+              </div>
+            ) : null}
             <div className="round-buff-choice-grid round-buff-choice-grid-modal">
               {pendingRoundBuffChoice.options.map((buffId, index) => {
                 const buff = roundBuffMap[buffId];
@@ -4541,11 +5649,15 @@ export function App() {
                     key={`${buffId}_${index}`}
                     type="button"
                     className="round-buff-choice-card round-buff-choice-card-modal"
+                    disabled={isRoundBuffSubmitting}
                     onClick={() => handleRoundBuffSelect(index)}
                   >
-                    <div className="round-buff-icon no-image">
-                      <strong>Noimage</strong>
-                      <small>{buff.name}</small>
+                    <div className={`round-buff-icon${roundBuffImageMap[buff.iconAsset ?? buff.id] ? " has-image" : " no-image"}`}>
+                      {roundBuffImageMap[buff.iconAsset ?? buff.id] ? (
+                        <img src={roundBuffImageMap[buff.iconAsset ?? buff.id]} alt="" />
+                      ) : (
+                        <><strong>Noimage</strong><small>{buff.name}</small></>
+                      )}
                     </div>
                     <div className="round-buff-choice-copy">
                       <strong>{buff.name}</strong>
@@ -4554,6 +5666,42 @@ export function App() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isRoundBuffListOpen ? (
+        <div className="help-modal-backdrop" onClick={() => setIsRoundBuffListOpen(false)}>
+          <div className="help-modal active-round-buff-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="help-modal-header">
+              <div>
+                <h2>発動中のラウンドバフ</h2>
+                <p>現在のプレイヤーに適用されている効果です。</p>
+              </div>
+              <button type="button" className="help-close-button" onClick={() => setIsRoundBuffListOpen(false)}>
+                閉じる
+              </button>
+            </div>
+            <div className="active-round-buff-list">
+              {groupedSelectedRoundBuffs.length > 0 ? groupedSelectedRoundBuffs.map((buff) => (
+                <article key={buff.id} className="active-round-buff-card">
+                  <div className={`round-buff-icon${roundBuffImageMap[buff.iconAsset ?? buff.id] ? " has-image" : " no-image"}`}>
+                    {roundBuffImageMap[buff.iconAsset ?? buff.id] ? (
+                      <img src={roundBuffImageMap[buff.iconAsset ?? buff.id]} alt="" />
+                    ) : (
+                      <><strong>Noimage</strong><small>{buff.name}</small></>
+                    )}
+                  </div>
+                  <div>
+                    <div className="active-round-buff-card-heading">
+                      <strong>{buff.name}</strong>
+                      {buff.count > 1 ? <span>×{buff.count}</span> : null}
+                    </div>
+                    <p>{buff.description}</p>
+                  </div>
+                </article>
+              )) : <p className="selected-role-description">現在発動中のラウンドバフはありません。</p>}
             </div>
           </div>
         </div>
@@ -4586,6 +5734,9 @@ export function App() {
                   <span>{audioVolume}%</span>
                 </label>
                 <p>ラウンド中にカードが発動するたび、音階が少しずつ上がります。`0%` にすると消音です。</p>
+                <button type="button" className="secondary-button settings-sound-preview" onClick={() => void playActivationTone("none")}>
+                  発動音を試聴
+                </button>
               </div>
             </div>
           </div>
@@ -4624,6 +5775,17 @@ export function App() {
               <div className="help-block">
                 <strong>ダメージ</strong>
                 <p>このゲームでは対戦相手のHPではなく、自分のスコア加算として扱います。</p>
+              </div>
+              <div className="help-block">
+                <strong>変動数値</strong>
+                <p>カード説明の白い数値は、効果や状態によって変化する可能性がある値です。数値にカーソルを合わせると種類を確認できます。</p>
+                <div className="help-value-kind-list">
+                  <span><i className="help-value-kind-dot is-normal" />通常数値：カード数値への補正で変動</span>
+                  <span><i className="help-value-kind-dot is-probability" />確率数値：確率への補正で変動</span>
+                  <span><i className="help-value-kind-dot is-enchant" />エンチャント数値：エンチャントへの補正で変動</span>
+                  <span><i className="help-value-kind-dot is-special" />特殊値：原則として変動しない固定値</span>
+                </div>
+                <p>赤い文字は元の値より増加、青い文字は減少している状態を表します。</p>
               </div>
             </div>
           </div>
@@ -4703,12 +5865,14 @@ export function App() {
                   {renderCardIllustration(card.id, card.name)}
                   <div className="catalog-card-top">
                     <strong>{card.name}</strong>
-                    <span>{resolveAttributeLabel(card.attribute)}</span>
+                    {!card.timings.includes("enchant") ? <span>{resolveAttributeLabel(card.attribute)}</span> : null}
                   </div>
-                  <div className="catalog-card-meta-row">
-                    <span>{resolveCardTypeLabel(card.type)}</span>
-                    {card.deckEligible === false ? <span>デッキ外</span> : <span>デッキ入り</span>}
-                  </div>
+                  {!card.timings.includes("enchant") ? (
+                    <div className="catalog-card-meta-row">
+                      <span>{resolveCardTypeLabel(card.type)}</span>
+                      {card.deckEligible === false ? <span>デッキ外</span> : <span>デッキ入り</span>}
+                    </div>
+                  ) : null}
                   <p className="card-text-body">
                     {renderCardTextWithAdjustedNumbers(card.text, null, {
                       definitionId: card.id,
@@ -4731,6 +5895,49 @@ export function App() {
         </div>
       ) : null}
 
+      {isRoundBuffCatalogOpen ? (
+        <div className="help-modal-backdrop" onClick={() => setIsRoundBuffCatalogOpen(false)}>
+          <div className="help-modal card-catalog-modal round-buff-catalog-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="help-modal-header">
+              <div>
+                <h2>ラウンドバフ一覧</h2>
+                <p>ゲームに登場するラウンドバフと、その効果を確認できます。</p>
+              </div>
+              <button type="button" className="help-close-button" onClick={() => setIsRoundBuffCatalogOpen(false)}>
+                閉じる
+              </button>
+            </div>
+            <div className="catalog-result-row">
+              <span>{sampleRoundBuffs.length} 件</span>
+            </div>
+            <div className="round-buff-catalog-grid">
+              {sampleRoundBuffs.map((buff) => {
+                const ownedCount = selectedRoundBuffs.filter((selected) => selected.id === buff.id).length;
+                return (
+                  <article key={buff.id} className={`active-round-buff-card round-buff-catalog-card${ownedCount > 0 ? " is-active" : ""}`}>
+                    <div className={`round-buff-icon${roundBuffImageMap[buff.iconAsset ?? buff.id] ? " has-image" : " no-image"}`}>
+                      {roundBuffImageMap[buff.iconAsset ?? buff.id] ? (
+                        <img src={roundBuffImageMap[buff.iconAsset ?? buff.id]} alt="" />
+                      ) : (
+                        <><strong>Noimage</strong><small>{buff.name}</small></>
+                      )}
+                    </div>
+                    <div>
+                      <div className="active-round-buff-card-heading">
+                        <strong>{buff.name}</strong>
+                        {ownedCount > 0 ? <span>発動中{ownedCount > 1 ? ` ×${ownedCount}` : ""}</span> : null}
+                      </div>
+                      <p>{buff.description}</p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {battleFeedback.effects}
       <div className="particle-layer" aria-hidden="true">
         {floatingTexts.map((entry) => (
           <div
@@ -4840,7 +6047,7 @@ function handleReplayEventParticle(
       spawnBurst(event.attribute, "activate", event.instanceId);
       break;
     case "DAMAGE_DEALT":
-      spawnBurst(lastActivationRef.current?.attribute ?? "none", "damage", lastActivationRef.current?.instanceId ?? null);
+      spawnBurst(event.attribute ?? lastActivationRef.current?.attribute ?? "none", "damage", event.sourceInstanceId ?? lastActivationRef.current?.instanceId ?? null);
       break;
     case "FINAL_ATTACK":
       spawnBurst(lastActivationRef.current?.attribute ?? "none", "final", lastActivationRef.current?.instanceId ?? null);

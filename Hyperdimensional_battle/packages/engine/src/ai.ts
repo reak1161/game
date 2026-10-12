@@ -1,6 +1,7 @@
 import type { CardInstance, SubmittedPlacement, SubmittedRoundData } from "@hyperdimensional-battle/shared";
 import {
   getCurrentResolutionCard,
+  getCurrentResolutionTargetCandidateIds,
   getCurrentResolutionTargetKeys,
   resolveNextCard,
   resolvePendingFinalAction,
@@ -8,7 +9,7 @@ import {
   type LocalGameState
 } from "./index";
 
-export type AiLevel = "easy" | "normal" | "expert";
+export type AiLevel = "easy" | "normal" | "advanced" | "expert";
 
 export type AiRoundDecision = {
   level: AiLevel;
@@ -17,6 +18,12 @@ export type AiRoundDecision = {
   evaluatedPlans: number;
   orderedFieldInstanceIds: string[];
   targetSelectionsByInstanceId: Record<string, Record<string, string>>;
+};
+
+export type AiPlanningProgress = {
+  processedPlans: number;
+  totalPlans: number;
+  percent: number;
 };
 
 type ScoredPlan = {
@@ -63,6 +70,34 @@ function* permutations<T>(items: T[], prefix: T[] = []): Generator<T[]> {
   for (let index = 0; index < items.length; index += 1) {
     yield* permutations([...items.slice(0, index), ...items.slice(index + 1)], [...prefix, items[index]!]);
   }
+}
+
+function factorial(value: number) {
+  let result = 1;
+  for (let factor = 2; factor <= value; factor += 1) {
+    result = Math.min(Number.MAX_SAFE_INTEGER, result * factor);
+  }
+  return result;
+}
+
+function combinationCount(total: number, selected: number) {
+  if (selected < 0 || selected > total) return 0;
+  let result = 1;
+  for (let index = 1; index <= Math.min(selected, total - selected); index += 1) {
+    result = Math.min(Number.MAX_SAFE_INTEGER, result * (total - index + 1) / index);
+  }
+  return result;
+}
+
+function countOrderedFieldCandidates(state: LocalGameState, reorderExisting: boolean) {
+  const handCount = getEligibleHandCards(state).length;
+  const fieldCount = state.players[0]!.field.length;
+  let total = 0;
+  for (let selected = 0; selected <= handCount; selected += 1) {
+    const orderCount = reorderExisting ? factorial(fieldCount + selected) : factorial(selected);
+    total = Math.min(Number.MAX_SAFE_INTEGER, total + combinationCount(handCount, selected) * orderCount);
+  }
+  return total;
 }
 
 function getEligibleHandCards(state: LocalGameState) {
@@ -121,7 +156,7 @@ function resolveBestOutcome(state: LocalGameState): { state: LocalGameState; tar
 
   const card = getCurrentResolutionCard(state);
   const keys = getCurrentResolutionTargetKeys(state);
-  const candidateIds = state.players[0]!.field.map((entry) => entry.instanceId);
+  const candidateIds = getCurrentResolutionTargetCandidateIds(state);
   const assignments = keys.length > 0 ? targetAssignments(keys, candidateIds) : [{}];
   let best: ReturnType<typeof resolveBestOutcome> | null = null;
 
@@ -168,16 +203,41 @@ function evaluateOrder(state: LocalGameState, orderedCards: CardInstance[]): Sco
 }
 
 /** Chooses a legal round plan using the same engine that resolves player turns. */
-export function planAiRound(state: LocalGameState, level: AiLevel = "normal"): AiRoundDecision {
+export function planAiRound(
+  state: LocalGameState,
+  level: AiLevel = "normal",
+  onProgress?: (progress: AiPlanningProgress) => void
+): AiRoundDecision {
   if (state.phase !== "input") {
     throw new Error("AI can only plan during the input phase.");
   }
 
   const random = createDeterministicRandom(`${state.rngSeed}:ai:${state.round}:${level}`);
-  const sampleLimit = level === "easy" ? 1 : level === "normal" ? 96 : Number.POSITIVE_INFINITY;
+  const advancedBudget = 384;
+  const sampleLimit = level === "easy" ? 1 : level === "normal" ? 96 : level === "advanced" ? advancedBudget : Number.POSITIVE_INFINITY;
+  const candidateCount = level === "easy" ? 1 : countOrderedFieldCandidates(state, level === "expert");
+  const progressTotal = level === "normal"
+    ? Math.min(sampleLimit, candidateCount)
+    : level === "advanced"
+      ? advancedBudget
+      : candidateCount;
+  const progressStep = Math.max(1, Math.floor(progressTotal / 500));
   let seen = 0;
   let evaluated = 0;
   let best: ScoredPlan | null = null;
+  let lastProgressAt = 0;
+  const reportProgress = (processedPlans: number, force = false) => {
+    if (!onProgress) return;
+    const now = Date.now();
+    if (!force && processedPlans % progressStep !== 0 && now - lastProgressAt < 250) return;
+    lastProgressAt = now;
+    onProgress({
+      processedPlans: Math.min(processedPlans, progressTotal),
+      totalPlans: progressTotal,
+      percent: progressTotal > 0 ? Math.min(100, processedPlans / progressTotal * 100) : 100
+    });
+  };
+  reportProgress(0, true);
 
   if (level === "easy") {
     const player = state.players[0]!;
@@ -188,18 +248,102 @@ export function planAiRound(state: LocalGameState, level: AiLevel = "normal"): A
     const count = Math.floor(random() * (Math.min(player.roundPlacementLimit, shuffled.length) + 1));
     best = evaluateOrder(state, [...player.field, ...shuffled.slice(0, count)]);
     evaluated = best ? 1 : 0;
+    reportProgress(1, true);
   }
 
-  for (const order of level === "easy" ? [] : orderedFieldCandidates(state, level === "expert")) {
+  if (level === "advanced") {
+    const player = state.players[0]!;
+    const eligibleHand = getEligibleHandCards(state);
+    const allCards = [...player.field, ...eligibleHand];
+    const cardsByInstanceId = new Map(allCards.map((card) => [card.instanceId, card] as const));
+    const handIds = new Set(eligibleHand.map((card) => card.instanceId));
+    const beam: ScoredPlan[] = [];
+    const seenOrders = new Set<string>();
+    let processed = 0;
+
+    const considerOrder = (order: CardInstance[]) => {
+      if (processed >= advancedBudget) return;
+      const key = order.map((card) => card.instanceId).join("|");
+      if (seenOrders.has(key)) return;
+      seenOrders.add(key);
+      processed += 1;
+      const candidate = evaluateOrder(state, order);
+      if (candidate) {
+        evaluated += 1;
+        beam.push(candidate);
+        beam.sort((left, right) => right.score - left.score || left.orderedFieldInstanceIds.join("|").localeCompare(right.orderedFieldInstanceIds.join("|")));
+        if (beam.length > 16) beam.length = 16;
+        if (!best || candidate.score > best.score) best = candidate;
+      }
+      reportProgress(processed);
+    };
+
+    for (const order of orderedFieldCandidates(state, false)) {
+      considerOrder(order);
+      if (processed >= 96) break;
+    }
+
+    const shuffleCards = (cards: CardInstance[]) => cards
+      .map((card) => ({ card, weight: random() }))
+      .sort((left, right) => left.weight - right.weight)
+      .map((entry) => entry.card);
+
+    let seedAttempts = 0;
+    while (processed < 160 && seedAttempts < 1600) {
+      seedAttempts += 1;
+      const selectedCount = Math.floor(random() * (Math.min(player.roundPlacementLimit, eligibleHand.length) + 1));
+      considerOrder(shuffleCards([...player.field, ...shuffleCards(eligibleHand).slice(0, selectedCount)]));
+    }
+
+    let mutationAttempts = 0;
+    while (processed < advancedBudget && beam.length > 0 && mutationAttempts < advancedBudget * 12) {
+      mutationAttempts += 1;
+      const parent = beam[Math.floor(random() * beam.length)]!;
+      const order = parent.orderedFieldInstanceIds
+        .map((instanceId) => cardsByInstanceId.get(instanceId))
+        .filter((card): card is CardInstance => Boolean(card));
+      const mutationKind = Math.floor(random() * 4);
+
+      if (mutationKind === 0 && order.length >= 2) {
+        const first = Math.floor(random() * order.length);
+        let second = Math.floor(random() * order.length);
+        if (second === first) second = (second + 1) % order.length;
+        [order[first], order[second]] = [order[second]!, order[first]!];
+      } else if (mutationKind === 1 && order.length >= 2) {
+        const from = Math.floor(random() * order.length);
+        const [card] = order.splice(from, 1);
+        order.splice(Math.floor(random() * (order.length + 1)), 0, card!);
+      } else if (mutationKind === 2) {
+        const unusedHand = eligibleHand.filter((card) => !order.some((entry) => entry.instanceId === card.instanceId));
+        if (unusedHand.length > 0 && order.filter((card) => handIds.has(card.instanceId)).length < player.roundPlacementLimit) {
+          const card = unusedHand[Math.floor(random() * unusedHand.length)]!;
+          order.splice(Math.floor(random() * (order.length + 1)), 0, card);
+        }
+      } else {
+        const placedHandIndexes = order
+          .map((card, index) => handIds.has(card.instanceId) ? index : -1)
+          .filter((index) => index >= 0);
+        if (placedHandIndexes.length > 0) {
+          order.splice(placedHandIndexes[Math.floor(random() * placedHandIndexes.length)]!, 1);
+        }
+      }
+      considerOrder(order);
+    }
+    reportProgress(advancedBudget, true);
+  }
+
+  for (const order of level === "easy" || level === "advanced" ? [] : orderedFieldCandidates(state, level === "expert")) {
     seen += 1;
     if (level !== "expert" && seen > sampleLimit && random() > sampleLimit / seen) {
       continue;
     }
     const candidate = evaluateOrder(state, order);
     if (!candidate) {
+      if (level === "expert") reportProgress(seen);
       continue;
     }
     evaluated += 1;
+    reportProgress(level === "expert" ? seen : evaluated);
     if (!best || candidate.score > best.score || (candidate.score === best.score && random() < 0.5)) {
       best = candidate;
     }
@@ -211,6 +355,7 @@ export function planAiRound(state: LocalGameState, level: AiLevel = "normal"): A
   if (!best) {
     throw new Error("AI could not find a legal round plan.");
   }
+  reportProgress(progressTotal, true);
   return {
     level,
     plan: {
@@ -226,14 +371,25 @@ export function planAiRound(state: LocalGameState, level: AiLevel = "normal"): A
 }
 
 /** Executes the full decision, including targets selected for cards already on the field. */
-export function applyAiRoundDecision(state: LocalGameState, decision: AiRoundDecision): LocalGameState {
+export function applyAiRoundDecisionWithFrames(
+  state: LocalGameState,
+  decision: AiRoundDecision
+): { state: LocalGameState; frames: LocalGameState[] } {
   let next = startRoundResolution(state, decision.orderedFieldInstanceIds);
+  const frames = [structuredClone(next)];
   while (next.pendingResolution) {
     const card = getCurrentResolutionCard(next);
     next = resolveNextCard(next, card ? decision.targetSelectionsByInstanceId[card.instanceId] ?? {} : {});
+    frames.push(structuredClone(next));
   }
   if (next.pendingFinalAction?.kind === "dolphin_duplicate") {
-    return resolveBestOutcome(next).state;
+    next = resolveBestOutcome(next).state;
+    frames.push(structuredClone(next));
   }
-  return next;
+  return { state: next, frames };
+}
+
+/** Executes the full decision, including targets selected for cards already on the field. */
+export function applyAiRoundDecision(state: LocalGameState, decision: AiRoundDecision): LocalGameState {
+  return applyAiRoundDecisionWithFrames(state, decision).state;
 }

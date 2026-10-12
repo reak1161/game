@@ -53,7 +53,7 @@
     {
       "effectId": "wind_oka_no_ue_no_fuusha_activate",
       "operationIndex": 0,
-      "occurrence": 0,
+      "occurrence": 1,
       "writtenValueKind": "normal",
       "affectsValueKind": "normal"
     }

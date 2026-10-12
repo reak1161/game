@@ -6,7 +6,7 @@
   "timings": [
     "consume"
   ],
-  "text": "消費：50%の確率で「現在の合計得点×２」\n外れたら「現在の合計得点を0にする」",
+  "text": "消費：{{50%}}の確率で「現在の合計得点{{×2}}」\n外れたら「現在の合計得点を{{0}}にする」",
   "effects": [
     {
       "id": "dark_yami_no_gamble_consume",
@@ -15,9 +15,35 @@
       "condition": null,
       "operations": [
         {
-          "kind": "gamble_total_score_double_or_zero"
+          "kind": "gamble_total_score_double_or_zero",
+          "value": 2
         }
       ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_yami_no_gamble_consume",
+      "operationIndex": 0,
+      "literalValue": 50,
+      "occurrence": 0,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
+    },
+    {
+      "effectId": "dark_yami_no_gamble_consume",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_yami_no_gamble_consume",
+      "operationIndex": 0,
+      "literalValue": 0,
+      "occurrence": 2,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
     }
   ],
   "tags": [

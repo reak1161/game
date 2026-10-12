@@ -1,0 +1,9017 @@
+{
+  "seed": 0,
+  "games": 1000,
+  "player1Wins": 526,
+  "player2Wins": 474,
+  "connectionWins": 861,
+  "judgementWins": 139,
+  "draws": 0,
+  "averageTurns": 58.934,
+  "minTurns": 24,
+  "maxTurns": 89,
+  "extendedPhaseRate": 0.726,
+  "averageRerolls": 1.306,
+  "elapsedSeconds": 14.8883343,
+  "results": [
+    {
+      "seed": 0,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 1,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 2,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 3,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 4,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 5,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 6,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 30,
+      "placements": 30,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 7,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 8,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 9,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 10,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 11,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 12,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 13,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 14,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 15,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 16,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 17,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 18,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 19,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 20,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 21,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 22,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 23,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 24,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 25,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 26,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 27,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 82,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 28,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 29,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 30,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 31,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 32,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 33,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 34,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 35,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 36,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 85,
+      "placements": 83,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 37,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 38,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 39,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 40,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 80,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 41,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 80,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 42,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 43,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 44,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 45,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 46,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 47,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 48,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 49,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 52,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 50,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 51,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 52,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 53,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 54,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 55,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 56,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 57,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 58,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 59,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 60,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 86,
+      "placements": 84,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 61,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 62,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 63,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 54,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 64,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 65,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 66,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 76,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 67,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 68,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 69,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 70,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 71,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 72,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 73,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 74,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 75,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 76,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 52,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 77,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 78,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 79,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 80,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 81,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 33,
+      "placements": 33,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 82,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 83,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 84,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 85,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 74,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 86,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 87,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 88,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 89,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 90,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 91,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 92,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 93,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 94,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 95,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 96,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 97,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 98,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 99,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 100,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 101,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 102,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 103,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 104,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 105,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 106,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 107,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 108,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 109,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 81,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 110,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 111,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 112,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 113,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 114,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 115,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 116,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 117,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 118,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 119,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 120,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 121,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 69,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 122,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 123,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 80,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 124,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 125,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 126,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 127,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 128,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 129,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 130,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 131,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 3
+    },
+    {
+      "seed": 132,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 133,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 70,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 134,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 135,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 136,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 137,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 138,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 139,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 68,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 140,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 141,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 142,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 69,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 143,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 144,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 145,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 146,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 147,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 148,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 149,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 150,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 151,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 152,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 153,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 154,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 155,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 156,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 157,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 158,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 159,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 160,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 161,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 72,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 5
+    },
+    {
+      "seed": 162,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 163,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 28,
+      "placements": 28,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 164,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 70,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 165,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 166,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 167,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 168,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 169,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 45,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 170,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 171,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 172,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 173,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 59,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 174,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 175,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 176,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 177,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 178,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 179,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 180,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 181,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 182,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 183,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 184,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 185,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 186,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 187,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 188,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 189,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 190,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 191,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 192,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 193,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 194,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 195,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 196,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 197,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 198,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 29,
+      "placements": 29,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 199,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 200,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 201,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 202,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 203,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 204,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 205,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 206,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 207,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 208,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 209,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 210,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 36,
+      "placements": 36,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 211,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 212,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 213,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 214,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 215,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 216,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 217,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 218,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 219,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 220,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 221,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 222,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 81,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 223,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 224,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 225,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 226,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 227,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 228,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 229,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 230,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 231,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 232,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 233,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 234,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 235,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 236,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 237,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 238,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 66,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 239,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 240,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 241,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 242,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 243,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 244,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 245,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 246,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 247,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 248,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 33,
+      "placements": 33,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 249,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 250,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 251,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 252,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 253,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 34,
+      "placements": 34,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 254,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 255,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 256,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 257,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 75,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 258,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 259,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 260,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 261,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 262,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 263,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 264,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 265,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 266,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 267,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 86,
+      "placements": 84,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 268,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 269,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 76,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 270,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 271,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 272,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 273,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 83,
+      "placements": 83,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 274,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 275,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 276,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 277,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 278,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 279,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 280,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 281,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 282,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 283,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 284,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 285,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 80,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 286,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 287,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 288,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 289,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 290,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 291,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 292,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 293,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 30,
+      "placements": 30,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 294,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 295,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 77,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 296,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 297,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 298,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 299,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 300,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 301,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 302,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 303,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 304,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 305,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 306,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 307,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 84,
+      "placements": 82,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 308,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 309,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 310,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 311,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 312,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 313,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 314,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 315,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 316,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 317,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 318,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 319,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 320,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 321,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 322,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 323,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 324,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 325,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 326,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 327,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 74,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 328,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 329,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 330,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 331,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 332,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 56,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 333,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 334,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 335,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 336,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 337,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 338,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 339,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 340,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 341,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 342,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 343,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 344,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 345,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 346,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 347,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 348,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 349,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 350,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 351,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 80,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 352,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 32,
+      "placements": 32,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 353,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 354,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 58,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 355,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 356,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 357,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 358,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 359,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 360,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 361,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 36,
+      "placements": 36,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 362,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 363,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 76,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 364,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 365,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 366,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 367,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 368,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 369,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 370,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 371,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 372,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 373,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 374,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 375,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 376,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 377,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 378,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 379,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 380,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 381,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 81,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 382,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 29,
+      "placements": 29,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 383,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 384,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 385,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 386,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 387,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 388,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 389,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 56,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 390,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 391,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 392,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 393,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 394,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 395,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 396,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 85,
+      "placements": 82,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 397,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 398,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 59,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 399,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 400,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 401,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 402,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 403,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 404,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 405,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 406,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 407,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 408,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 62,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 409,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 25,
+      "placements": 25,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 410,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 411,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 67,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 412,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 413,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 414,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 4
+    },
+    {
+      "seed": 415,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 416,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 417,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 70,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 418,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 419,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 420,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 421,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 422,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 423,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 424,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 425,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 426,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 427,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 57,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 428,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 85,
+      "placements": 82,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 429,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 430,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 431,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 432,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 433,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 434,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 435,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 436,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 437,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 438,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 439,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 440,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 441,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 89,
+      "placements": 86,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 442,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 443,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 444,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 445,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 446,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 447,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 448,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 449,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 450,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 451,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 452,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 453,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 454,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 80,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 455,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 456,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 457,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 458,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 459,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 460,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 461,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 462,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 463,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 464,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 465,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 466,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 467,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 468,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 469,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 470,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 471,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 472,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 473,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 49,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 474,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 475,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 476,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 34,
+      "placements": 34,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 477,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 478,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 479,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 480,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 481,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 482,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 483,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 484,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 80,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 485,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 486,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 487,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 488,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 489,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 34,
+      "placements": 34,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 490,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 491,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 492,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 493,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 494,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 495,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 496,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 497,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 498,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 499,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 500,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 501,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 502,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 503,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 504,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 505,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 506,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 507,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 508,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 509,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 510,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 511,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 512,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 513,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 514,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 515,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 516,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 517,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 518,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 519,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 520,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 521,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 522,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 523,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 524,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 525,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 526,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 527,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 528,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 529,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 530,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 531,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 532,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 533,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 36,
+      "placements": 36,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 534,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 535,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 536,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 537,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 538,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 539,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 71,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 540,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 541,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 542,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 543,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 544,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 545,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 546,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 547,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 548,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 549,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 550,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 551,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 552,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 553,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 554,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 555,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 556,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 557,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 558,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 559,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 560,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 561,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 562,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 563,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 564,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 3
+    },
+    {
+      "seed": 565,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 566,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 567,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 568,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 569,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 570,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 571,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 5
+    },
+    {
+      "seed": 572,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 573,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 75,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 574,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 575,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 576,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 24,
+      "placements": 24,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 577,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 578,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 579,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 580,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 581,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 582,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 583,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 584,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 82,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 585,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 36,
+      "placements": 36,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 586,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 587,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 588,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 589,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 590,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 591,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 592,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 593,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 594,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 595,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 596,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 597,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 598,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 599,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 600,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 601,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 602,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 603,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 604,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 50,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 605,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 606,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 607,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 608,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 609,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 610,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 65,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 611,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 612,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 613,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 614,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 34,
+      "placements": 34,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 615,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 616,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 617,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 85,
+      "placements": 84,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 618,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 619,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 620,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 48,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 621,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 622,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 623,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 624,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 625,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 76,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 626,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 627,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 628,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 629,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 630,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 631,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 632,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 633,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 50,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 634,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 635,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 636,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 80,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 637,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 638,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 639,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 640,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 641,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 642,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 643,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 644,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 64,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 645,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 646,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 647,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 648,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 649,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 650,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 651,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 652,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 653,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 654,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 655,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 656,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 657,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 658,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 659,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 660,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 661,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 662,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 663,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 27,
+      "placements": 27,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 664,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 665,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 666,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 667,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 69,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 668,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 669,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 670,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 671,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 672,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 85,
+      "placements": 83,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 673,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 674,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 675,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 82,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 676,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 677,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 678,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 679,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 680,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 681,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 682,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 683,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 684,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 685,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 686,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 687,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 688,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 689,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 690,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 691,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 692,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 693,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 694,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 695,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 696,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 697,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 698,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 699,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 700,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 701,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 32,
+      "placements": 32,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 702,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 83,
+      "placements": 82,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 703,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 704,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 705,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 706,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 707,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 708,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 709,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 710,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 711,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 712,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 713,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 714,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 715,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 716,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 717,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 36,
+      "placements": 36,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 718,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 719,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 720,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 721,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 52,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 722,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 723,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 724,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 725,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 53,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 726,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 727,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 728,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 729,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 730,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 731,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 732,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 733,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 734,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 735,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 736,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 737,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 738,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 739,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 55,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 740,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 741,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 742,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 743,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 744,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 745,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 746,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 747,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 748,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 749,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 750,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 751,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 752,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 753,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 754,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 755,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 756,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 757,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 758,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 759,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 760,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 761,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 762,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 763,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 764,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 765,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 766,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 767,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 768,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 769,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 770,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 771,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 772,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 773,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 774,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 775,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 776,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 777,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 778,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 779,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 780,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 781,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 782,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 85,
+      "placements": 83,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 783,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 82,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 784,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 785,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 786,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 787,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 788,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 789,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 790,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 791,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 792,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 793,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 794,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 795,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 796,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 797,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 798,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 799,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 800,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 801,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 802,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 84,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 803,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 804,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 805,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 806,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 807,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 36,
+      "placements": 36,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 808,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 56,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 809,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 810,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 811,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 812,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 813,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 814,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 815,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 75,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 816,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 817,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 818,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 819,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 820,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 821,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 822,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 823,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 824,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 825,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 826,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 827,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 828,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 829,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 830,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 831,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 832,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 83,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 833,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 834,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 835,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 836,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 837,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 838,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 52,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 839,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 840,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 841,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 842,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 843,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 844,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 845,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 846,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 78,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 847,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 848,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 849,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 850,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 851,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 852,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 853,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 854,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 87,
+      "placements": 86,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 855,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 856,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 857,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 858,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 859,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 860,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 32,
+      "placements": 32,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 861,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 862,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 863,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 864,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 865,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 866,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 867,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 64,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 868,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 869,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 870,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 871,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 872,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 873,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 874,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 875,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 80,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 876,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 70,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 877,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 61,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 878,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 48,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 879,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 60,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 880,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 881,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 882,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 883,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 884,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 885,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 79,
+      "placements": 78,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 886,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 887,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 888,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 889,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 890,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 891,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 39,
+      "placements": 39,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 892,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 72,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 893,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 894,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 895,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 896,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 77,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 897,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 898,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 899,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 900,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 901,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 72,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 902,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 903,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 904,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 905,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 906,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 58,
+      "placements": 57,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 907,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 908,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 909,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 47,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 910,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 911,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 1
+    },
+    {
+      "seed": 912,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 913,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 72,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 914,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 915,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 916,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 69,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 917,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 918,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 919,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 920,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 921,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 68,
+      "placements": 67,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 922,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 923,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 924,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 925,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 71,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 926,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 927,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 63,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 928,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 929,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 930,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 931,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 932,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 933,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 76,
+      "placements": 74,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 934,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 935,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 43,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 936,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 33,
+      "placements": 33,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 937,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 63,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 938,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 50,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 939,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 66,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 940,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 52,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 941,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 942,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 70,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 943,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 64,
+      "placements": 62,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 944,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 945,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 60,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 946,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 947,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 83,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 948,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 43,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 949,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 61,
+      "placements": 59,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 950,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 951,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 45,
+      "placements": 45,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 952,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 69,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 953,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 72,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 954,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 67,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 955,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 956,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 38,
+      "placements": 38,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 957,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 40,
+      "placements": 40,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 958,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 41,
+      "placements": 41,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 959,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 55,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 960,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 56,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 961,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 59,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 962,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 53,
+      "placements": 51,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 963,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 58,
+      "placements": 58,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 964,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 73,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 965,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 37,
+      "placements": 37,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 966,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 79,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 967,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 59,
+      "placements": 56,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 968,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 969,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 47,
+      "placements": 46,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 970,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 82,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 971,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 73,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 972,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 46,
+      "placements": 46,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 973,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 50,
+      "placements": 48,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 974,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 65,
+      "placements": 65,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 975,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 89,
+      "placements": 86,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 976,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 62,
+      "placements": 61,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 977,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 74,
+      "placements": 71,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 978,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 48,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 979,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 75,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 980,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 54,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 981,
+      "winner": 2,
+      "winType": "judgement",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 982,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 67,
+      "placements": 66,
+      "enteredExtendedPhase": true,
+      "rerollCount": 1
+    },
+    {
+      "seed": 983,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 77,
+      "placements": 73,
+      "enteredExtendedPhase": true,
+      "rerollCount": 4
+    },
+    {
+      "seed": 984,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 29,
+      "placements": 29,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 985,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 49,
+      "placements": 47,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 986,
+      "winner": 1,
+      "winType": "judgement",
+      "turns": 55,
+      "placements": 53,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 987,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 51,
+      "placements": 49,
+      "enteredExtendedPhase": false,
+      "rerollCount": 2
+    },
+    {
+      "seed": 988,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 78,
+      "placements": 76,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 989,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 81,
+      "placements": 79,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 990,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 991,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 42,
+      "placements": 42,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 992,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 68,
+      "placements": 68,
+      "enteredExtendedPhase": true,
+      "rerollCount": 0
+    },
+    {
+      "seed": 993,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 33,
+      "placements": 33,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 994,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 83,
+      "placements": 81,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 995,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 57,
+      "placements": 54,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 996,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 55,
+      "placements": 52,
+      "enteredExtendedPhase": true,
+      "rerollCount": 3
+    },
+    {
+      "seed": 997,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 82,
+      "placements": 80,
+      "enteredExtendedPhase": true,
+      "rerollCount": 2
+    },
+    {
+      "seed": 998,
+      "winner": 2,
+      "winType": "connection",
+      "turns": 44,
+      "placements": 44,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    },
+    {
+      "seed": 999,
+      "winner": 1,
+      "winType": "connection",
+      "turns": 35,
+      "placements": 35,
+      "enteredExtendedPhase": false,
+      "rerollCount": 0
+    }
+  ]
+}

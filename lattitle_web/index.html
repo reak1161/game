@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ラティトル</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, "Yu Gothic", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #f7f4ea; background: radial-gradient(circle at 15% 10%, #284453, transparent 34%), #10191f; }
+    main { width: min(980px, calc(100% - 40px)); margin: 0 auto; padding: 8vh 0; }
+    h1 { font-size: clamp(3rem, 9vw, 6rem); letter-spacing: .08em; margin: 0 0 .2em; }
+    .lead { color: #c9d5d6; font-size: 1.1rem; line-height: 1.8; margin-bottom: 3rem; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 20px; }
+    article { padding: 28px; border: 1px solid #55737c; border-radius: 16px; background: #192a31; }
+    article h2 { margin: 0 0 12px; font-size: 1.5rem; }
+    article p { color: #c9d5d6; line-height: 1.7; min-height: 5em; }
+    .tag { display: inline-block; margin-bottom: 20px; color: #102018; background: #9ee9b0; border-radius: 999px; padding: 5px 12px; font-size: .8rem; font-weight: 700; }
+    .tag.wip { background: #d7c694; }
+    a.button { display: inline-block; background: #a5f1b9; color: #102018; padding: 12px 20px; border-radius: 8px; font-weight: 800; text-decoration: none; }
+    a.button:hover, a.button:focus-visible { background: #d5ffe0; }
+    footer { margin-top: 2.5rem; color: #91a5aa; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ラティトル</h1>
+    <p class="lead">4×4の盤面で仲間を動かし、コマンドを選んで戦うリアルタイムバトル。</p>
+    <div class="cards">
+      <article>
+        <span class="tag">遊べます</span>
+        <h2>レガシー版</h2>
+        <p>当時の見た目とルールを残したPython版です。ブラウザへの移植に必要な変更だけ加えています。</p>
+        <a class="button" href="./legacy/build/web/">レガシー版を遊ぶ</a>
+      </article>
+      <article>
+        <span class="tag wip">試遊できます</span>
+        <h2>製品版</h2>
+        <p>元のリアルタイム戦闘ルールを基にした新しい版。現在は4人対「へび」の1戦を遊べるプロトタイプです。</p>
+        <a class="button" href="./remake/">製品版を試す</a>
+      </article>
+    </div>
+    <footer>レガシー版は最初のクリック後に読み込みが始まります。マウス操作を推奨します。</footer>
+  </main>
+</body>
+</html>

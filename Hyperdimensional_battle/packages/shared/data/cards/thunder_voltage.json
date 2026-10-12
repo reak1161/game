@@ -6,7 +6,7 @@
   "timings": [
     "placed"
   ],
-  "text": "設置: 攻撃カードを発動する度、一時攻撃{{×2}}。魔法カードを発動する度、一時魔法{{×2}}",
+  "text": "設置: 攻撃カードを発動する度、一時攻撃{{×1.5}}。魔法カードを発動する度、一時魔法{{×1.5}}",
   "effects": [
     {
       "id": "thunder_voltage_attack",
@@ -21,7 +21,7 @@
       "operations": [
         {
           "kind": "multiply_temp_attack",
-          "value": 2
+          "value": 1.5
         }
       ]
     },
@@ -38,7 +38,7 @@
       "operations": [
         {
           "kind": "multiply_temp_magic",
-          "value": 2
+          "value": 1.5
         }
       ]
     }

@@ -1,0 +1,13 @@
+{
+  "name": "playform-game-studies",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check app.js && node --check game-studies.js && node --check quiet.js && node --check objects.js && node --check more.js && node --check more-logic.js && node --check server.mjs && node --check parts-demo.js && node --check parts/game-parts.js && node --check parts/motions.js && node --check parts/example.js && node --check game-parts-demo.js && node --check parts/game-widgets.js && node --check parts/game-example.js && node --test game-logic.test.js more-logic.test.js parts/components.test.js parts/game-widgets.test.js"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.14.5"
+  }
+}

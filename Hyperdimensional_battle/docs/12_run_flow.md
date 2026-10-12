@@ -77,7 +77,7 @@ npm run dev:web
 - `docs/patch_notes_public.md`
 
 ## 7. 補足
-- `npm test` は現在 `packages/engine` の Vitest を実行する
+- `npm test` は `apps/web` の演出データ処理と `packages/engine` のエンジン・AIを Vitest で検証する
 - `npm run build` は現在 `apps/web` の Vite build を含む
 - Worker 側は骨組みのみで、現時点では主に `typecheck` 対象
 

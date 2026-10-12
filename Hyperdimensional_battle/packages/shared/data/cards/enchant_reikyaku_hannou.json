@@ -26,6 +26,15 @@
       ]
     }
   ],
+  "textValueBindings": [
+    {
+      "effectId": "enchant_reikyaku_hannou_effect",
+      "operationIndex": 0,
+      "occurrence": 0,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
+    }
+  ],
   "tags": [
     "ice",
     "enchant"

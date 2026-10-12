@@ -1,0 +1,19 @@
+{
+  "name": "quadridge",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && wrangler dev",
+    "build": "vite build",
+    "deploy:check": "npm run build && wrangler deploy --dry-run",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "node --test",
+    "ai:simulate": "node src/ai/cli.js",
+    "test:online": "node scripts/smoke-online.mjs"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0",
+    "wrangler": "^4.0.0"
+  }
+}

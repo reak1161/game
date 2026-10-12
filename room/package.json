@@ -1,0 +1,16 @@
+{
+  "name": "room-game",
+  "private": true,
+  "version": "0.2.5",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "node scripts/verify-0.2.5.mjs && node scripts/verify-combat-feedback.mjs",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5"
+  }
+}

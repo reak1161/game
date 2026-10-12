@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { sampleCards, sampleRoles } from "@hyperdimensional-battle/shared";
-import { applyAiRoundDecision, applyRoundPlan, createLocalGame, planAiRound } from "./index";
+import { sampleCards, sampleRoles, sampleRoundBuffs } from "@hyperdimensional-battle/shared";
+import { applyAiRoundDecision, applyRoundPlan, chooseRoundBuff, createLocalGame, finalizeRound, planAiRound } from "./index";
 
 function createSmallGame() {
   const game = createLocalGame({ roleId: "role_simple", cards: sampleCards, roles: sampleRoles, seed: "ai-test" });
@@ -18,7 +18,8 @@ function createSmallGame() {
 describe("round AI", () => {
   it("expert returns an executable maximum-score placement", () => {
     const game = createSmallGame();
-    const decision = planAiRound(game, "expert");
+    const progress: number[] = [];
+    const decision = planAiRound(game, "expert", (entry) => progress.push(entry.percent));
     const resolved = applyRoundPlan(game, decision.plan);
     const fullyResolved = applyAiRoundDecision(game, decision);
 
@@ -44,13 +45,48 @@ describe("round AI", () => {
     expect(resolved.players[0]!.scoreThisRound).toBe(maximum);
     expect(fullyResolved.players[0]!.scoreThisRound).toBe(maximum);
     expect(decision.evaluatedPlans).toBe(5);
+    expect(progress[0]).toBe(0);
+    expect(progress.at(-1)).toBe(100);
   });
 
-  it.each(["easy", "normal"] as const)("%s produces a legal deterministic plan", (level) => {
+  it.each(["easy", "normal", "advanced"] as const)("%s produces a legal deterministic plan", (level) => {
     const game = createSmallGame();
     const first = planAiRound(game, level);
     const second = planAiRound(game, level);
     expect(first.plan).toEqual(second.plan);
     expect(() => applyRoundPlan(game, first.plan)).not.toThrow();
   });
+
+  it("advanced keeps the normal candidate quality while searching reordered improvements", () => {
+    const game = createSmallGame();
+    const normal = planAiRound(game, "normal");
+    const advanced = planAiRound(game, "advanced");
+    expect(advanced.projectedRoundScore).toBeGreaterThanOrEqual(normal.projectedRoundScore);
+  });
+
+  it("normal AI can complete all five rounds for a solo replay", () => {
+    let game = createLocalGame({
+      roleId: "role_simple",
+      cards: sampleCards,
+      roles: sampleRoles,
+      roundBuffs: sampleRoundBuffs,
+      seed: "solo-ai-replay-test"
+    });
+    const frames = [structuredClone(game)];
+
+    while (game.phase !== "finished") {
+      game = applyAiRoundDecision(game, planAiRound(game, "normal"));
+      frames.push(structuredClone(game));
+      game = finalizeRound(game, game.players[0]!.field.slice(0, 2).map((card) => card.instanceId));
+      frames.push(structuredClone(game));
+      if (game.pendingRoundBuffChoice) {
+        game = chooseRoundBuff(game, 0);
+        frames.push(structuredClone(game));
+      }
+    }
+
+    expect(game.round).toBe(5);
+    expect(game.phase).toBe("finished");
+    expect(frames.length).toBeGreaterThan(10);
+  }, 20_000);
 });

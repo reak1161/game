@@ -6,7 +6,9 @@ import {
   createLocalGame,
   finalizeRound,
   getCurrentResolutionCard,
+  getCurrentResolutionTargetCandidateIds,
   getCurrentResolutionTargetKeys,
+  hasCurrentResolutionActivationEffect,
   resolveNextCard,
   resolvePendingFinalAction,
   rerollRoundBuffChoice,
@@ -52,6 +54,7 @@ function ensureCardCopiesInHand(game: ReturnType<typeof createGame>, definitionI
 function finalizeRoundAndAdvance(game: ReturnType<typeof createGame>, discardIds: string[]) {
   const afterFinalize = finalizeRound(game, discardIds);
   if (afterFinalize.pendingRoundBuffChoice) {
+    afterFinalize.pendingRoundBuffChoice.options[0] = "round_buff_mirror";
     const advanced = chooseRoundBuff(afterFinalize, 0);
     advanced.players[0].selectedRoundBuffs = [];
     for (const card of advanced.players[0].field) {
@@ -65,6 +68,82 @@ function finalizeRoundAndAdvance(game: ReturnType<typeof createGame>, discardIds
 }
 
 describe("engine", () => {
+  it("does not require a presentation pause for passive-only cards", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["fire_fellow_fire", "none_punch"]);
+    const passive = game.players[0].hand.find((card) => card.definitionId === "fire_fellow_fire")!;
+    const punch = game.players[0].hand.find((card) => card.definitionId === "none_punch")!;
+    const started = startRoundResolution(game, [passive.instanceId, punch.instanceId]);
+    expect(hasCurrentResolutionActivationEffect(started)).toBe(false);
+    const afterPassive = resolveNextCard(started);
+    expect(hasCurrentResolutionActivationEffect(afterPassive)).toBe(true);
+    const result = resolveNextCard(afterPassive);
+    expect(result.phase).toBe("round_end");
+    expect(result.players[0].field.some((card) => card.instanceId === passive.instanceId)).toBe(true);
+    expect(result.replayEvents.filter((event) => event.type === "CARD_ACTIVATED")
+      .map((event) => event.instanceId)).toEqual([punch.instanceId]);
+    expect(result.players[0].totalScore).toBe(200);
+  });
+
+  it("still requests the next active card's target after passing a passive card", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["fire_fellow_fire", "none_buildup"]);
+    const passive = game.players[0].hand.find((card) => card.definitionId === "fire_fellow_fire")!;
+    const buildup = game.players[0].hand.find((card) => card.definitionId === "none_buildup")!;
+    const started = startRoundResolution(game, [passive.instanceId, buildup.instanceId]);
+    expect(hasCurrentResolutionActivationEffect(started)).toBe(false);
+    const afterPassive = resolveNextCard(started);
+    expect(getCurrentResolutionCard(afterPassive)?.instanceId).toBe(buildup.instanceId);
+    expect(hasCurrentResolutionActivationEffect(afterPassive)).toBe(true);
+    const keys = getCurrentResolutionTargetKeys(afterPassive);
+    expect(keys.length).toBeGreaterThan(0);
+    const result = resolveNextCard(afterPassive, Object.fromEntries(keys.map((key) => [key, passive.instanceId])));
+    expect(result.phase).toBe("round_end");
+    expect(result.players[0].field.find((card) => card.instanceId === passive.instanceId)?.enchantments)
+      .toEqual(expect.arrayContaining([expect.objectContaining({ definitionId: "enchant_attack_plus_10" })]));
+  });
+
+  it("keeps enchantment-only activations and finishes all-passive fields", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["fire_fellow_fire", "ice_wall"]);
+    const passive = game.players[0].hand.find((card) => card.definitionId === "fire_fellow_fire")!;
+    const wall = game.players[0].hand.find((card) => card.definitionId === "ice_wall")!;
+    const inert = startRoundResolution(game, [passive.instanceId]);
+    expect(hasCurrentResolutionActivationEffect(inert)).toBe(false);
+    const finished = resolveNextCard(inert);
+    expect(finished.phase).toBe("round_end");
+    expect(finished.replayEvents.some((event) => event.type === "CARD_ACTIVATED")).toBe(false);
+
+    const enchanted = startRoundResolution(game, [wall.instanceId, passive.instanceId]);
+    expect(getCurrentResolutionCard(enchanted)?.instanceId).toBe(wall.instanceId);
+    expect(hasCurrentResolutionActivationEffect(enchanted)).toBe(true);
+    const afterWall = resolveNextCard(enchanted);
+    expect(afterWall.players[0].baseAttack).toBe(55);
+    expect(getCurrentResolutionCard(afterWall)?.instanceId).toBe(passive.instanceId);
+    expect(hasCurrentResolutionActivationEffect(afterWall)).toBe(true);
+    const afterPassive = resolveNextCard(afterWall);
+    expect(afterPassive.players[0].baseAttack).toBe(60);
+    expect(afterPassive.replayEvents.filter((event) => event.type === "CARD_ACTIVATED")).toHaveLength(2);
+  });
+
+  it("records score changes from gambling before the final attack", () => {
+    const game = createGame();
+    game.players[0].totalScore = 500;
+    ensureCardsInHand(game, ["dark_yami_no_gamble"]);
+    const card = game.players[0].hand.find((entry) => entry.definitionId === "dark_yami_no_gamble")!;
+    const result = applyRoundPlan(game, {
+      round: 1, mulliganInstanceIds: [], placements: [{ handInstanceId: card.instanceId, order: 0, targetSelections: {} }]
+    });
+    const final = result.replayEvents.find((event) => event.type === "FINAL_ATTACK");
+    expect(final?.type).toBe("FINAL_ATTACK");
+    if (final?.type !== "FINAL_ATTACK") throw new Error("Missing final attack");
+    const scoreAfterGamble = result.players[0].totalScore - final.amount;
+    expect([0, 1000]).toContain(scoreAfterGamble);
+    expect(result.replayEvents.some((event) => event.type === "STATUS_CHANGED" &&
+      event.score?.totalScore === scoreAfterGamble && event.score.scoreThisRound === 0)).toBe(true);
+    expect(final.score).toEqual({ scoreThisRound: final.amount, totalScore: result.players[0].totalScore });
+  });
+
   it("punch doubles temp attack and applies final attack", () => {
     const game = createGame();
     ensureCardsInHand(game, ["none_punch"]);
@@ -139,6 +218,18 @@ describe("engine", () => {
     });
 
     expect(afterResolve.log.filter((entry) => entry.code === "DAMAGE_DEALT")).toHaveLength(5);
+    expect(afterResolve.replayEvents.filter((event) => event.type === "DAMAGE_DEALT")
+      .every((event) => event.sourceInstanceId === card!.instanceId && event.attribute === "thunder")).toBe(true);
+    expect(afterResolve.replayEvents
+      .filter((event) => event.type === "DAMAGE_DEALT" || event.type === "FINAL_ATTACK")
+      .map((event) => event.score)).toEqual([10, 20, 30, 40, 50, 100].map((value) => ({
+        scoreThisRound: value, totalScore: value
+      })));
+    expect(
+      afterResolve.replayEvents.some(
+        (event) => event.type === "MULTI_HIT_STARTED" && event.instanceId === card!.instanceId && event.count === 5
+      )
+    ).toBe(true);
     expect(afterResolve.players[0].scoreThisRound).toBe(100);
   });
 
@@ -164,6 +255,7 @@ describe("engine", () => {
     expect(selected.phase).toBe("input");
     expect(selected.round).toBe(2);
     expect(selected.players[0].selectedRoundBuffs).toHaveLength(1);
+    expect(selected.log.some((entry) => entry.code === "ROUND_BUFFS_ACTIVE")).toBe(true);
   });
 
   it("freezing wind increases ice draw weight and adds twinkling snow scenery to ice cards", () => {
@@ -200,6 +292,129 @@ describe("engine", () => {
     expect(fieldHybrid?.enchantments.some((enchantment) => enchantment.definitionId === "enchant_kirameku_yukigeshiki")).toBe(false);
   });
 
+  it("voltessimo boosts thunder card values and mirror duplicates that boost", () => {
+    const game = createGame();
+    game.players[0].selectedRoundBuffs = [
+      { instanceId: "buff_voltessimo", buffId: "round_buff_voltessimo" },
+      { instanceId: "buff_mirror", buffId: "round_buff_mirror" }
+    ];
+    ensureCardsInHand(game, ["thunder_shock"]);
+    const shock = game.players[0].hand.find((card) => card.definitionId === "thunder_shock")!;
+
+    const started = startRoundResolution(game, [shock.instanceId]);
+    const fieldShock = started.players[0].field.find((card) => card.instanceId === shock.instanceId);
+    expect(fieldShock?.derived?.roundBuffNumericValueMultiplier).toBeCloseTo(1.21);
+  });
+
+  it("voltessimo boosts cards transformed to thunder by the transformer facility", () => {
+    const game = createGame();
+    game.players[0].selectedRoundBuffs = [
+      { instanceId: "buff_voltessimo", buffId: "round_buff_voltessimo" }
+    ];
+    ensureCardsInHand(game, ["thunder_henden_shisetsu", "none_punch"]);
+    const facility = game.players[0].hand.find((card) => card.definitionId === "thunder_henden_shisetsu")!;
+    const punch = game.players[0].hand.find((card) => card.definitionId === "none_punch")!;
+
+    const started = startRoundResolution(game, [facility.instanceId, punch.instanceId]);
+    const fieldPunch = started.players[0].field.find((card) => card.instanceId === punch.instanceId);
+    expect(fieldPunch?.derived?.fieldAttributeOverride).toBe("thunder");
+    expect(fieldPunch?.derived?.roundBuffNumericValueMultiplier).toBeCloseTo(1.1);
+  });
+
+  it("halloween trick boosts dark probability values and mirror duplicates that boost", () => {
+    const game = createGame();
+    game.players[0].selectedRoundBuffs = [
+      { instanceId: "buff_halloween", buffId: "round_buff_halloween_trick" },
+      { instanceId: "buff_mirror", buffId: "round_buff_mirror" }
+    ];
+    ensureCardsInHand(game, ["dark_poltergeist"]);
+    const poltergeist = game.players[0].hand.find((card) => card.definitionId === "dark_poltergeist")!;
+
+    const started = startRoundResolution(game, [poltergeist.instanceId]);
+    const fieldPoltergeist = started.players[0].field.find((card) => card.instanceId === poltergeist.instanceId);
+    expect(fieldPoltergeist?.derived?.roundBuffProbabilityValueMultiplier).toBeCloseTo(2.25);
+  });
+
+  it("magical miracle scales base and temporary magic changes", () => {
+    const game = createGame();
+    game.players[0].selectedRoundBuffs = [
+      { instanceId: "buff_magical", buffId: "round_buff_magical_miracle" }
+    ];
+    ensureCardsInHand(game, ["none_chant_practice"]);
+    const chantPractice = game.players[0].hand.find((card) => card.definitionId === "none_chant_practice")!;
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [{ handInstanceId: chantPractice.instanceId, order: 0, targetSelections: {} }]
+    });
+
+    expect(afterResolve.players[0].baseMagic).toBe(95);
+    expect(afterResolve.players[0].tempMagic).toBe(95);
+  });
+
+  it("energy calculates every card numeric value at 1.2 times", () => {
+    const game = createGame("role_energy");
+    ensureCardsInHand(game, ["none_hybrid"]);
+    const hybrid = game.players[0].hand.find((card) => card.definitionId === "none_hybrid")!;
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [{ handInstanceId: hybrid.instanceId, order: 0, targetSelections: {} }]
+    });
+
+    expect(afterResolve.players[0].baseAttack).toBe(48);
+    expect(afterResolve.players[0].baseMagic).toBe(48);
+  });
+
+  it("flame reaction doubles a revived fire card numeric value", () => {
+    const game = createGame();
+    game.players[0].selectedRoundBuffs = [
+      { instanceId: "buff_flame_reaction", buffId: "round_buff_flame_reaction" }
+    ];
+    ensureCardsInHand(game, ["fire_hellflame", "fire_bending"]);
+    const hellflame = game.players[0].hand.find((card) => card.definitionId === "fire_hellflame")!;
+    const bending = game.players[0].hand.find((card) => card.definitionId === "fire_bending")!;
+    const phoenix = sampleCards.find((card) => card.id === "enchant_phoenix")!;
+    bending.enchantments.push({
+      instanceId: "test_phoenix",
+      definitionId: phoenix.id,
+      name: phoenix.name,
+      effects: phoenix.effects
+    });
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [
+        { handInstanceId: hellflame.instanceId, order: 0, targetSelections: {} },
+        { handInstanceId: bending.instanceId, order: 1, targetSelections: {} }
+      ]
+    });
+    const revivedBending = afterResolve.players[0].field.find((card) => card.instanceId === bending.instanceId);
+
+    expect(revivedBending).toBeDefined();
+    expect(revivedBending?.counters?.merge_numeric).toBe(3);
+    expect(afterResolve.log.some((entry) => entry.code === "ROUND_BUFF_APPLIED" && entry.message.includes("炎色反応"))).toBe(true);
+  });
+
+  it("tailwind rush multiplies wind card values at round end", () => {
+    const game = createGame();
+    game.players[0].selectedRoundBuffs = [{ instanceId: "buff_tailwind", buffId: "round_buff_tailwind_rush" }];
+    ensureCardsInHand(game, ["wind_air_slash"]);
+    const airSlash = game.players[0].hand.find((card) => card.definitionId === "wind_air_slash")!;
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [{ handInstanceId: airSlash.instanceId, order: 0, targetSelections: {} }]
+    });
+    const fieldAirSlash = afterResolve.players[0].field.find((card) => card.instanceId === airSlash.instanceId);
+    expect(fieldAirSlash?.derived?.numericValueMultiplier).toBeCloseTo(1.3);
+    expect(afterResolve.log.some((entry) => entry.code === "ROUND_BUFF_APPLIED")).toBe(true);
+  });
+
   it("one more queues an extra activation for the rightmost card", () => {
     const game = createGame();
     game.players[0].selectedRoundBuffs = [{ instanceId: "buff_one_more", buffId: "round_buff_one_more" }];
@@ -228,6 +443,30 @@ describe("engine", () => {
     });
 
     expect(afterResolve.players[0].baseAttack).toBe(125);
+    expect(
+      afterResolve.replayEvents.some(
+        (event) =>
+          event.type === "CARD_ACTIVATED" &&
+          event.instanceId === kintore!.instanceId &&
+          event.activationKind === "additional" &&
+          event.activationSourceName === "もう一回"
+      )
+    ).toBe(true);
+    const additionalAnnouncementIndex = afterResolve.replayEvents.findIndex(
+      (event) =>
+        event.type === "ADDITIONAL_ACTIVATION_ANNOUNCED" &&
+        event.instanceId === kintore!.instanceId &&
+        event.activationSourceName === "もう一回"
+    );
+    const additionalActivationIndex = afterResolve.replayEvents.findIndex(
+      (event, index) =>
+        index > additionalAnnouncementIndex &&
+        event.type === "CARD_ACTIVATED" &&
+        event.instanceId === kintore!.instanceId &&
+        event.activationKind === "additional"
+    );
+    expect(additionalAnnouncementIndex).toBeGreaterThanOrEqual(0);
+    expect(additionalActivationIndex).toBeGreaterThan(additionalAnnouncementIndex);
     expect(
       afterResolve.log.some(
         (entry) => entry.code === "ROUND_BUFF_ONE_MORE" && entry.message.includes("もう一回") && entry.message.includes("筋トレ")
@@ -748,6 +987,40 @@ describe("engine", () => {
     expect(afterResolve.log.some((entry) => entry.code === "LOOP_GUARD_TRIGGERED")).toBe(false);
   });
 
+  it("doppelganger can additionally activate static and resolves its activate effect again", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["dark_doppelganger", "thunder_static"]);
+    const doppelganger = game.players[0].hand.find((entry) => entry.definitionId === "dark_doppelganger")!;
+    const staticCard = game.players[0].hand.find((entry) => entry.definitionId === "thunder_static")!;
+    const chanceOperation = game.cardCatalog.find((entry) => entry.id === "dark_doppelganger")?.effects[0]?.operations[0];
+    expect(chanceOperation?.kind).toBe("chance_percent");
+    if (chanceOperation?.kind === "chance_percent") {
+      chanceOperation.value = 100;
+    }
+    const initialBaseMagic = game.players[0].baseMagic;
+
+    const afterResolve = applyRoundPlan(game, {
+      round: 1,
+      mulliganInstanceIds: [],
+      placements: [
+        { handInstanceId: doppelganger.instanceId, order: 0, targetSelections: {} },
+        { handInstanceId: staticCard.instanceId, order: 1, targetSelections: {} }
+      ]
+    });
+
+    expect(afterResolve.players[0].baseMagic).toBe(initialBaseMagic + 20);
+    expect(
+      afterResolve.log.some(
+        (entry) =>
+          entry.code === "CARD_ACTIVATION_STARTED" &&
+          entry.message.startsWith("静電気:") &&
+          entry.meta?.activationKind === "additional" &&
+          entry.meta?.activationSourceName === "ドッペルゲンガー"
+      )
+    ).toBe(true);
+    expect(afterResolve.log.some((entry) => entry.message.startsWith("ドッペルゲンガー: 発動"))).toBe(false);
+  });
+
   it("shock still chains from other allied damage and thunder shock feedback only extends once per shock damage source", () => {
     const game = createGame();
     ensureCardsInHand(game, ["none_punch"]);
@@ -1000,6 +1273,65 @@ describe("engine", () => {
     expect(getCurrentResolutionTargetKeys(afterKaryoku)).toEqual(["apply_enchant"]);
   });
 
+  it("super chain starts on the second matching attribute and resets only its own multiplier when the chain breaks", () => {
+    const game = createGame();
+    ensureCardCopiesInHand(game, "fire_bending", 3);
+    ensureCardsInHand(game, ["none_super_chain", "none_hybrid"]);
+    const player = game.players[0];
+    const superChain = player.hand.find((card) => card.definitionId === "none_super_chain")!;
+    const fireCards = player.hand.filter((card) => card.definitionId === "fire_bending").slice(0, 3);
+    const chainBreaker = player.hand.find((card) => card.definitionId === "none_hybrid")!;
+
+    let resolving = startRoundResolution(game, [
+      superChain.instanceId,
+      ...fireCards.map((card) => card.instanceId),
+      chainBreaker.instanceId
+    ]);
+    resolving = resolveNextCard(resolving, {});
+    resolving = resolveNextCard(resolving, {});
+    const baseBeforeSecondFire = resolving.players[0].baseAttack;
+
+    resolving = resolveNextCard(resolving, {});
+    let resolvedSuperChain = resolving.players[0].field.find((card) => card.instanceId === superChain.instanceId)!;
+    expect(resolving.players[0].baseAttack - baseBeforeSecondFire).toBe(20);
+    expect(resolvedSuperChain.derived?.chainNumericValueMultiplier).toBe(2);
+
+    const baseBeforeThirdFire = resolving.players[0].baseAttack;
+    resolving = resolveNextCard(resolving, {});
+    resolvedSuperChain = resolving.players[0].field.find((card) => card.instanceId === superChain.instanceId)!;
+    expect(resolving.players[0].baseAttack - baseBeforeThirdFire).toBe(40);
+    expect(resolvedSuperChain.derived?.chainNumericValueMultiplier).toBe(4);
+
+    resolvedSuperChain.counters = { ...resolvedSuperChain.counters, externalBonus: 7 };
+    resolvedSuperChain.derived = { ...resolvedSuperChain.derived, numericValueMultiplier: 1.5 };
+    resolving = resolveNextCard(resolving, {});
+    resolvedSuperChain = resolving.players[0].field.find((card) => card.instanceId === superChain.instanceId)!;
+    expect(resolvedSuperChain.derived?.chainNumericValueMultiplier).toBe(1);
+    expect(resolvedSuperChain.derived?.numericValueMultiplier).toBe(1.5);
+    expect(resolvedSuperChain.counters?.externalBonus).toBe(7);
+  });
+
+  it("does not allow a consume card to select itself as an effect target", () => {
+    const game = createGame();
+    ensureCardsInHand(game, ["none_buildup", "none_hybrid"]);
+    const buildup = game.players[0].hand.find((entry) => entry.definitionId === "none_buildup")!;
+    const hybrid = game.players[0].hand.find((entry) => entry.definitionId === "none_hybrid")!;
+
+    const started = startRoundResolution(game, [buildup.instanceId, hybrid.instanceId]);
+    expect(getCurrentResolutionTargetCandidateIds(started)).not.toContain(buildup.instanceId);
+    expect(getCurrentResolutionTargetCandidateIds(started)).toContain(hybrid.instanceId);
+    expect(() => resolveNextCard(started, { apply_enchant: buildup.instanceId })).toThrow(
+      "選択できない対象"
+    );
+
+    const resolved = resolveNextCard(started, { apply_enchant: hybrid.instanceId });
+    expect(
+      resolved.players[0].field
+        .find((card) => card.instanceId === hybrid.instanceId)
+        ?.enchantments.some((enchant) => enchant.definitionId === "enchant_attack_plus_10")
+    ).toBe(true);
+  });
+
   it("hyakka ryoran can queue into karyoku hatsuden and still stop on amakakeru tsubasa target selection", () => {
     const game = createGame();
     ensureCardsInHand(game, ["none_hyakka_ryoran", "fire_karyoku_hatsuden", "wind_amakakeru_tsubasa", "none_hybrid"]);
@@ -1060,6 +1392,51 @@ describe("engine", () => {
           entry.message.includes("追加で発動")
       )
     ).toBe(true);
+  });
+
+  it("rerolls a card's chance effect from the beginning when it reactivates itself", () => {
+    let verified = false;
+
+    for (let seedIndex = 0; seedIndex < 200 && !verified; seedIndex += 1) {
+      const game = createGame();
+      game.rngSeed = `self-reactivation-reroll-${seedIndex}`;
+      ensureCardsInHand(game, ["dark_haiyoru_kage"]);
+      const shadow = game.players[0].hand.find((card) => card.definitionId === "dark_haiyoru_kage")!;
+
+      const afterResolve = applyRoundPlan(game, {
+        round: 1,
+        mulliganInstanceIds: [],
+        placements: [{ handInstanceId: shadow.instanceId, order: 0, targetSelections: {} }]
+      });
+      const chanceLogs = afterResolve.log.filter(
+        (entry) => entry.message.startsWith("はいよる影: 確率抽選：")
+      );
+      if (chanceLogs.length < 2 || !chanceLogs.some((entry) => entry.code === "CHANCE_ROLL_FAILED")) {
+        continue;
+      }
+
+      const activationCount = afterResolve.replayEvents.filter(
+        (event) => event.type === "CARD_ACTIVATED" && event.instanceId === shadow.instanceId
+      ).length;
+      const chanceEvents = afterResolve.replayEvents.filter(
+        (event) => event.type === "CHANCE_ROLL_RESULT" && event.instanceId === shadow.instanceId
+      );
+      expect(chanceLogs[0]?.code).toBe("CHANCE_ROLL_SUCCEEDED");
+      expect(activationCount).toBe(chanceLogs.length);
+      expect(chanceEvents).toHaveLength(chanceLogs.length);
+      expect(chanceEvents.some((event) => event.type === "CHANCE_ROLL_RESULT" && !event.succeeded)).toBe(true);
+      expect(
+        afterResolve.replayEvents.some(
+          (event) =>
+            event.type === "CARD_ACTIVATED" &&
+            event.instanceId === shadow.instanceId &&
+            event.activationKind === "reactivation"
+        )
+      ).toBe(true);
+      verified = true;
+    }
+
+    expect(verified).toBe(true);
   });
 
   it("kowareta kikai transforms into taiko no kikai after its seal is satisfied", () => {
@@ -1125,7 +1502,7 @@ describe("engine", () => {
     const afterHybrid = resolveNextCard(afterFirstTaiko, {});
     expect(
       afterHybrid.log.some(
-        (entry) => entry.code === "ADDITIONAL_ACTIVATION_QUEUED" && entry.message.includes("自己誘発")
+        (entry) => entry.code === "ADDITIONAL_ACTIVATION_QUEUED" && entry.message.includes("再発動")
       )
     ).toBe(true);
 
@@ -1437,8 +1814,8 @@ describe("engine", () => {
     game = finalizeRoundAndAdvance(game, discardTargets);
 
     expect(game.round).toBe(2);
-    expect(game.players[0].baseAttack).toBe(150);
-    expect(game.players[0].baseMagic).toBe(150);
+    expect(game.players[0].baseAttack).toBe(250);
+    expect(game.players[0].baseMagic).toBe(250);
   });
 
   it("blizzard applies frozen air enchantment and increases total damage", () => {
@@ -1496,7 +1873,7 @@ describe("engine", () => {
     });
 
     const placedCard = game.players[0].field.find((entry) => entry.instanceId === kamaitachi!.instanceId);
-    expect(placedCard?.counters?.power ?? 0).toBe(30);
+    expect(placedCard?.counters?.power ?? 0).toBe(40);
 
     game = finalizeRoundAndAdvance(game, [hybrid!.instanceId, kintore!.instanceId]);
 
@@ -1506,8 +1883,8 @@ describe("engine", () => {
       placements: []
     });
 
-    expect(game.players[0].baseAttack).toBe(145);
-    expect(game.players[0].scoreThisRound).toBe(290);
+    expect(game.players[0].baseAttack).toBe(175);
+    expect(game.players[0].scoreThisRound).toBe(350);
   });
 
   it("rewind copies the previous round last activated card effect as itself", () => {
@@ -1569,7 +1946,7 @@ describe("engine", () => {
     });
 
     const placedCard = game.players[0].field.find((entry) => entry.instanceId === airSlash!.instanceId);
-    expect(placedCard?.counters?.power ?? 0).toBe(20);
+    expect(placedCard?.counters?.power ?? 0).toBe(30);
   });
 
   it("sukimakaze invalidates cards to the right and immediately triggers their round-end effects", () => {
@@ -1608,8 +1985,8 @@ describe("engine", () => {
     const rightAirSlash = game.players[0].field.find((entry) => entry.instanceId === airSlash!.instanceId);
     expect(rightKamaitachi?.isInvalidated).toBe(false);
     expect(rightAirSlash?.isInvalidated).toBe(false);
-    expect(rightKamaitachi?.counters?.power ?? 0).toBe(90);
-    expect(rightAirSlash?.counters?.power ?? 0).toBe(60);
+    expect(rightKamaitachi?.counters?.power ?? 0).toBe(120);
+    expect(rightAirSlash?.counters?.power ?? 0).toBe(90);
     expect(game.log.some((entry) => entry.code === "ROUND_END_EFFECTS_TRIGGERED")).toBe(true);
   });
 
@@ -1727,8 +2104,8 @@ describe("engine", () => {
     const rightAirSlash = game.players[0].field.find((entry) => entry.instanceId === airSlash!.instanceId);
     expect(rightKamaitachi?.isInvalidated).toBe(false);
     expect(rightAirSlash?.isInvalidated).toBe(false);
-    expect(rightKamaitachi?.counters?.power ?? 0).toBe(30);
-    expect(rightAirSlash?.counters?.power ?? 0).toBe(20);
+    expect(rightKamaitachi?.counters?.power ?? 0).toBe(40);
+    expect(rightAirSlash?.counters?.power ?? 0).toBe(30);
   });
 
   it("tsumujikaze gains +20 numeric value per connected wind card after activating", () => {

@@ -30,6 +30,8 @@ type ActivationTask = {
   instanceId: string;
   skippedReactiveEffectIds: string[];
   isAdditional?: boolean;
+  activationKind?: "additional" | "reactivation";
+  activationSourceName?: string;
 };
 
 type FutureChainMultiplier = {
@@ -293,7 +295,7 @@ function addStatDeltaLog(
     code: "CARD_EFFECT_APPLIED",
     message:
       options?.sourceKind === "enchant"
-        ? `${resolvingCard.name}: 付与エンチャント ${options?.sourceName ?? resolvingCard.name} により ${changes.join(" / ")}`
+        ? `${resolvingCard.name}: ${options?.sourceName ?? resolvingCard.name} により ${changes.join(" / ")}`
         : `${resolvingCard.name}: カード効果 ${label} により ${changes.join(" / ")}`,
     meta: {
       sourceKind: options?.sourceKind ?? "card",
@@ -439,7 +441,17 @@ function getRoundBuffDrawWeightBonus(player: PlayerState, attribute: Attribute) 
   if (attribute === "wind") {
     return getEffectiveRoundBuffCount(player, "round_buff_tailwind_rush");
   }
+  if (attribute === "dark") {
+    return getEffectiveRoundBuffCount(player, "round_buff_halloween_trick");
+  }
+  if (attribute === "fire") {
+    return getEffectiveRoundBuffCount(player, "round_buff_flame_reaction");
+  }
   return 0;
+}
+
+function getRoundBuffMagicValueMultiplier(player: PlayerState) {
+  return 1.5 ** getEffectiveRoundBuffCount(player, "round_buff_magical_miracle");
 }
 
 function getRoundBuffMaxHandSizeBonus(player: PlayerState) {
@@ -533,6 +545,14 @@ function getMainTiming(card: CardDefinition) {
   return "activate" as const;
 }
 
+function hasActivationEffect(card: CardInstance, definition: CardDefinition, task: ActivationTask) {
+  return definition.effects.some((effect) => effect.timing === getMainTiming(definition)) ||
+    card.enchantments.some((enchantment) => enchantment.effects.some((effect) =>
+      effect.timing === "enchant" && (effect.trigger?.kind === "when_host_card_activates" ||
+        (task.isAdditional && effect.trigger?.kind === "when_host_card_additionally_activates"))
+    ));
+}
+
 function drawUpToHandSize(state: LocalGameState, player: PlayerState, size: number) {
   while (player.hand.length < size && player.deck.length > 0) {
     const card = drawCardByAttributeWeight(state, player);
@@ -612,17 +632,23 @@ function getProbabilityValueMultiplier(card: CardInstance | null) {
     return 1;
   }
   const multiplier = card.derived?.probabilityValueMultiplier;
-  return typeof multiplier === "number" ? multiplier : 1;
+  const roundBuffMultiplier = card.derived?.roundBuffProbabilityValueMultiplier;
+  return (
+    (typeof multiplier === "number" ? multiplier : 1) *
+    (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1)
+  );
 }
 
 function getNumericMultiplier(card: CardInstance) {
   const multiplier = card.derived?.numericValueMultiplier;
   const roundBuffMultiplier = card.derived?.roundBuffNumericValueMultiplier;
   const fieldTransformMultiplier = card.derived?.fieldTransformNumericValueMultiplier;
+  const chainMultiplier = card.derived?.chainNumericValueMultiplier;
   return (
     (typeof multiplier === "number" ? multiplier : 1) *
     (typeof roundBuffMultiplier === "number" ? roundBuffMultiplier : 1) *
-    (typeof fieldTransformMultiplier === "number" ? fieldTransformMultiplier : 1)
+    (typeof fieldTransformMultiplier === "number" ? fieldTransformMultiplier : 1) *
+    (typeof chainMultiplier === "number" ? chainMultiplier : 1)
   );
 }
 
@@ -647,7 +673,23 @@ function rollChancePercent(state: LocalGameState, context: ResolutionContext, ef
   const rng = createRng(
     `${state.rngSeed}:chance:${state.round}:${rollIndex}:${effectId}:${context.resolvingCard.instanceId}:${context.activeEnchantment?.instanceId ?? "card"}`
   );
-  return rng() * 100 < clampedChance;
+  const succeeded = rng() * 100 < clampedChance;
+  const sourceLabel = context.activeEnchantment
+    ? `エンチャント「${context.activeEnchantment.name}」の確率抽選`
+    : "確率抽選";
+  addLog(state, {
+    level: "info",
+    code: succeeded ? "CHANCE_ROLL_SUCCEEDED" : "CHANCE_ROLL_FAILED",
+    message: `${context.resolvingCard.name}: ${sourceLabel}：${succeeded ? "成功" : "外れ"}（${formatLogNumber(clampedChance)}%）`
+  });
+  addReplay(state, {
+    type: "CHANCE_ROLL_RESULT",
+    playerId: context.player.playerId,
+    instanceId: context.resolvingCard.instanceId,
+    attribute: context.resolvingCard.attribute,
+    succeeded
+  });
+  return succeeded;
 }
 
 function countConnectedAttributeCards(player: PlayerState, sourceCard: CardInstance, attribute: Attribute) {
@@ -784,7 +826,8 @@ function pushStatusReplay(state: LocalGameState, player: PlayerState) {
     baseAttack: player.baseAttack,
     baseMagic: player.baseMagic,
     tempAttack: player.tempAttack,
-    tempMagic: player.tempMagic
+    tempMagic: player.tempMagic,
+    score: { scoreThisRound: player.scoreThisRound, totalScore: player.totalScore }
   });
 }
 
@@ -1029,23 +1072,24 @@ function queueAdditionalActivation(
   if (!state.pendingResolution) {
     return;
   }
-  state.pendingResolution.queue.splice(state.pendingResolution.cursor, 0, {
-    instanceId,
-    skippedReactiveEffectIds: [skippedReactiveEffectId],
-    isAdditional: true
-  });
-
   const targetCard = findCardByInstanceId(player, instanceId);
   if (!targetCard) {
     return;
   }
   const isSelfTrigger = sourceCard.instanceId === targetCard.instanceId;
+  state.pendingResolution.queue.splice(state.pendingResolution.cursor, 0, {
+    instanceId,
+    skippedReactiveEffectIds: [skippedReactiveEffectId],
+    isAdditional: true,
+    activationKind: isSelfTrigger ? "reactivation" : "additional",
+    activationSourceName: sourceCard.name
+  });
 
   addLog(state, {
     level: "info",
     code: "ADDITIONAL_ACTIVATION_QUEUED",
     message: isSelfTrigger
-      ? `${sourceCard.name}: ${reasonLabel} により誘発します。`
+      ? `${sourceCard.name}: ${reasonLabel}を予約しました。`
       : `${sourceCard.name}: ${reasonLabel} により ${targetCard.name} が追加で発動します。`
   });
 }
@@ -1143,7 +1187,9 @@ function queuePlacedRoundStartAdditionalActivations(
           state.pendingResolution.queue.push({
             instanceId: target.instanceId,
             skippedReactiveEffectIds: [],
-            isAdditional: true
+            isAdditional: true,
+            activationKind: target.instanceId === sourceCard.instanceId ? "reactivation" : "additional",
+            activationSourceName: sourceCard.name
           });
         }
         addLog(state, {
@@ -1618,11 +1664,13 @@ function syncJammingInvalidations(player: PlayerState) {
 
 function syncRoundBuffFieldModifiers(player: PlayerState, cardsById: Record<string, CardDefinition>) {
   const thunderMultiplier = 1.1 ** getEffectiveRoundBuffCount(player, "round_buff_voltessimo");
+  const darkProbabilityMultiplier = 1.5 ** getEffectiveRoundBuffCount(player, "round_buff_halloween_trick");
   const freezingWindCount = getEffectiveRoundBuffCount(player, "round_buff_freezing_wind");
   const snowEnchantDefinition = cardsById.enchant_kirameku_yukigeshiki;
 
   for (const card of player.field) {
-    const desiredSnowEnchantCount = card.attribute === "ice" ? freezingWindCount : 0;
+    const effectiveAttribute = getEffectiveCardAttribute(card);
+    const desiredSnowEnchantCount = effectiveAttribute === "ice" ? freezingWindCount : 0;
     const existingSnowEnchants = card.enchantments.filter((enchantment) =>
       enchantment.persistentSourceCardInstanceId?.startsWith("round_buff:freezing_wind:")
     );
@@ -1655,12 +1703,18 @@ function syncRoundBuffFieldModifiers(player: PlayerState, cardsById: Record<stri
 
     const snowMultiplier = desiredSnowEnchantCount > 0 ? 2 ** desiredSnowEnchantCount : 1;
     const derived = { ...(card.derived ?? {}) };
-    const appliedThunderMultiplier = card.attribute === "thunder" ? thunderMultiplier : 1;
-    const totalMultiplier = appliedThunderMultiplier * snowMultiplier;
+    const appliedThunderMultiplier = effectiveAttribute === "thunder" ? thunderMultiplier : 1;
+    const roleMultiplier = player.roleId === "role_energy" ? 1.2 : 1;
+    const totalMultiplier = appliedThunderMultiplier * snowMultiplier * roleMultiplier;
     if (totalMultiplier !== 1) {
       derived.roundBuffNumericValueMultiplier = totalMultiplier;
     } else {
       delete derived.roundBuffNumericValueMultiplier;
+    }
+    if (effectiveAttribute === "dark" && darkProbabilityMultiplier !== 1) {
+      derived.roundBuffProbabilityValueMultiplier = darkProbabilityMultiplier;
+    } else {
+      delete derived.roundBuffProbabilityValueMultiplier;
     }
     card.derived = derived;
   }
@@ -1865,7 +1919,9 @@ function applyFutureChainMultipliers(context: ResolutionContext) {
     }
 
     context.player.tempAttack = floorValue(context.player.tempAttack * chainEffect.value);
-    context.player.tempMagic = floorValue(context.player.tempMagic * chainEffect.value);
+    context.player.tempMagic = floorValue(
+      context.player.tempMagic * chainEffect.value * getRoundBuffMagicValueMultiplier(context.player)
+    );
     applied = true;
     addLog(context.state, {
       level: "info",
@@ -1890,7 +1946,7 @@ function applyRolePreActivationEffect(context: ResolutionContext) {
   }
   const before = snapshotPlayerStats(context.player);
   context.player.tempAttack = floorValue(context.player.tempAttack * 2);
-  context.player.tempMagic = floorValue(context.player.tempMagic * 2);
+  context.player.tempMagic = floorValue(context.player.tempMagic * 2 * getRoundBuffMagicValueMultiplier(context.player));
   addLog(context.state, {
     level: "info",
     code: "ROLE_FINALE",
@@ -1920,9 +1976,10 @@ function applyRoleAfterActivationEffects(context: ResolutionContext) {
     for (const operation of effect.operations) {
       if (operation.kind === "multiply_base_both") {
         context.player.baseAttack = floorValue(context.player.baseAttack * operation.value);
-        context.player.baseMagic = floorValue(context.player.baseMagic * operation.value);
+        const magicMultiplier = operation.value * getRoundBuffMagicValueMultiplier(context.player);
+        context.player.baseMagic = floorValue(context.player.baseMagic * magicMultiplier);
         context.player.tempAttack = floorValue(context.player.tempAttack * operation.value);
-        context.player.tempMagic = floorValue(context.player.tempMagic * operation.value);
+        context.player.tempMagic = floorValue(context.player.tempMagic * magicMultiplier);
         applied = true;
       }
     }
@@ -1972,7 +2029,7 @@ function applyRoleRoundStartEffects(state: LocalGameState, player: PlayerState, 
     if (multiplierCount > 0) {
       const multiplier = 2 ** multiplierCount;
       player.tempAttack = floorValue(player.tempAttack * multiplier);
-      player.tempMagic = floorValue(player.tempMagic * multiplier);
+      player.tempMagic = floorValue(player.tempMagic * multiplier * getRoundBuffMagicValueMultiplier(player));
       addLog(state, {
         level: "info",
         code: "ROLE_DOLPHIN_ROUND_START",
@@ -2030,7 +2087,10 @@ function dealDamage(
     type: "DAMAGE_DEALT",
     playerId: context.player.playerId,
     amount: finalAmount,
-    source: context.resolvingCard.definitionId
+    source: context.resolvingCard.definitionId,
+    sourceInstanceId: context.resolvingCard.instanceId,
+    attribute: getEffectiveCardAttribute(context.resolvingCard),
+    score: { scoreThisRound: context.player.scoreThisRound, totalScore: context.player.totalScore }
   });
   addLog(context.state, {
     level: "info",
@@ -2098,6 +2158,24 @@ function resolveImmediateAdditionalActivations(
   }
 }
 
+function operationIncludesDamage(operation: OperationDefinition): boolean {
+  switch (operation.kind) {
+    case "deal_damage_from_temp_attack":
+    case "deal_damage_from_temp_attack_fraction":
+    case "deal_damage_from_ally_field_definition_count_multiplier":
+    case "deal_damage_from_temp_magic":
+    case "deal_damage_from_max_temp_stat":
+      return true;
+    case "repeat_embedded_operation":
+    case "repeat_embedded_operation_per_ally_field_card_count":
+    case "chance_percent":
+    case "special_chance_percent":
+      return operation.operations.some(operationIncludesDamage);
+    default:
+      return false;
+  }
+}
+
 function resolveOperation(
   operation: OperationDefinition,
   context: ResolutionContext,
@@ -2113,6 +2191,7 @@ function resolveOperation(
         ? operation.value + getHostEnchantNumericBonus(resolvingCard)
         : getScaledValue(operation.value, resolvingCard)
       : null;
+  const magicScaledValue = scaledValue === null ? null : scaledValue * getRoundBuffMagicValueMultiplier(player);
   const scaledProbabilityValue =
     "value" in operation && typeof operation.value === "number"
       ? context.activeEnchantment
@@ -2140,14 +2219,14 @@ function resolveOperation(
       player.tempAttack += scaledValue!;
       break;
     case "add_base_magic":
-      player.baseMagic += scaledValue!;
-      player.tempMagic += scaledValue!;
+      player.baseMagic += magicScaledValue!;
+      player.tempMagic += magicScaledValue!;
       break;
     case "add_base_both":
       player.baseAttack += scaledValue!;
-      player.baseMagic += scaledValue!;
+      player.baseMagic += magicScaledValue!;
       player.tempAttack += scaledValue!;
-      player.tempMagic += scaledValue!;
+      player.tempMagic += magicScaledValue!;
       break;
     case "add_base_attack_per_ally_field_card_count": {
       const amount = scaledValue! * player.field.length;
@@ -2156,15 +2235,16 @@ function resolveOperation(
       break;
     }
     case "add_base_both_per_ally_field_card_count": {
-      const amount = scaledValue! * player.field.length;
-      player.baseAttack += amount;
-      player.baseMagic += amount;
-      player.tempAttack += amount;
-      player.tempMagic += amount;
+      const attackAmount = scaledValue! * player.field.length;
+      const magicAmount = magicScaledValue! * player.field.length;
+      player.baseAttack += attackAmount;
+      player.baseMagic += magicAmount;
+      player.tempAttack += attackAmount;
+      player.tempMagic += magicAmount;
       break;
     }
     case "add_base_magic_per_last_removed_enchant_count": {
-      const amount = context.lastRemovedEnchantCount * scaledValue!;
+      const amount = context.lastRemovedEnchantCount * magicScaledValue!;
       player.baseMagic += amount;
       player.tempMagic += amount;
       break;
@@ -2213,34 +2293,33 @@ function resolveOperation(
       player.tempAttack = floorValue(player.tempAttack * scaledValue!);
       break;
     case "multiply_temp_magic":
-      player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+      player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       break;
     case "multiply_temp_both":
       player.tempAttack = floorValue(player.tempAttack * scaledValue!);
-      player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+      player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       break;
     case "multiply_temp_both_by_self_numeric_value": {
-      const multiplier = scaledValue!;
-      player.tempAttack = floorValue(player.tempAttack * multiplier);
-      player.tempMagic = floorValue(player.tempMagic * multiplier);
+      player.tempAttack = floorValue(player.tempAttack * scaledValue!);
+      player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       break;
     }
     case "multiply_base_magic":
-      player.baseMagic = floorValue(player.baseMagic * scaledValue!);
-      player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+      player.baseMagic = floorValue(player.baseMagic * magicScaledValue!);
+      player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       break;
     case "multiply_base_both":
       player.baseAttack = floorValue(player.baseAttack * scaledValue!);
-      player.baseMagic = floorValue(player.baseMagic * scaledValue!);
+      player.baseMagic = floorValue(player.baseMagic * magicScaledValue!);
       player.tempAttack = floorValue(player.tempAttack * scaledValue!);
-      player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+      player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       break;
     case "multiply_base_both_if_last_destroy_succeeded":
       if (context.lastDestroySucceeded) {
         player.baseAttack = floorValue(player.baseAttack * scaledValue!);
-        player.baseMagic = floorValue(player.baseMagic * scaledValue!);
+        player.baseMagic = floorValue(player.baseMagic * magicScaledValue!);
         player.tempAttack = floorValue(player.tempAttack * scaledValue!);
-        player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+        player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       }
       break;
     case "multiply_pending_damage":
@@ -2264,6 +2343,20 @@ function resolveOperation(
       });
       break;
     }
+    case "multiply_self_chain_numeric_value": {
+      const previousMultiplier = resolvingCard.derived?.chainNumericValueMultiplier;
+      const multiplier = typeof previousMultiplier === "number" ? previousMultiplier : 1;
+      resolvingCard.derived = {
+        ...(resolvingCard.derived ?? {}),
+        chainNumericValueMultiplier: floorValue(multiplier * operation.value)
+      };
+      addLog(state, {
+        level: "info",
+        code: "CARD_COUNTER_UPDATED",
+        message: `${resolvingCard.name}: 連鎖によるカード数値倍率が ×${formatLogNumber(multiplier * operation.value)} になりました。`
+      });
+      break;
+    }
     case "multiply_temp_attack_per_last_invalidated_count": {
       for (let count = 0; count < context.lastInvalidatedCount; count += 1) {
         player.tempAttack = floorValue(player.tempAttack * scaledValue!);
@@ -2272,20 +2365,20 @@ function resolveOperation(
     }
     case "multiply_temp_magic_per_last_destroy_count": {
       for (let count = 0; count < context.lastDestroyCount; count += 1) {
-        player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+        player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       }
       break;
     }
     case "multiply_temp_magic_per_connected_attribute_count": {
       const connectedCount = countConnectedAttributeCards(player, resolvingCard, operation.attribute);
       for (let count = 0; count < connectedCount; count += 1) {
-        player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+        player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       }
       break;
     }
     case "multiply_temp_magic_per_self_enchant_count": {
       for (let count = 0; count < resolvingCard.enchantments.length; count += 1) {
-        player.tempMagic = floorValue(player.tempMagic * scaledValue!);
+        player.tempMagic = floorValue(player.tempMagic * magicScaledValue!);
       }
       break;
     }
@@ -2298,16 +2391,17 @@ function resolveOperation(
       break;
     }
     case "multiply_base_both_and_add_reduction_to_self_numeric": {
-      const multiplier = operation.value;
+      const attackMultiplier = operation.value;
+      const magicMultiplier = operation.value * getRoundBuffMagicValueMultiplier(player);
       const previousBaseAttack = player.baseAttack;
       const previousBaseMagic = player.baseMagic;
-      const nextBaseAttack = floorValue(player.baseAttack * multiplier);
-      const nextBaseMagic = floorValue(player.baseMagic * multiplier);
+      const nextBaseAttack = floorValue(player.baseAttack * attackMultiplier);
+      const nextBaseMagic = floorValue(player.baseMagic * magicMultiplier);
       const reducedAmount = previousBaseAttack - nextBaseAttack + (previousBaseMagic - nextBaseMagic);
       player.baseAttack = nextBaseAttack;
       player.baseMagic = nextBaseMagic;
-      player.tempAttack = floorValue(player.tempAttack * multiplier);
-      player.tempMagic = floorValue(player.tempMagic * multiplier);
+      player.tempAttack = floorValue(player.tempAttack * attackMultiplier);
+      player.tempMagic = floorValue(player.tempMagic * magicMultiplier);
       if (reducedAmount > 0) {
         resolvingCard.counters = {
           ...(resolvingCard.counters ?? {}),
@@ -2701,7 +2795,7 @@ function resolveOperation(
       break;
     }
     case "queue_additional_activation_for_self":
-      queueAdditionalActivation(state, player, resolvingCard, resolvingCard.instanceId, effectId, "自己誘発");
+      queueAdditionalActivation(state, player, resolvingCard, resolvingCard.instanceId, effectId, "再発動");
       break;
     case "queue_additional_activation_for_source_card":
       if (event && "sourceCard" in event && event.sourceCard) {
@@ -2733,6 +2827,15 @@ function resolveOperation(
       }
       break;
     case "repeat_embedded_operation":
+      if (operation.count > 1 && operation.operations.some(operationIncludesDamage)) {
+        addReplay(state, {
+          type: "MULTI_HIT_STARTED",
+          playerId: player.playerId,
+          instanceId: resolvingCard.instanceId,
+          attribute: getEffectiveCardAttribute(resolvingCard),
+          count: operation.count
+        });
+      }
       for (let repeatIndex = 0; repeatIndex < operation.count; repeatIndex += 1) {
         for (const embeddedOperation of operation.operations) {
           event = resolveOperation(embeddedOperation, context, effectId, event);
@@ -2740,6 +2843,15 @@ function resolveOperation(
       }
       break;
     case "repeat_embedded_operation_per_ally_field_card_count":
+      if (player.field.length > 1 && operation.operations.some(operationIncludesDamage)) {
+        addReplay(state, {
+          type: "MULTI_HIT_STARTED",
+          playerId: player.playerId,
+          instanceId: resolvingCard.instanceId,
+          attribute: getEffectiveCardAttribute(resolvingCard),
+          count: player.field.length
+        });
+      }
       for (let repeatIndex = 0; repeatIndex < player.field.length; repeatIndex += 1) {
         for (const embeddedOperation of operation.operations) {
           event = resolveOperation(embeddedOperation, context, effectId, event);
@@ -2875,14 +2987,14 @@ function resolveOperation(
       state.chanceRollCount += 1;
       const won = random() < 0.5;
       if (won) {
-        player.totalScore = floorValue(player.totalScore * 2);
+        player.totalScore = floorValue(player.totalScore * scaledValue!);
       } else {
         player.totalScore = 0;
       }
       addLog(state, {
         level: "info",
         code: "TOTAL_SCORE_MODIFIED",
-        message: `${resolvingCard.name}: ${won ? "闇のギャンブル成功で合計得点を ×2 にしました。" : "闇のギャンブル失敗で合計得点を 0 にしました。"}`
+        message: `${resolvingCard.name}: ${won ? `闇のギャンブル成功で合計得点を ×${formatLogNumber(scaledValue!)} にしました。` : "闇のギャンブル失敗で合計得点を 0 にしました。"}`
       });
       break;
     }
@@ -2915,6 +3027,7 @@ function resolveOperation(
     multiply_base_both_if_last_destroy_succeeded: "破壊成功時の強化",
     multiply_pending_damage: "ダメージ補正",
     multiply_self_numeric_counters: "カード数値倍化",
+    multiply_self_chain_numeric_value: "連鎖によるカード数値倍化",
     multiply_temp_attack_per_last_invalidated_count: "無効化参照の一時攻撃変化",
     multiply_temp_magic_per_last_destroy_count: "破壊参照の一時魔法変化",
     multiply_temp_magic_per_connected_attribute_count: "連結参照の一時魔法変化",
@@ -2952,7 +3065,7 @@ function resolveOperation(
     queue_additional_activation_for_all_ally_field_cards: "全体追加発動",
     queue_additional_activation_for_relative_card: "相対追加発動",
     queue_random_additional_activations_excluding_self: "ランダム追加発動",
-    queue_additional_activation_for_self: "自己誘発",
+    queue_additional_activation_for_self: "再発動",
     queue_additional_activation_for_source_card: "元カード追加発動",
     register_future_same_attribute_chain_multiplier: "連続発動予約",
     register_future_specific_attribute_chain_multiplier: "属性連続予約",
@@ -3035,6 +3148,7 @@ function dispatchPlacedTrigger(
       if (typeof effect.roundTriggerLimit === "number") {
         markRoundTriggered(currentCard, effect.id);
       }
+
     }
   }
   return event;
@@ -3179,11 +3293,6 @@ function temporarilyRestoreConsumedCardForActivation(
   assignFieldIndexes(player);
   syncPersistentPlacedAuras(state, player, getCardDefinitionMap(state.cardCatalog), { suppressLogs: true });
 
-  addLog(state, {
-    level: "info",
-    code: "CARD_RESTORED_FOR_REACTIVATION",
-    message: `${card.name} を一時的に場へ戻して再発動します。`
-  });
   return true;
 }
 
@@ -3261,7 +3370,10 @@ function completeRoundAfterResolution(state: LocalGameState, player: PlayerState
   const finalAttackAmount = floorDamageValue(finalAttack.amount);
   player.scoreThisRound += finalAttackAmount;
   player.totalScore += finalAttackAmount;
-  addReplay(state, { type: "FINAL_ATTACK", playerId: player.playerId, amount: finalAttackAmount });
+  addReplay(state, {
+    type: "FINAL_ATTACK", playerId: player.playerId, amount: finalAttackAmount,
+    score: { scoreThisRound: player.scoreThisRound, totalScore: player.totalScore }
+  });
   addLog(state, {
     level: "info",
     code: "FINAL_ATTACK",
@@ -3344,10 +3456,30 @@ function applyMulligan(state: LocalGameState, player: PlayerState, mulliganInsta
   drawUpToHandSize(state, player, getEffectiveRoundHandSize(player));
 }
 
-function updateChainState(state: LocalGameState, card: CardInstance) {
+function updateChainState(state: LocalGameState, player: PlayerState, card: CardInstance) {
   const pending = getChainState(state);
   const currentAttribute = getEffectiveCardAttribute(card);
   pending.previousResolvedAttribute = pending.lastResolvedAttribute;
+  if (pending.lastResolvedAttribute !== null && pending.lastResolvedAttribute !== currentAttribute) {
+    for (const fieldCard of player.field) {
+      if (fieldCard.definitionId !== "none_super_chain") {
+        continue;
+      }
+      const chainMultiplier = fieldCard.derived?.chainNumericValueMultiplier;
+      if (typeof chainMultiplier !== "number" || chainMultiplier === 1) {
+        continue;
+      }
+      fieldCard.derived = {
+        ...(fieldCard.derived ?? {}),
+        chainNumericValueMultiplier: 1
+      };
+      addLog(state, {
+        level: "info",
+        code: "CARD_COUNTER_UPDATED",
+        message: `${fieldCard.name}: 属性の連続が途切れたため、連鎖によるカード数値倍率をリセットしました。`
+      });
+    }
+  }
   if (pending.lastResolvedAttribute === currentAttribute) {
     pending.sameAttributeChainCount += 1;
   } else {
@@ -3408,6 +3540,12 @@ function resolveSingleCard(
     return;
   }
 
+  const mainTiming = getMainTiming(definition);
+  const mainEffects = definition.effects.filter((effect) => effect.timing === mainTiming);
+  if (!hasActivationEffect(resolvingCard, definition, activationTask)) {
+    return;
+  }
+
   const pending = getChainState(state);
   pending.activationCount += 1;
 
@@ -3433,26 +3571,49 @@ function resolveSingleCard(
   });
   applyRolePreActivationEffect(context);
     applyFutureChainMultipliers(context);
-    updateChainState(state, resolvingCard);
+    updateChainState(state, player, resolvingCard);
     const activationAttribute = getEffectiveCardAttribute(resolvingCard);
     player.attributeActivationCounts[activationAttribute] = (player.attributeActivationCounts[activationAttribute] ?? 0) + 1;
     advanceSealProgressForActivation(player, cardsById, activationAttribute);
+
+    addLog(state, {
+      level: "info",
+      code: "CARD_ACTIVATION_STARTED",
+      message: `${resolvingCard.name}: 発動`,
+      meta: {
+        activationKind: activationTask.activationKind ?? "normal",
+        activationSourceName: activationTask.activationSourceName ?? null
+      }
+    });
+
+    if (activationTask.activationKind) {
+      addReplay(state, {
+        type: "ADDITIONAL_ACTIVATION_ANNOUNCED",
+        playerId: player.playerId,
+        instanceId: resolvingCard.instanceId,
+        attribute: activationAttribute,
+        activationKind: activationTask.activationKind,
+        activationSourceName: activationTask.activationSourceName
+      });
+    }
 
     addReplay(state, {
       type: "CARD_ACTIVATED",
     playerId: player.playerId,
     instanceId: resolvingCard.instanceId,
     attribute: activationAttribute,
-    chainCount: pending.sameAttributeChainCount
+    chainCount: pending.sameAttributeChainCount,
+    isAdditional: Boolean(activationTask.isAdditional),
+    activationKind: activationTask.activationKind,
+    activationSourceName: activationTask.activationSourceName
   });
 
-  const mainTiming = getMainTiming(definition);
   const referencedEffectDefinition = getResolvableCardDefinition(player, resolvingCard, cardsById);
   executeHostEnchantmentEffects(context, "when_host_card_activates");
   if (activationTask.isAdditional) {
     executeHostEnchantmentEffects(context, "when_host_card_additionally_activates");
   }
-  runCardEffects(definition.effects.filter((effect) => effect.timing === mainTiming), context, null);
+  runCardEffects(mainEffects, context, null);
   dispatchPlacedTrigger(state, player, cardsById, {
     kind: "after_card_activates",
     sourceCard: resolvingCard,
@@ -3523,6 +3684,16 @@ function applyRoundEndEffects(state: LocalGameState, player: PlayerState, cardsB
     const insertIndex = Math.min(Math.max(revive.fieldIndex, 0), player.field.length);
     player.field.splice(insertIndex, 0, revivedCard);
     assignFieldIndexes(player);
+    const flameReactionCount = getEffectiveRoundBuffCount(player, "round_buff_flame_reaction");
+    if (getEffectiveCardAttribute(revivedCard) === "fire" && flameReactionCount > 0) {
+      const multiplier = 2 ** flameReactionCount;
+      scaleCardNumericValue(cardsById, revivedCard, multiplier);
+      addLog(state, {
+        level: "info",
+        code: "ROUND_BUFF_APPLIED",
+        message: `炎色反応により、復活した ${revivedCard.name} の数値を ×${formatLogNumber(multiplier)} にしました。`
+      });
+    }
     addReplay(state, {
       type: "CARD_REVIVED",
       playerId: player.playerId,
@@ -3630,10 +3801,11 @@ function prepareNextRound(state: LocalGameState) {
 
   if (player.scheduledNextRoundBaseBothBonus > 0) {
     const bonus = player.scheduledNextRoundBaseBothBonus;
+    const magicBonus = bonus * getRoundBuffMagicValueMultiplier(player);
     player.baseAttack += bonus;
-    player.baseMagic += bonus;
+    player.baseMagic += magicBonus;
     player.tempAttack += bonus;
-    player.tempMagic += bonus;
+    player.tempMagic += magicBonus;
     player.scheduledNextRoundBaseBothBonus = 0;
     addLog(state, {
       level: "info",
@@ -3676,6 +3848,15 @@ function prepareNextRound(state: LocalGameState) {
   player.nextRoundDrawBonus = 0;
   drawUpToHandSize(state, player, handSize);
   syncRoundBuffFieldModifiers(player, getCardDefinitionMap(state.cardCatalog));
+  if (player.selectedRoundBuffs.length > 0) {
+    const roundBuffsById = getRoundBuffMap(state);
+    const activeBuffNames = player.selectedRoundBuffs.map((selected) => roundBuffsById[selected.buffId]?.name ?? selected.buffId);
+    addLog(state, {
+      level: "info",
+      code: "ROUND_BUFFS_ACTIVE",
+      message: `ラウンドバフ発動中: ${activeBuffNames.join(" / ")}`
+    });
+  }
 }
 
 export function createLocalGame({ roleId, cards, roles, roundBuffs = [], seed: providedSeed }: CreateLocalGameInput): LocalGameState {
@@ -3853,7 +4034,9 @@ export function startRoundResolution(currentState: LocalGameState, orderedFieldI
       state.pendingResolution.queue.push({
         instanceId: rightmostFieldInstanceId,
         skippedReactiveEffectIds: [],
-        isAdditional: true
+        isAdditional: true,
+        activationKind: "additional",
+        activationSourceName: "もう一回"
       });
     }
     const rightmostCard = player.field.find((card) => card.instanceId === rightmostFieldInstanceId);
@@ -3915,6 +4098,24 @@ export function getCurrentResolutionCard(currentState: LocalGameState): CardInst
   return null;
 }
 
+/** Whether the next resolution step needs the normal activation pause. */
+export function hasCurrentResolutionActivationEffect(currentState: LocalGameState): boolean {
+  const pending = currentState.pendingResolution;
+  if (!pending) return false;
+  const player = getPlayer(currentState);
+  const cardsById = getCardDefinitionMap(currentState.cardCatalog);
+  for (const task of pending.queue.slice(pending.cursor)) {
+    const card = findCardByInstanceId(player, task.instanceId);
+    if (!card || isCardSealed(player, card, cardsById)) continue;
+    const definition = cardsById[card.definitionId];
+    const canRestore = getMainTiming(definition) === "consume" && Boolean(card.isConsumed) &&
+      (card.zone === "discard" || card.zone === "removed");
+    return !card.isInvalidated && !card.isDestroyed && (card.zone === "field" || canRestore) &&
+      hasActivationEffect(card, definition, task);
+  }
+  return false;
+}
+
 export function getCurrentResolutionTargetKeys(currentState: LocalGameState): string[] {
   const card = getCurrentResolutionCard(currentState);
   if (!card) {
@@ -3933,6 +4134,20 @@ export function getCurrentResolutionTargetKeys(currentState: LocalGameState): st
       "target" in operation && operation.target === "one_ally_field_card" ? [operation.kind] : []
     )
   );
+}
+
+export function getCurrentResolutionTargetCandidateIds(currentState: LocalGameState): string[] {
+  const card = getCurrentResolutionCard(currentState);
+  if (!card) {
+    return [];
+  }
+
+  const cardsById = getCardDefinitionMap(currentState.cardCatalog);
+  const definition = cardsById[card.definitionId];
+  const excludeResolvingCard = definition ? getMainTiming(definition) === "consume" : false;
+  return getPlayer(currentState).field
+    .filter((candidate) => !excludeResolvingCard || candidate.instanceId !== card.instanceId)
+    .map((candidate) => candidate.instanceId);
 }
 
 export function resolveNextCard(currentState: LocalGameState, targetSelections: Record<string, string> = {}): LocalGameState {
@@ -3969,9 +4184,22 @@ export function resolveNextCard(currentState: LocalGameState, targetSelections: 
       }
     });
 
+    const validTargetIds = new Set(
+      getCurrentResolutionTargetCandidateIds({
+        ...state,
+        pendingResolution: {
+          ...state.pendingResolution,
+          cursor: state.pendingResolution.cursor - 1
+        }
+      })
+    );
     for (const targetKey of requiredTargetKeys) {
-      if (!targetSelections[targetKey]) {
+      const targetId = targetSelections[targetKey];
+      if (!targetId) {
         throw new Error(`${resolvingCard.name} の対象が未選択です。`);
+      }
+      if (!validTargetIds.has(targetId)) {
+        throw new Error(`${resolvingCard.name} に選択できない対象が指定されました。`);
       }
     }
 

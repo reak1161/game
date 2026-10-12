@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動: このカード以外のすべてのカードを破壊する。破壊したカード1枚につき火力を増幅し、その後ダメージを与える",
+  "text": "発動: このカード以外のすべてのカードを破壊する。破壊したカード1枚につき一時魔法{{×3}}。その後ダメージを与える。",
   "effects": [
     {
       "id": "fire_burnout_activate",
@@ -25,6 +25,15 @@
           "kind": "deal_damage_from_temp_magic"
         }
       ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "fire_burnout_activate",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "normal",
+      "affectsValueKind": "normal"
     }
   ],
   "tags": [

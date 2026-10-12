@@ -1,0 +1,15 @@
+へび,enemy_001
+snake.png
+1200
+300
+400
+100,1,100
+200
+boss,middle
+0,1,2,3
+Ground
+half_guarantee,molting,molting_defense
+3
+tail_rush,50,しっぽうち
+snake_dash,15,へびダッシュ
+tightening,35,しめつけ

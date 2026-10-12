@@ -1,0 +1,153 @@
+.battle-combo-overlay {
+  position: absolute;
+  top: 4px;
+  right: 14px;
+  z-index: 25;
+  display: flex;
+  align-items: baseline;
+  justify-content: end;
+  gap: 14px;
+  max-width: calc(100% - 56px);
+  pointer-events: none;
+}
+.battle-combo { display: flex; align-items: baseline; gap: 5px; color: var(--combo-color); filter: drop-shadow(0 2px 2px #0f172a90); animation: combo-pop 900ms ease-out both; }
+.battle-combo strong { font-size: 34px; font-weight: 950; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; -webkit-text-stroke: 1px #334155; }
+.battle-combo span { color: #334155; font-size: 10px; font-weight: 900; letter-spacing: .06em; }
+.battle-combo.is-milestone { filter: drop-shadow(0 0 6px var(--combo-color)); }
+.battle-combo.is-milestone strong { font-size: 38px; }
+.battle-impact { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; animation: score-hit-pop 380ms cubic-bezier(.16,1,.3,1); }
+.battle-impact span { color: #854d0e; font-size: 10px; font-weight: 800; }
+.battle-impact strong { color: #1e40af; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 1px 4px #fff; }
+.battle-impact:is(.is-finale, [data-heavy="true"]) strong { color: #a16207; text-shadow: 0 0 10px #fbbf2470; }
+.battle-impact.is-charging { animation: final-charge 160ms ease-in both; }
+.battle-impact.is-multi-hit { display: grid; grid-template-columns: auto auto; gap: 1px 7px; }
+.battle-impact .hit-count { color: #475569; font-variant-numeric: tabular-nums; }
+.battle-impact small { grid-column: 1 / -1; justify-self: end; color: #64748b; font-size: 10px; font-variant-numeric: tabular-nums; }
+.card-chip.is-awaiting-target { outline: 2px solid #60a5fa; outline-offset: 2px; }
+.card-multi-hit { position: absolute; inset: auto 5px 8px; z-index: 3; pointer-events: none; padding: 5px 3px; border-radius: 7px; background: #0f172ae8; color: #f8fafc; text-align: center; }
+.card-hit-beat { display: grid; justify-items: center; gap: 2px; animation: hit-tick 180ms ease-out; }
+.card-hit-beat strong { color: #fde68a; font-size: 23px; line-height: 1; font-variant-numeric: tabular-nums; }
+.card-hit-beat span { font-size: 10px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.card-hit-beat b { color: #facc15; }
+@keyframes hit-tick { from { opacity: .6; transform: scale(1.18); } to { opacity: 1; transform: scale(1); } }
+.animated-score { font-variant-numeric: tabular-nums; }
+.battle-frame .status-grid .status-score { background: linear-gradient(135deg, #e0ecff, #edf4ff); border: 1px solid #adc9ee; }
+.battle-frame .status-grid .status-score-total { background: linear-gradient(135deg, #fff5cc, #fff9e8); border: 1px solid #e8cd85; }
+.battle-frame .status-grid .status-score strong { color: #1e40af; font-size: 22px; }
+.battle-frame .status-grid .status-score-total strong { color: #854d0e; }
+.battle-feedback-layer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 119; }
+.score-flight { position: absolute; width: 0; height: 0; }
+.score-flight i { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: 0 0 7px 3px var(--flight-color), 0 0 18px var(--flight-color); animation: score-delivery var(--flight-duration, 180ms) cubic-bezier(.4,0,.2,1) both; }
+.score-flight i:nth-child(2) { animation-delay: 35ms; width: 6px; height: 6px; }
+.score-flight i:nth-child(3) { animation-delay: 70ms; width: 4px; height: 4px; }
+.score-flight.is-final i { width: 13px; height: 13px; }
+.particle-burst::before { content: ""; position: absolute; width: 46px; height: 46px; border: 2px solid var(--particle-color, #fbbf24); border-radius: 50%; animation: impact-ring 420ms ease-out both; }
+.particle-final::before { width: 90px; height: 90px; border-width: 4px; border-color: #fbbf24; animation-duration: 600ms; }
+.floating-status { font-size: clamp(17px, 2.2vw, 26px); }
+@keyframes combo-pop { 0% { opacity: 0; transform: translateY(6px) scale(.7); } 16% { opacity: 1; transform: translateY(-2px) scale(1.12); } 35%, 72% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-7px); } }
+@keyframes score-hit-pop { 0% { opacity: .4; transform: translateY(7px) scale(.85); } 35% { opacity: 1; transform: translateY(-1px) scale(1.04); } 100% { transform: none; } }
+@keyframes final-charge { from { opacity: .5; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes score-delivery { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--flight-x), var(--flight-y)) scale(.45); } }
+@keyframes impact-ring { from { opacity: .85; transform: translate(-50%, -50%) scale(.4); } to { opacity: 0; transform: translate(-50%, -50%) scale(2.1); } }
+
+/* Keep the board in the available viewport; only card rows and drawers scroll. */
+.app-shell:is([data-screen="solo_battle"], [data-screen="multi_match"], [data-screen="replay"]) { padding: clamp(8px, 2dvh, 20px); }
+.battle-stage { overflow: clip; }
+.battle-stage .battle-frame {
+  --battle-status-height: clamp(186px, 26dvh, 228px);
+  width: min(1080px, 100%); min-width: 0; max-width: 1080px;
+  height: min(880px, 100%); min-height: 0; max-height: 880px;
+  grid-template-rows: var(--battle-status-height) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.battle-stage .battle-top-row { min-height: 0; }
+.battle-stage .battle-frame .status-panel { height: 100%; min-height: 0; max-height: none; grid-template-rows: minmax(64px, 1fr) auto; gap: 6px; padding: 10px 12px; }
+.battle-stage .status-hero { grid-template-rows: minmax(54px, 1fr); gap: 6px; }
+.battle-stage .status-hero-center { min-height: 48px; padding: 5px 8px; }
+.battle-stage .round-buff-icon { width: 44px; height: 44px; min-width: 44px; min-height: 0; border-radius: 12px; padding: 3px; gap: 1px; overflow: hidden; }
+.battle-stage .round-buff-icon.has-image img { min-height: 0; }
+.battle-stage .round-buff-icon.no-image strong { font-size: 8px; }
+.battle-stage .round-buff-icon.no-image small { font-size: 8px; }
+.battle-stage .status-hero-meta { gap: 3px; }
+.battle-stage .status-hero-round { display: flex; align-items: center; gap: 6px; }
+.battle-stage .status-hero-round strong { font-size: 19px; }
+.battle-stage .battle-frame .status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 8px; margin: 0; }
+.battle-stage .battle-frame .status-grid > div { min-height: 0; padding: 5px 10px; gap: 1px; }
+.battle-stage .battle-task-guide { top: calc(var(--battle-status-height) + 6px); min-height: 34px; padding: 6px 14px; }
+.battle-stage .battle-task-error { top: calc(var(--battle-status-height) + 35px); }
+.battle-stage .battle-frame :is(.field-panel, .hand-panel) { grid-template-rows: 28px minmax(0, 1fr); padding: 10px 12px 4px; }
+.battle-row-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.battle-stage .field-panel { position: relative; }
+.battle-row-heading h2 { margin: 0; font-size: 14px; }
+.battle-row-heading > span { font-size: 10px; color: #64748b; }
+.battle-stage .battle-frame :is(.field-panel, .hand-panel) .horizontal-card-row { container-type: size; height: 100%; min-height: 0; max-height: none; padding-top: 10px; padding-bottom: 10px; }
+.battle-stage .battle-frame .horizontal-card-row .card-chip { height: min(174px, 100cqh); width: clamp(92px, calc(100cqh * 2 / 3), 116px); min-width: 0; max-width: 116px; padding: 8px 7px; gap: 3px; }
+.battle-stage .battle-frame .horizontal-card-row .card-title-row span { font-size: clamp(10px, 8cqh, 13px); }
+.battle-stage .battle-frame .horizontal-card-row .card-chip small { font-size: clamp(8px, 6cqh, 10px); }
+.battle-stage .battle-frame :is(.log-drawer, .match-edge-drawer) { height: 100%; max-width: 100%; }
+.battle-stage .match-edge-drawer-log .match-edge-drawer-handle { height: 50%; }
+.battle-stage :is(.match-edge-drawer-player, .match-edge-drawer-replay) .match-edge-drawer-handle { height: 50%; margin-top: 0; align-self: end; }
+@media (max-height: 700px) {
+  .battle-stage .battle-frame { --battle-status-height: 196px; gap: 8px; }
+  .battle-stage .battle-frame .status-grid strong { font-size: 15px; }
+  .battle-stage .battle-frame .status-grid .status-score strong { font-size: 18px; }
+  .battle-stage .battle-task-guide { font-size: 12px; min-height: 28px; }
+  .battle-stage .battle-task-guide strong { font-size: 12px; }
+  .battle-stage .battle-icon-button { width: 24px; height: 24px; }
+  .battle-stage .attribute-rate-button { width: 22px; height: 22px; }
+}
+@media (max-width: 650px) {
+  .battle-stage .battle-frame { --battle-status-height: 200px; gap: 10px; }
+  .battle-stage .battle-frame :is(.battle-top-row, .field-panel, .hand-panel) { margin-right: 24px; }
+  .battle-stage .battle-frame :is(.status-panel, .field-panel, .hand-panel) { padding-left: 7px; padding-right: 7px; }
+  .battle-stage .status-hero-player h2 { font-size: 17px; max-width: 92px; }
+  .battle-stage .status-hero-center { margin: 0 112px 0 0; padding: 4px; }
+  .battle-stage .status-hero-center p { font-size: 10px; }
+  .battle-stage .status-hero-top { gap: 5px; }
+  .battle-stage .status-hero-meta { width: 108px; right: 0; }
+  .battle-stage .status-hero-round-line { gap: 3px; }
+  .battle-stage .status-hero-round-line > span { font-size: 10px; }
+  .battle-stage .status-hero-round strong { font-size: 14px; white-space: nowrap; }
+  .battle-stage .attribute-rate-button { width: 22px; height: 22px; }
+  .battle-stage .role-summary-button { font-size: 17px; }
+  .battle-stage .battle-utility-buttons { gap: 3px; }
+  .battle-stage .battle-icon-button { width: 24px; height: 24px; }
+  .battle-stage .round-buff-icon-row { gap: 2px; flex-wrap: wrap; }
+  .battle-stage .round-buff-icon { width: 24px; height: 24px; min-width: 24px; }
+  .battle-stage .battle-frame .status-grid > div { padding: 5px 6px; }
+  .battle-stage .battle-frame .status-grid span { font-size: 9px; }
+  .battle-stage .battle-frame .status-grid .status-score strong { font-size: 16px; }
+  .battle-stage .battle-task-guide { width: calc(100% - 44px); gap: 5px; padding: 5px 9px; }
+  .battle-stage .battle-task-guide strong { font-size: 11px; }
+  .battle-stage .battle-task-guide > span:first-child { display: none; }
+  .battle-stage .battle-frame :is(.log-drawer, .match-edge-drawer) { grid-template-columns: 22px minmax(0, 1fr); transform: translateX(calc(100% - 22px)); }
+  .battle-stage .battle-frame :is(.log-drawer, .match-edge-drawer):is(:hover, :focus-within) { transform: translateX(0); }
+  .battle-combo-overlay { right: 8px; gap: 9px; }
+  .battle-combo strong { font-size: 28px; }
+  .battle-combo.is-milestone strong { font-size: 32px; }
+  .battle-combo span, .battle-impact span { font-size: 8px; }
+  .battle-impact strong { font-size: 19px; }
+}
+@media (max-height: 520px) and (min-width: 651px) {
+  .battle-stage .battle-frame { --battle-status-height: 118px; gap: 6px; }
+  .battle-stage .battle-frame .status-panel { grid-template-rows: minmax(40px, 1fr) auto; gap: 3px; padding-top: 5px; padding-bottom: 5px; }
+  .battle-stage .status-hero { grid-template-rows: minmax(40px, 1fr); gap: 3px; }
+  .battle-stage .status-hero-player h2 { font-size: 16px; }
+  .battle-stage .role-summary-button { font-size: 15px; }
+  .battle-stage .status-hero-center { min-height: 36px; padding: 2px 6px; }
+  .battle-stage .round-buff-icon { width: 32px; height: 32px; min-width: 32px; }
+  .battle-stage .battle-frame .status-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .battle-stage .battle-frame .status-grid > div { padding: 3px 6px; }
+  .battle-stage .battle-frame .status-grid span { font-size: 9px; }
+  .battle-stage .battle-frame :is(.field-panel, .hand-panel) { grid-template-rows: 18px minmax(0, 1fr); padding-top: 5px; }
+  .battle-stage .battle-frame .horizontal-card-row .card-chip { padding: 4px 6px; }
+  .battle-stage .battle-frame .horizontal-card-row .card-chip > small:last-child { display: none; }
+  .battle-combo-overlay { top: 0; }
+  .battle-combo strong, .battle-combo.is-milestone strong { font-size: 24px; }
+  .battle-impact strong { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-feedback-layer, .particle-layer { display: none; }
+  .battle-combo-overlay *, .battle-frame .field-connection-particle { animation: none !important; transition: none !important; }
+  .card-hit-beat { animation: none !important; }
+}

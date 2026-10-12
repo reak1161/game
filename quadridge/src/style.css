@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap');
+:root{font-family:'DM Sans','Noto Sans JP',sans-serif;color:#e8f1f3;background:#0d1925;font-synthesis:none}*{box-sizing:border-box}body{margin:0;min-width:320px;background:radial-gradient(circle at 40% 10%,#1d3446 0,#0d1925 55%);min-height:100vh}button{font:inherit;cursor:pointer}button:disabled{cursor:default}.shell{max-width:1450px;margin:auto;padding:27px clamp(16px,3vw,48px) 20px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:30px}.eyebrow{color:#8fb7bb;letter-spacing:.22em;font-size:11px;font-weight:800}.topbar h1{font-size:clamp(25px,3vw,39px);letter-spacing:.075em;line-height:1.1;margin:8px 0 0;font-weight:800}.topbar h1 span{display:block;color:#9dafb8;font-size:11px;letter-spacing:.14em;font-weight:600;margin-top:7px}.top-actions{display:flex;gap:9px}.quiet{background:#203342;border:1px solid #3e5968;border-radius:9px;color:#e6f0f2;padding:10px 16px}.quiet:hover{background:#2b4557}main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:35px;align-items:start}.arena{min-width:0;display:flex;flex-direction:column;align-items:center}.board-frame{width:100%;display:flex;align-items:stretch;gap:10px}.board{width:min(100%,690px);aspect-ratio:1;display:grid;grid-template-columns:repeat(15,1fr);gap:2px;background:#152836;border:6px solid #254353;box-shadow:0 24px 55px #0007,0 0 0 1px #456474;border-radius:8px;padding:3px;touch-action:manipulation}.cell{appearance:none;border:0;border-radius:2px;background:#314858;min-width:0;min-height:0;padding:0;transition:background .12s,transform .16s,box-shadow .16s}.cell:hover{background:#496578}.cell.blue{background:#40bbd5;box-shadow:inset 0 -3px #18849e}.cell.red{background:#fb8678;box-shadow:inset 0 -3px #c65b53}.cell.latest{animation:place .3s ease-out}.cell.ghost-blue{background:#82dce9;box-shadow:inset 0 0 0 2px #c7f7ff}.cell.ghost-red{background:#ffc2b9;box-shadow:inset 0 0 0 2px #ffe3d9}.cell.ghost-invalid{background:#d5686d;box-shadow:inset 0 0 0 2px #ffb1b1}.cell.victory{background:#f5e89f;box-shadow:0 0 14px #f7e678;z-index:1}.cell:focus-visible,button:focus-visible{outline:3px solid #ffe8a3;outline-offset:2px}.edge-label{width:calc(100% - 70px);max-width:690px;text-align:center;background:#2b879d;color:#dbfbff;text-transform:uppercase;letter-spacing:.18em;font-weight:800;font-size:10px;padding:5px;border-radius:5px}.edge-label.top{margin-bottom:9px}.edge-label.bottom{margin-top:9px}.edge-side{width:25px;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;background:#ad5a57;color:#ffe9e3;border-radius:5px;letter-spacing:.2em;font-size:10px;font-weight:800}.edge-side.left{transform:rotate(180deg)}.panel{background:linear-gradient(160deg,#1e3444,#182b39);border:1px solid #365163;border-radius:16px;box-shadow:0 20px 45px #0004;padding:25px}.round{font-size:11px;font-weight:800;letter-spacing:.25em;color:#9ab4c1;margin-bottom:15px}.turn-heading{font-size:23px;font-weight:800;display:flex;align-items:center;gap:10px}.turn-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#40bbd5;box-shadow:0 0 15px #40bbd5}.turn-heading.red .turn-dot{background:#fb8678;box-shadow:0 0 15px #fb8678}.status{min-height:48px;color:#aebfca;font-size:13px;line-height:1.7;margin:11px 0}.divider{height:1px;background:#3c5360;margin:20px 0}.section-title{font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center}.section-title span{font-size:10px;color:#99b1bb;font-weight:500}.hand{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0 20px}.candidate:hover{background:#315367}.candidate{height:132px;min-width:0;background:#253d4d;color:#e8f1f3;border:1px solid #456170;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:9px;transition:transform .15s,background .15s,border-color .15s}.candidate.active{transform:translateY(-5px);border-color:#65d6e7;background:#2d5264;box-shadow:0 8px 20px #0004}.candidate.active.red{border-color:#ffa599;background:#684a4c}.candidate-number{align-self:flex-start;color:#9db4bd;font-size:10px;font-weight:800}.candidate strong{font-size:12px}.mini{display:grid;grid-template-columns:repeat(var(--columns),13px);grid-auto-rows:13px;gap:2px}.mini i{display:block;border-radius:2px}.mini i.filled{background:#67cfe0;box-shadow:inset 0 -2px #3598ab}.candidate.red .mini i.filled{background:#ff9f92;box-shadow:inset 0 -2px #ce6c64}.controls{display:flex;align-items:center;gap:15px}.primary{border:0;background:#d9ecab;color:#203d3e;border-radius:9px;font-weight:800;padding:11px 17px}.primary:hover{background:#edfac4}.primary:disabled{opacity:.5}.rotate-icon{font-size:19px;vertical-align:middle}.primary kbd{font:700 10px 'DM Sans';margin-left:8px;border:1px solid #7d9a7b;border-radius:3px;padding:2px 5px}.rotation{color:#a9bec8;font-size:12px}.hint{font-size:11px;line-height:1.7;color:#96adba;margin:15px 0}.message{min-height:22px;color:#ffb2aa;font-size:12px}.legend{display:flex;justify-content:space-between;border-top:1px solid #3c5360;padding-top:17px;margin-top:8px;font-size:11px;color:#c7d6d9}.legend span{display:flex;align-items:center;gap:6px}.legend i{width:10px;height:10px;border-radius:50%}.legend-blue{background:#40bbd5}.legend-red{background:#fb8678}footer{text-align:center;color:#708d9a;font-size:11px;letter-spacing:.04em;margin-top:28px}.modal-backdrop{position:fixed;inset:0;background:#06121bdc;display:grid;place-items:center;padding:18px;z-index:10}.modal{position:relative;background:#1d3342;border:1px solid #597383;border-radius:16px;max-width:540px;max-height:90vh;overflow:auto;padding:30px;box-shadow:0 28px 70px #0008}.modal h2{margin:8px 0 15px}.modal p,.modal li{font-size:13px;line-height:1.8;color:#c7d8df}.modal ul{padding-left:20px}.modal li{margin:8px 0}.close{position:absolute;right:18px;top:12px;border:0;background:none;color:#d8e8ed;font-size:30px}@keyframes place{0%{transform:scale(.7)}70%{transform:scale(1.08)}100%{transform:scale(1)}}@media(max-width:900px){main{grid-template-columns:1fr;gap:27px}.panel{max-width:690px;width:100%;margin:auto}.board-frame{justify-content:center}.board{width:min(100%,690px)}}@media(max-width:520px){.shell{padding:17px 10px}.topbar{align-items:flex-start;margin-bottom:18px}.top-actions{flex-direction:column}.quiet{padding:7px 9px;font-size:11px}.board-frame{gap:3px}.board{border-width:3px;gap:1px;padding:1px}.edge-side{width:16px;font-size:8px}.edge-label{width:calc(100% - 38px);font-size:8px}.panel{padding:18px}.candidate{height:115px}.mini{grid-template-columns:repeat(var(--columns),11px);grid-auto-rows:11px}}
+
+/* 盤面と上下ゴールは同じ中央列を共有する。 */
+.arena{width:100%}
+.board-frame{max-width:760px;margin-inline:auto}
+.board{flex:1 1 0;width:0;min-width:0}
+@media(max-width:520px){.board-frame{max-width:100%}}
+
+/* v0.2: 盤面を表示領域の縦横の狭い方に合わせる。 */
+.shell{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.topbar{flex:none}
+main{flex:1;min-height:0}
+footer{flex:none}
+.arena{--board-size:min(690px, calc(100vw - 520px), calc(100dvh - 285px));width:calc(var(--board-size) + 70px);max-width:100%;height:100%;justify-content:center}
+.board-frame{width:100%;max-width:none;flex:none}
+.board{width:var(--board-size);height:var(--board-size);max-width:none;flex:none;aspect-ratio:1}
+.board{position:relative}
+.turning-ghost{position:absolute;pointer-events:none;transform-origin:center;z-index:4}
+.board.rotating .cell{transition:none!important}
+.turning-ghost i{position:absolute;display:block;border-radius:2px;background:#82dce9;box-shadow:inset 0 0 0 2px #c7f7ff}
+.turning-ghost.red i{background:#ffc2b9;box-shadow:inset 0 0 0 2px #ffe3d9}
+.cell.ghost-invalid-blue,.cell.ghost-invalid-red{position:relative;z-index:2}
+.cell.ghost-invalid-blue{background:#2b7288;box-shadow:inset 0 0 0 2px #9ce8f5}
+.cell.ghost-invalid-red{background:#ae5d58;box-shadow:inset 0 0 0 2px #ffc3b8}
+.cell.ghost-invalid-blue::after,.cell.ghost-invalid-red::after{content:'×';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:clamp(10px,1.8vw,22px);font-weight:800;line-height:1;pointer-events:none}
+.turning-ghost.blue i.invalid{background:#2b7288;box-shadow:inset 0 0 0 2px #9ce8f5}
+.turning-ghost.red i.invalid{background:#ae5d58;box-shadow:inset 0 0 0 2px #ffc3b8}
+.turning-ghost i.invalid::after{content:'×';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:clamp(10px,1.8vw,22px);font-weight:800;line-height:1}
+.edge-label{width:var(--board-size);max-width:none;flex:none}
+.panel{align-self:start}
+.controls{gap:7px;flex-wrap:wrap}
+.controls .primary{padding:9px 10px;font-size:12px;white-space:nowrap}
+.controls .primary kbd{margin-left:3px}
+@media(max-width:900px){
+  .shell{padding-top:12px;padding-bottom:10px}
+  .topbar{margin-bottom:9px}
+  main{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .arena{--board-size:max(100px, min(690px, calc(100vw - 100px), calc(100dvh - 430px)));width:calc(var(--board-size) + 70px);height:auto;flex:none}
+  .panel{width:min(100%,760px);max-width:760px;padding:12px;flex:none}
+  .round{margin-bottom:5px}
+  .turn-heading{font-size:18px}
+  .status{min-height:0;margin:4px 0;font-size:11px}
+  .divider{margin:8px 0}
+  .hand{margin:7px 0 9px}
+  .candidate{height:65px;flex-direction:row;gap:5px;padding:5px}
+  .candidate-number{display:none}
+  .mini{grid-template-columns:repeat(var(--columns),9px);grid-auto-rows:9px;gap:1px}
+  .hint{margin:6px 0;font-size:10px}
+  .message{min-height:16px}
+  .legend{padding-top:7px;margin-top:4px}
+  footer{margin-top:7px}
+}
+@media(max-width:520px){
+  .arena{--board-size:max(100px, min(calc(100vw - 58px), calc(100dvh - 430px)));width:calc(var(--board-size) + 38px)}
+  .topbar h1{font-size:22px}
+  .topbar h1 span{margin-top:3px}
+  .eyebrow{font-size:9px}
+  .panel{padding:9px}
+  .candidate{height:57px}
+  .controls .primary{padding:6px 8px}
+  footer{font-size:9px}
+}
+@media(max-height:680px){
+  .shell{padding-top:8px;padding-bottom:5px}
+  .topbar{margin-bottom:5px}
+  .panel{padding:9px}
+  .candidate{height:55px}
+  .hint,footer{display:none}
+}
+
+/* v0.7: ホームと対戦画面で共通の、柔らかい青灰色パレット。 */
+:root{--player-blue:#417ab1;--player-red:#e83743;--ui-surface:#333844;color:#edf3f4;background:#263944}
+body{background:#263944}
+.panel,.modal{background:#314752;border-color:#526a75;box-shadow:0 16px 38px #18273066}
+.quiet{background:#3a515c;border-color:#617681}
+.quiet:hover{background:#465f6b}
+.primary{background:#c9d9c0;color:#263e42}
+.primary:hover{background:#dbe7d4}
+.board{background:#263d48;border-color:#4a626d;box-shadow:0 16px 35px #17262f66,0 0 0 1px #647985}
+.cell{background:#405864}
+.cell:hover{background:#536d79}
+.judgment-blue{filter:brightness(1.28);box-shadow:inset 0 0 0 2px #b9edf4,0 0 11px #6bd6e5!important;z-index:2}
+.judgment-red{filter:brightness(1.2);box-shadow:inset 0 0 0 2px #ffd1ca,0 0 11px #f69a8d!important;z-index:2}
+.guide-blue,.guide-red{position:relative}
+.guide-blue::before,.guide-red::before{content:'';position:absolute;inset:26%;border:2px dashed #b6eaf1;border-radius:50%;opacity:.85}
+.guide-red::before{border-color:#ffd0c8}
+.judgment-result{position:absolute;z-index:7;left:calc(var(--goal-side) + var(--goal-gap));top:0;width:var(--board-size);height:var(--board-size);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;pointer-events:none;background:#26394473;animation:judgment-in .45s .55s ease-out both}
+.judgment-result span,.judgment-result strong{background:#2d424def;border:1px solid #71858e;padding:7px 16px;box-shadow:0 9px 25px #17263066}
+.judgment-result span{font-size:12px;color:#cfdddf}
+.judgment-result strong{font-size:22px;letter-spacing:.08em;color:#f1f5f5}
+@keyframes judgment-in{from{opacity:0}to{opacity:1}}
+
+/* プレイヤーの基準色。ブロック、候補、ゴーストの色は変更しない。 */
+.edge-label{background:#40bbd5}
+.edge-side{background:#fb8678}
+.turn-dot,.legend-blue{background:var(--player-blue)}
+.turn-dot{box-shadow:0 0 15px color-mix(in srgb,var(--player-blue) 75%,transparent)}
+.turn-heading.red .turn-dot,.legend-red{background:var(--player-red)}
+.turn-heading.red .turn-dot{box-shadow:0 0 15px color-mix(in srgb,var(--player-red) 75%,transparent)}
+
+/* ボタン、カード、情報パネルなどの共通UI色。 */
+.panel,.modal,.quiet,.primary,.candidate{background:var(--ui-surface);color:#f1f3f5}
+.quiet,.candidate{border-color:#5a6070}
+.quiet:hover,.primary:hover,.candidate:hover{background:#404656}
+.candidate.active{background:#414859}
+.candidate.active.red{background:#4c414c}

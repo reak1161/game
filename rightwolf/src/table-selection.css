@@ -1,0 +1,88 @@
+/* Decisions stay within the table while its cards and seats remain interactive. */
+.table-decision.choice-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1.5fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: 100%; max-width: none; max-height: none;
+  margin: 0 0 12px; padding: 12px 16px;
+  border: 1px solid #7e8d6f80; border-radius: 9px;
+  background: #192d25; box-shadow: 0 4px 16px #071b1922;
+  color: var(--table-ink); overflow: visible;
+}
+.table-decision.choice-panel > .effect-source { border: 0; padding: 0; margin: 0; gap: 12px; }
+.table-decision .effect-source-face { width: 46px; height: 66px; }
+.table-decision .effect-source strong { font-size: 12px; }
+.table-decision .effect-source p { margin: 4px 0 0; color: #c5cfbc; font-size: 10px; }
+.table-decision .decision-result { min-width: 0; max-height: 158px; overflow: auto; scrollbar-width: thin; scrollbar-color: #8b986c transparent; }
+.table-decision .selection-count { font-size: 10px; color: #dccb9e; margin: 0 0 7px; }
+.table-decision .choice-comparison { margin: 0; }
+.table-decision .choice-comparison > div { padding: 7px 9px; }
+.table-decision .choice-comparison p, .table-decision .choice-outcome p { margin: 3px 0; }
+.table-decision .choice-outcome, .table-decision .configure-result { margin: 0; padding: 7px 9px; }
+.decision-actions { display: flex; flex-direction: column; gap: 7px; min-width: 124px; }
+.table-decision .decision-actions button { position: static; padding: 10px 14px; margin: 0; font-size: 11px; border-radius: 5px; cursor: pointer; }
+.table-decision .primary { color: #1b3227; background: #d3b975; border: 1px solid #e1c682; }
+.table-decision .secondary { background: transparent; color: #dbd3b8; border: 1px solid #8b986c80; }
+.table-decision button:disabled { opacity: .4; cursor: not-allowed; }
+.table-decision.choice-waiting { grid-template-columns: 1fr auto; }
+.number-choices { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.number-choices button { min-width: 36px; min-height: 36px; padding: 6px 12px; background: #10271f; color: #d1d8be; border: 1px solid #82917760; border-radius: 5px; cursor: pointer; }
+.number-choices button[aria-pressed='true'] { background: #d3b975; color: #1b3227; border-color: #e8ca7d; }
+
+/* Face-up installed cards, with the condition on each individual card. */
+.installed-cards { display: flex; justify-content: safe center; gap: 7px; margin-top: 10px; padding: 7px 5px 9px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #93a27b #193329; }
+.installed-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 0 0 62px; padding: 0; border: 0; background: transparent; color: #dae1c8; cursor: pointer; animation: installed-arrive 260ms ease-out backwards; animation-delay: var(--installed-delay); }
+.installed-face { display: block; width: 39px; height: 56px; transition: transform 150ms; }
+.installed-card:hover .installed-face, .installed-card:focus-visible .installed-face { transform: translateY(-4px); }
+.installed-face .paper-card { border-radius: 3px; }
+.installed-face .paper-card::after { inset: 3px; }
+.installed-face .card-corner { left: 4px; top: 4px; }
+.installed-face .card-corner b { font-size: 11px; }
+.installed-face .card-corner small, .installed-face .lower { display: none; }
+.installed-face .paper-mark { width: 17px; height: 20px; top: 45%; }
+.installed-face .paper-name { left: 2px; right: 2px; bottom: 5px; font-size: 5px; line-height: 1.3; }
+.installed-condition { font-size: 7px; line-height: 1.4; white-space: nowrap; padding: 2px 3px; border-radius: 3px; background: #122a20cc; }
+.installed-card.is-inactive { opacity: .45; filter: grayscale(.8); }
+.installed-card.is-eligible .installed-face { outline: 2px solid #9bbd91; outline-offset: 2px; border-radius: 3px; }
+.installed-card.is-selected .installed-face { outline: 2px solid #edc96e; transform: translateY(-4px); box-shadow: 0 0 16px #edc96e55; }
+.installed-card[aria-disabled='true'] { cursor: default; }
+.effect-token { display: grid; place-items: center; height: 100%; padding: 4px; background: #334c41; border: 1px solid #adba8e; border-radius: 4px; font-size: 9px; }
+.choice-number { position: absolute; top: -6px; right: -3px; z-index: 2; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: #edc96e; color: #1a3024; font: bold 12px Georgia, serif; box-shadow: 0 2px 7px #071b1970; pointer-events: none; }
+.self-field > .installed-cards { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; }
+.self-field .installed-card { flex-basis: 78px; }
+.self-field .installed-face { width: 52px; height: 74px; }
+.self-field .installed-face .paper-mark { width: 22px; height: 26px; }
+.self-field .installed-face .paper-name { font-size: 6px; bottom: 7px; }
+.self-field .installed-condition { font-size: 9px; }
+.is-choice-target .seat-badge { outline-offset: 3px; }
+.is-choice-selected .lock-on { color: #e8cf88; }
+.is-choice-selected .seat-badge { border-color: #e8cf88; }
+.is-choice-source { outline: 2px solid #d7b568; outline-offset: 6px; border-radius: 5px; }
+
+/* Deck/discard candidates occupy a reserved space between the seats. */
+.has-card-spread .center-turn { display: none; }
+.card-spread { position: absolute; top: 36%; left: 50%; transform: translateX(-50%); width: min(560px, 48%); max-height: 235px; padding: 9px 10px; border: 1px solid #a2ac7866; border-radius: 9px; background: #18372dbb; overflow: auto; scrollbar-width: thin; scrollbar-color: #9d9d6d transparent; animation: spread-open 200ms ease-out; }
+.card-spread > header { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin: 0 0 5px; }
+.card-spread > header > strong { font-size: 10px; font-weight: 500; color: #dad9b8; }
+.card-spread > header > button { background: none; color: #dad9b8; border: 1px solid #a2ac7866; border-radius: 4px; width: 28px; height: 28px; cursor: pointer; }
+.spread-cards { display: flex; gap: 10px; align-items: start; overflow-x: auto; padding: 8px 5px; scrollbar-width: thin; scrollbar-color: #9d9d6d transparent; }
+.spread-card { position: relative; flex: 0 0 106px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #e6dfc8; background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 5px; cursor: pointer; }
+.spread-card:first-child { margin-left: auto; }
+.spread-card:last-child { margin-right: auto; }
+.spread-card.is-selected { border-color: #edc96e; background: #d1b26622; }
+.spread-card:disabled { cursor: default; opacity: .65; }
+.spread-face { width: 76px; height: 108px; display: block; }
+.spread-face .card-corner { top: 7px; left: 7px; }
+.spread-face .card-corner b { font-size: 17px; }
+.spread-face .card-corner small, .spread-face .lower { display: none; }
+.spread-face .paper-mark { width: 29px; height: 34px; }
+.spread-face .paper-name { font-size: 7px; left: 4px; right: 4px; bottom: 13px; }
+.spread-card > strong { font-size: 10px; font-weight: 500; }
+.spread-card > small { font-size: 9px; line-height: 1.6; text-align: left; color: #cbd5bd; }
+.card-spread > p { font-size: 11px; color: #cbd5bd; }
+@keyframes installed-arrive { from { opacity: 0; transform: translateY(12px); } }
+@keyframes spread-open { from { opacity: 0; translate: 0 10px; } }
+@media (prefers-reduced-motion: reduce) {
+  .installed-card, .installed-face, .card-spread { animation: none; transition: none; }
+}

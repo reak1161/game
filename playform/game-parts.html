@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PLAYFORM 07 — GAME PARTS</title><link rel="icon" href="data:,">
+  <link rel="stylesheet" href="objects.css"><link rel="stylesheet" href="parts-demo.css"><link rel="stylesheet" href="game-parts-demo.css">
+  <script src="parts/motions.js" defer></script><script src="parts/game-parts.js" defer></script><script src="parts/game-widgets.js" defer></script><script src="game-logic.js" defer></script><script src="game-parts-demo.js" defer></script>
+</head>
+<body><a class="skip" href="#widget-stage">部品へ</a><div class="gallery">
+  <header class="gallery-header"><a class="brand" href="game-parts.html">PLAYFORM <b>07 / GAME PARTS</b></a><nav aria-label="見本帳"><a href="index.html">01</a><a href="games.html">02</a><a href="quiet.html">03</a><a href="objects.html">04</a><a href="more.html">05</a><a href="parts.html">06</a><a href="game-parts.html" aria-current="page">07</a></nav></header>
+  <main><div class="part-picker"><nav id="widget-types" aria-label="ゲームの部品"></nav><div><label>外観 <select id="widget-theme"><option value="neutral">白・グレー</option><option value="table">卓</option><option value="slate">石板</option><option value="pixel">ドット</option><option value="arena">競技</option><option value="blueprint">設計図</option></select></label></div></div>
+    <section id="widget-stage" tabindex="-1"><div class="context"><span id="game-name"></span><span id="game-state" role="status"></span></div><div id="widget"></div><div id="widget-actions"></div></section>
+    <div class="part-footer"><label><input type="checkbox" id="widget-reduce">動きなし</label><button id="widget-reset" aria-label="リセット" title="リセット">↻</button><span></span><a href="parts/game-example.html">組み込み例 ↗</a><button id="widget-code">組み込み</button><a href="parts/game-parts.zip" download>ダウンロード ↓</a></div>
+  </main></div>
+  <dialog id="widget-dialog"><form method="dialog"><button aria-label="閉じる">×</button></form><h1 id="widget-tag"></h1><p id="widget-note"></p><textarea id="widget-snippet" readonly spellcheck="false" aria-label="組み込みコード"></textarea><button id="widget-copy">コピー</button><p id="widget-copy-status" role="status"></p></dialog>
+</body></html>

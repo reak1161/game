@@ -7,7 +7,7 @@
     "activate",
     "placed"
   ],
-  "text": "発動: 基礎攻撃{{+10}}、その後ダメージを与える\n設置: ラウンドの終わりにこのカードの数値を{{+30}}する",
+  "text": "発動: 基礎攻撃{{+20}}、その後ダメージを与える\n設置: ラウンドの終わりにこのカードの数値を{{+40}}する",
   "effects": [
     {
       "id": "wind_kamaitachi_activate",
@@ -17,7 +17,7 @@
       "operations": [
         {
           "kind": "add_base_attack",
-          "value": 10
+          "value": 20
         },
         {
           "kind": "deal_damage_from_temp_attack"
@@ -35,7 +35,7 @@
         {
           "kind": "add_self_numeric_counter",
           "counter": "power",
-          "value": 30
+          "value": 40
         }
       ]
     }

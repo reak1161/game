@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PLAYFORM 06 — PARTS</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%232b3933'/%3E%3Cpath d='M9 9h9v9H9zm13 0h9v9h-9zM9 22h9v9H9zm13 0h9v9h-9z' fill='%23eee9d7'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="objects.css"><link rel="stylesheet" href="parts-demo.css">
+  <script src="parts/motions.js" defer></script><script src="parts/game-parts.js" defer></script><script src="parts-demo.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#part-stage">部品へ</a>
+  <div class="gallery">
+    <header class="gallery-header"><a class="brand" href="parts.html">PLAYFORM <b>06 / PARTS</b></a><nav aria-label="見本帳"><a href="index.html">01</a><a href="games.html">02</a><a href="quiet.html">03</a><a href="objects.html">04</a><a href="more.html">05</a><a href="parts.html" aria-current="page">06</a><a href="game-parts.html">07</a></nav></header>
+    <main>
+      <div class="part-picker"><nav id="part-types" aria-label="部品"></nav><div><label>外観 <select id="theme"><option value="neutral">白・グレー</option><option value="table">卓</option><option value="slate">石板</option><option value="pixel">ドット</option><option value="arena">競技</option><option value="blueprint">設計図</option></select></label><label>動き <select id="motion"><option value="place">置く</option><option value="deal">配る</option><option value="handoff">手番</option><option value="hit">被弾</option><option value="resolve">解決</option></select></label><button id="replay" title="動きを再生" aria-label="動きを再生">▷</button></div></div>
+      <section id="part-stage" tabindex="-1" aria-label="組み込めるUI部品"><div id="sample"></div><div id="sample-actions"></div></section>
+      <div class="part-footer"><label><input type="checkbox" id="reduce">動きなし</label><button id="reset" aria-label="リセット" title="リセット">↻</button><span></span><a href="parts/example.html">組み合わせ例 ↗</a><button id="show-code">組み込み</button><a id="download" href="parts/game-parts.zip" download>ダウンロード ↓</a></div>
+    </main>
+  </div>
+  <dialog id="code-dialog"><form method="dialog"><button aria-label="閉じる">×</button></form><h1 id="code-title"></h1><p>2つのJSファイルをコピーして読み込みます。</p><textarea id="code" readonly spellcheck="false" aria-label="組み込みコード"></textarea><button id="copy-code">コピー</button><a href="parts/example.html">動く組み込み例 ↗</a><p class="code-status" id="copy-status" role="status"></p></dialog>
+</body>
+</html>

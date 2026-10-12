@@ -6,7 +6,7 @@
   "timings": [
     "enchant"
   ],
-  "text": "発動: 一時ステータス{{×3}}\nその後、このカードの数値を2/3にする",
+  "text": "発動: 一時ステータス{{×3}}\nその後、このカードの数値を{{2/3}}にする",
   "effects": [
     {
       "id": "enchant_toushou_effect",
@@ -34,6 +34,14 @@
       "occurrence": 0,
       "writtenValueKind": "enchant",
       "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "enchant_toushou_effect",
+      "operationIndex": 1,
+      "occurrence": 1,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special",
+      "preserveWrittenValue": true
     }
   ],
   "tags": [

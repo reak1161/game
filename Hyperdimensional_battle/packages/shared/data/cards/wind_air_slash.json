@@ -7,7 +7,7 @@
     "activate",
     "placed"
   ],
-  "text": "発動: 基礎魔法{{+20}}、その後ダメージを与える\n設置: ラウンドの終わりにこのカードの数値を{{+20}}する",
+  "text": "発動: 基礎魔法{{+30}}、その後ダメージを与える\n設置: ラウンドの終わりにこのカードの数値を{{+30}}する",
   "effects": [
     {
       "id": "wind_air_slash_activate",
@@ -17,7 +17,7 @@
       "operations": [
         {
           "kind": "add_base_magic",
-          "value": 20
+          "value": 30
         },
         {
           "kind": "deal_damage_from_temp_magic"
@@ -35,7 +35,7 @@
         {
           "kind": "add_self_numeric_counter",
           "counter": "power",
-          "value": 20
+          "value": 30
         }
       ]
     }

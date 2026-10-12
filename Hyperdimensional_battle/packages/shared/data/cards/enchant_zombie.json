@@ -6,7 +6,7 @@
   "timings": [
     "enchant"
   ],
-  "text": "設置：このカードの数値×0.5\nこのカードが破壊されたとき、そのラウンドの終わりに同じ位置に復活する\n発動：{{30%}}の確率で「このカードの距離2以内にあるランダムなカード1枚にエンチャント『ゾンビ』を付与する」",
+  "text": "設置：このカードの数値{{×0.5}}\nこのカードが破壊されたとき、そのラウンドの終わりに同じ位置に復活する\n発動：{{30%}}の確率で「このカードの距離2以内にあるランダムなカード1枚にエンチャント『ゾンビ』を付与する」",
   "effects": [
     {
       "id": "enchant_zombie_placed",
@@ -58,9 +58,16 @@
   ],
   "textValueBindings": [
     {
-      "effectId": "enchant_zombie_activate",
+      "effectId": "enchant_zombie_placed",
       "operationIndex": 0,
       "occurrence": 0,
+      "writtenValueKind": "special",
+      "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "enchant_zombie_activate",
+      "operationIndex": 0,
+      "occurrence": 1,
       "writtenValueKind": "probability",
       "affectsValueKind": "normal"
     }

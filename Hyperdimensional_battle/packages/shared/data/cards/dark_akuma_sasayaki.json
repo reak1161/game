@@ -49,6 +49,14 @@
       "occurrence": 1,
       "writtenValueKind": "normal",
       "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_akuma_sasayaki_activate",
+      "operationIndex": 0,
+      "operationPath": [0, 1],
+      "occurrence": 2,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
     }
   ],
   "tags": [

@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動: 基礎ステータス{{+15}}、その後破壊する",
+  "text": "発動: 基礎ステータス{{+20}}、その後破壊する",
   "effects": [
     {
       "id": "water_bubble_activate",
@@ -16,7 +16,7 @@
       "operations": [
         {
           "kind": "add_base_both",
-          "value": 15
+          "value": 20
         },
         {
           "kind": "destroy_self"

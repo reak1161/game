@@ -1,0 +1,79 @@
+/* A single, stable tabletop. Only the available viewport changes its scale. */
+.battle-layout { height: calc(100dvh - 82px); min-height: 0; padding: 10px 20px 12px; display: grid; grid-template-rows: 28px minmax(0, 1fr); gap: 8px; }
+.battle-layout .battle-heading { margin: 0; }
+.table-viewport { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; --table-scale: 1; }
+.battle-layout .table-viewport .table-stage { position: absolute; top: 0; left: 50%; width: 1400px; height: 900px; min-height: 0; max-height: none; transform: translateX(-50%) scale(var(--table-scale)); transform-origin: top center; }
+.table-stage .table-surface { inset: 85px 2.5% 60px; }
+.table-stage .table-seat { width: 174px; transform: translateX(-50%) scale(.88); transform-origin: center top; }
+.table-stage .seat-cards { margin-top: 6px; }
+.table-stage .opponent-hand { height: 60px; }
+.table-stage .opponent-card { width: 36px; height: 52px; left: calc(50% - 18px); }
+.table-stage .table-seat .field-cards { margin-top: 5px; }
+.table-stage .table-seat .field-card { width: 42px; height: 60px; }
+.table-stage .table-seat .field-label { font-size: 8px; line-height: 1.25; }
+.table-stage .table-seat .installed-cards { height: 94px; margin-top: 6px; }
+.table-stage .self-seat { bottom: 13px; height: 340px; }
+.table-stage .self-field { width: 500px; bottom: 250px; }
+.table-stage .self-field > .field-cards { gap: 24px; }
+.table-stage .self-field > .installed-cards { top: 110px; bottom: auto; left: calc(100% + 18px); right: auto; width: 250px; height: 128px; margin: 0; justify-content: safe center; }
+.table-stage .self-field .installed-card { flex-basis: 72px; }
+.table-stage .hand-fan { height: 164px; bottom: 40px; }
+.table-stage .self-field:has(> .installed-cards)::before { content: '自分の設置カード'; position: absolute; top: 96px; left: calc(100% + 24px); font-size: 9px; color: #c8cfad; white-space: nowrap; }
+.table-stage .fan-card-slot { width: 116px; height: 166px; left: calc(50% - 58px); transform: translate(var(--fan-x), var(--fan-y)) rotate(var(--fan-angle)); }
+.table-stage .hand-card .paper-mark { width: 48px; height: 56px; }
+.table-stage .hand-card .paper-name { font-size: 9px; bottom: 23px; }
+.table-stage .hand-card .card-corner { top: 12px; left: 12px; }
+.table-stage .hand-card .card-corner b { font-size: 23px; }
+.table-stage .hand-card .card-corner.lower { top: auto; left: auto; right: 10px; bottom: 9px; }
+.table-stage .hand-card .card-corner.lower b { font-size: 12px; }
+.table-stage .table-center { top: 45%; left: 50%; display: flex; align-items: center; gap: 24px; }
+.table-stage .center-turn { margin: 0; text-align: left; }
+.table-stage .table-decision.choice-panel { position: absolute; top: 277px; left: 50%; transform: translateX(-50%); z-index: 15; width: 540px; height: 128px; margin: 0; padding: 10px 12px; gap: 8px; grid-template-columns: 120px minmax(0, 1fr) 88px; overflow: visible; }
+.table-stage .table-decision > .effect-source { gap: 8px; }
+.table-stage .table-decision .effect-source strong { font-size: 11px; }
+.table-stage .table-decision .effect-source p { display: none; }
+.table-stage .table-decision.choice-waiting { grid-template-columns: 1fr auto; }
+.table-stage .table-decision.choice-waiting .effect-source p { display: block; }
+.table-stage .table-decision .decision-result { max-height: none; overflow: visible; font-size: 11px; }
+.table-stage .table-decision .selection-count { margin: 0 0 3px; }
+.table-stage .table-decision .decision-summary { font-size: 10px; line-height: 1.5; margin: 0 0 4px; color: #c5cfbc; }
+.table-stage .table-decision .choice-outcome, .table-stage .table-decision .configure-result { padding: 4px 6px; white-space: pre-line; }
+.effect-source button.effect-source-face { padding: 0; border: 0; background: transparent; color: inherit; cursor: help; }
+.effect-source button.effect-source-face:focus-visible { outline: 2px solid #edc96e; outline-offset: 4px; }
+.table-stage .table-decision .decision-actions { min-width: 0; }
+.table-stage .table-decision .decision-actions button { font-size: 10px; padding: 8px; }
+.table-stage .number-choices { gap: 4px; margin-bottom: 4px; }
+.table-stage .number-choices button { min-width: 27px; min-height: 28px; padding: 3px 6px; font-size: 11px; }
+.table-stage .table-decision .choice-comparison { gap: 4px; grid-template-columns: 1fr; margin: 0; }
+.table-stage .choice-comparison > div { padding: 4px; display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 4px; }
+.table-stage .choice-comparison b { white-space: nowrap; }
+.table-stage .table-decision .choice-comparison p { margin: 0; line-height: 1.4; }
+.table-stage .choice-comparison p, .table-stage .choice-outcome p, .table-stage .configure-result { font-size: 10px; }
+.has-decision .table-stage .center-turn { display: none; }
+.has-decision .table-stage .table-center { top: 50%; }
+.table-stage.has-card-spread .table-center { left: 26%; top: 49%; }
+.table-stage .card-spread { top: 416px; width: 540px; height: 114px; max-height: 114px; padding: 5px 9px; overflow: hidden; }
+.table-stage .card-spread > header { height: 20px; margin: 0; }
+.table-stage .card-spread > header > button { width: 22px; height: 22px; }
+.table-stage .spread-cards { height: 82px; padding: 3px 5px 5px; gap: 8px; overflow-y: hidden; }
+.table-stage .spread-card { flex-basis: 76px; padding: 1px 4px; gap: 0; }
+.table-stage .spread-face { width: 42px; height: 60px; }
+.table-stage .spread-face .card-corner { top: 4px; left: 4px; }
+.table-stage .spread-face .card-corner b { font-size: 11px; }
+.table-stage .spread-face .paper-mark { width: 18px; height: 22px; }
+.table-stage .spread-face .paper-name { font-size: 5px; bottom: 7px; }
+.table-stage .spread-card > strong { font-size: 8px; line-height: 1.2; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table-stage.is-defending .table-center { top: 44%; left: 50%; display: block; }
+.table-stage .defense-context { top: -60px; left: 50%; width: 540px; transform: translateX(-50%); display: grid; grid-template-columns: 200px 100px 220px; gap: 10px; }
+.table-stage .defense-source { position: static; grid-column: 1; grid-row: 1 / 3; width: auto; padding: 10px; }
+.table-stage .defense-actions { grid-column: 3; align-self: end; }
+.table-stage .defense-skip-result { grid-column: 3; margin: 0; }
+.table-stage .defense-card-row { bottom: 0; left: 260px; right: 260px; max-height: 232px; padding-top: 16px; }
+.table-stage .defense-choice-card { flex-basis: 150px; padding: 7px 9px; gap: 5px; }
+.table-stage .defense-card-face { width: 72px; height: 103px; }
+.table-stage .defense-card-face .paper-mark { width: 28px; height: 33px; }
+.table-stage .defense-card-face .paper-name { bottom: 14px; font-size: 6px; }
+.table-stage .defense-choice-card > strong { font-size: 10px; }
+.table-stage .defense-choice-card > small { font-size: 9px; }
+.damage-allocation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;font-size:11px}
+.damage-allocation>div{display:flex;align-items:center;gap:5px}.damage-allocation span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.damage-allocation button{padding:2px 7px;background:#31443a;color:#eee;border:1px solid #8a916a}.damage-allocation b{min-width:12px;text-align:center}

@@ -7,7 +7,7 @@
     "placed",
     "activate"
   ],
-  "text": "設置：ラウンドの終わりに、このカードの数値×現在のラウンド数\n発動：基礎攻撃{{+20}}、その後ダメージを与える",
+  "text": "設置：ラウンドの終わりに、このカードの数値×現在のラウンド数\n発動：基礎攻撃{{+30}}、その後ダメージを与える",
   "effects": [
     {
       "id": "wind_tachikomeru_kemuri_placed",
@@ -30,7 +30,7 @@
       "operations": [
         {
           "kind": "add_base_attack",
-          "value": 20
+          "value": 30
         },
         {
           "kind": "deal_damage_from_temp_attack"

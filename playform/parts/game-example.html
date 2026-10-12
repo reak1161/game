@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><title>Game Parts — 牌の選択</title><link rel="icon" href="data:,">
+<script src="motions.js" defer></script><script src="game-parts.js" defer></script><script src="game-widgets.js" defer></script><script src="game-example.js" defer></script>
+<style>body{margin:0;min-width:1040px;background:#eff0f2;color:#292d33;font:14px 'Segoe UI','Yu Gothic UI',sans-serif}main{width:900px;margin:100px auto}header{display:flex;align-items:center;justify-content:space-between;margin-bottom:45px}h1{font-size:15px;font-weight:500}button{font:inherit;background:#fff;color:inherit;border:1px solid #c8ccd2;padding:8px 16px;cursor:pointer}pf-tile-rack{--gp-padding:30px 20px}footer{margin-top:35px;display:flex;justify-content:flex-end;align-items:center;gap:20px}#selected{font-size:12px;color:#606b78}button:disabled{opacity:.35;cursor:default}</style>
+</head><body><main><header><h1>和了牌を選ぶ</h1><button id="reset">リセット</button></header><pf-tile-rack id="rack" theme="neutral"></pf-tile-rack><footer><span id="selected" role="status"></span><button id="confirm" disabled>決定</button></footer></main></body></html>

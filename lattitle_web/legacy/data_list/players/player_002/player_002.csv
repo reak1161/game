@@ -1,0 +1,13 @@
+しょう,player_002
+red_man.png
+300
+67
+85
+250,0,100
+76
+80,30
+Fire
+attack,たいあたり,50,1,0,normal,Normal
+defense,てっぺき,50,0,30,0,0
+magic,ファイア,100,10,30,0,normal,Fire
+item

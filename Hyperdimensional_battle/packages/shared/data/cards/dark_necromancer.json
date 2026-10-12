@@ -6,7 +6,7 @@
   "timings": [
     "activate"
   ],
-  "text": "発動：場のランダムな位置に『ネクロ』を1～3体生成する。\nその後、自分の場のネクロの数×0.5のダメージを与える。",
+  "text": "発動：場のランダムな位置に『ネクロ』を1～3体生成する。\nその後、自分の場のネクロの数{{×0.5}}のダメージを与える。",
   "effects": [
     {
       "id": "dark_necromancer_activate",
@@ -26,6 +26,15 @@
           "value": 0.5
         }
       ]
+    }
+  ],
+  "textValueBindings": [
+    {
+      "effectId": "dark_necromancer_activate",
+      "operationIndex": 1,
+      "occurrence": 2,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
     }
   ],
   "tags": [

@@ -1,0 +1,9 @@
+{
+  "id": "role_energy",
+  "name": "エネルギー",
+  "description": "すべてのカードが発動するとき、そのカードの数値を×1.2して計算する。",
+  "initialBaseAttack": 30,
+  "initialBaseMagic": 30,
+  "passiveEffects": [],
+  "restrictions": {}
+}

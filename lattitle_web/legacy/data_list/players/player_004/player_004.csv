@@ -1,0 +1,13 @@
+まさよし,player_004
+yellow_man.png
+300
+80
+60
+150,1,100
+80
+200,50
+Water
+magic,かみなり,100,10,30,0,normal,Electric
+magic,だくりゅう,100,10,30,0,normal,Water
+magic,ファイア,100,10,30,0,normal,Fire
+item

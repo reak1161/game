@@ -1,0 +1,3 @@
+legacy/build/
+__pycache__/
+*.pyc

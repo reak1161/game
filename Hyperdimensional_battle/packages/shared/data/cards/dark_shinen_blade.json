@@ -61,6 +61,14 @@
       "occurrence": 2,
       "writtenValueKind": "normal",
       "affectsValueKind": "normal"
+    },
+    {
+      "effectId": "dark_shinen_blade_placed",
+      "operationIndex": 0,
+      "operationPath": [0, 0],
+      "occurrence": 1,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
     }
   ],
   "tags": [

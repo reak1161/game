@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081626">
+  <link rel="icon" href="data:,">
+  <title>ヴィラニス | VILLANICE — 氷獄の収容所</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="frost.css">
+</head>
+<body>
+  <canvas id="world" aria-label="氷獄の収容所 ゲーム画面"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <main id="menu" class="screen">
+    <div class="brand"><span class="brand-symbol">❄</span> VILLANICE PROJECT <span class="edition">LOCAL PLAY / 01</span></div>
+    <section class="intro">
+      <div class="eyebrow"><span class="live-dot"></span> 3D ASYMMETRIC SURVIVAL HORROR</div>
+      <h1>VILLAN<span>ICE</span></h1>
+      <div class="subtitle"><i></i> ヴィ ラ ニ ス <i></i></div>
+      <p class="lead">凍てつく夜に、息をひそめて。<br>その悪意が、氷を伝う。</p>
+      <p class="description">氷に閉ざされた収容所。4人の生存者。ひとりの番人。<br>仲間と熱源を復旧し、この夜から抜け出せ。</p>
+      <div class="role-label">01 <span>あなたの役割を選択</span></div>
+      <div class="roles" role="group" aria-label="陣営の選択">
+        <button class="role selected" data-role="survivor" aria-pressed="true"><span class="role-icon">♧</span><span><small>THE SURVIVOR / TPS</small><strong>生存者</strong><em>三人称 · 修理 · 脱出</em></span><b>01 / 04</b></button>
+        <button class="role" data-role="hunter" aria-pressed="false"><span class="role-icon hunter-icon">♜</span><span><small>THE FROST WARDEN / FPS</small><strong>氷の番人</strong><em>一人称 · 追跡 · 捕獲</em></span><b>01 / 01</b></button>
+      </div>
+      <button id="start" class="start">氷獄の中へ <span>ENTER THE FROST</span><b>↗</b></button>
+      <p id="render-error" hidden role="alert"></p><div class="menu-actions"><button id="help-button">遊び方・操作方法 <span>↗</span></button><span>1 PLAYER + AI · 約 5–7 分</span></div>
+    </section>
+    <div class="scene-caption"><span>RESTRICTED AREA</span><strong>FROST VEIL<br>CRYOGENIC CAMP</strong><p>35° 42′ N &nbsp; / &nbsp; 139° 46′ E</p></div>
+    <footer><span>VILLAIN + ICE / HEADPHONES RECOMMENDED</span><span>オリジナル作品 · ローカルシングルプレイ</span><button id="sound-menu">SOUND / ON</button></footer>
+  </main>
+  <section id="hud" hidden>
+    <div id="danger-vignette"></div><div id="crosshair"></div>
+    <div class="view-info"><span id="view-mode">THIRD PERSON / TPS</span><strong id="bearing">N 000°</strong><small id="location"></small></div>
+    <div class="hud-top"><div class="wordmark">VILLANICE <span>氷獄の収容所</span></div><div class="objective"><small id="phase">RESTORE THE HEAT</small><strong id="objective">熱源装置を修理する</strong><div id="gen-pips"></div></div><div class="hud-tools"><span id="timer">07:00</span><button id="sound" aria-label="サウンド切替">音 ON</button><button id="pause" aria-label="一時停止">Ⅱ</button></div></div>
+    <div id="team" class="team"></div><div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <div id="chase" class="chase" hidden>追跡されている <span>BREAK LINE OF SIGHT</span></div>
+    <div class="bottom-hud"><div class="player-panel"><small id="player-role">SURVIVOR / 01</small><strong id="condition">無傷</strong><div class="stamina"><i id="stamina-fill"></i></div><span id="ability">Q 氷霧 / 使用可能</span></div><div class="interaction"><div id="prompt"></div><div id="action-track" hidden><i id="action-fill"></i></div><div id="skill" hidden><span>SPACE</span><div class="skill-track"><i class="skill-zone"></i><b id="skill-needle"></b></div><small>白い範囲で止める</small></div></div><div id="map-panel" class="map-wrap" hidden><canvas id="minimap" width="180" height="135" aria-label="マップ"></canvas><span>FROST VEIL / SECTOR 04</span></div></div>
+    <div class="keybar"><span><kbd>WASD</kbd> 移動 <kbd>マウス</kbd> 視点</span><span id="controls-extra"><kbd>SHIFT</kbd> 走る <kbd>C</kbd> しゃがむ <kbd>E</kbd> 長押しで作業 <kbd>SPACE</kbd> 板を倒す / 判定</span><span><kbd>Q</kbd> 能力 <kbd>V</kbd> FPS / TPS <kbd>M</kbd> 地図 <kbd>ESC</kbd> 停止</span></div>
+  </section>
+  <button id="capture-mouse" hidden>クリックして視点操作 <span>マウスで周囲を見回す / ESCで解除</span></button>
+  <dialog id="help"><div class="dialog-eyebrow">FIELD GUIDE / 01</div><h2>この夜を、生き延びろ。</h2><div class="guide-grid"><article><h3>生存者</h3><p>AIの仲間3人と協力して、5台の熱源装置のうち<strong>3台</strong>を修理。出口を開放し、脱出してください。</p><p>熱源装置・檻・出口の近くで <kbd>E</kbd> を長押し。修理中の判定では白い範囲で <kbd>SPACE</kbd>。失敗すると番人に音が届きます。</p><p>2回攻撃を受けると捕獲。仲間が救助できますが、3回目の捕獲、または檻の残り時間がなくなると脱落します。</p></article><article><h3>番人</h3><p>4人の生存者を追い詰めてください。<strong>3人以上捕獲・脱落</strong>させれば勝利です。3人以上が脱出すれば敗北、2人ずつなら引き分け。</p><p><kbd>左クリック</kbd> / <kbd>SPACE</kbd> で正面の生存者を狙って攻撃。倒れた相手は自動で檻へ。<kbd>E</kbd> 長押しで熱源装置を破壊し、倒れた板を壊せます。</p><p><kbd>Q</kbd>「凍てつく反響」で生存者の位置を一時的に表示。走った足跡と修理の音も手がかりになります。</p></article></div><div class="guide-tip">生存者はTPS、番人はFPS。<kbd>マウス</kbd> 視点操作 <kbd>V</kbd> FPS / TPS切替 <kbd>B</kbd> 肩を切替<br><kbd>WASD / 矢印</kbd> 移動　 <kbd>SHIFT</kbd> 走る　 <kbd>C / CTRL</kbd> しゃがむ<br>生存者の <kbd>Q</kbd> は氷霧。板で番人を足止めし、建物の陰で視線を切ろう。負傷した仲間は <kbd>E</kbd> 長押しで治療できます。</div><button id="close-help" class="start">了解した <b>↗</b></button></dialog>
+  <dialog id="pause-dialog"><div class="dialog-eyebrow">THE FROST CAN WAIT</div><h2>息をひそめて。</h2><p>ゲームを一時停止しています。<br>マウスで視点操作 · VでFPS / TPS切替 · Bで肩を切替</p><label class="sensitivity-label" for="sensitivity">マウス感度 <input id="sensitivity" type="range" min="0.3" max="2.5" step="0.1" value="1"></label><button id="resume" class="start">続ける <b>↗</b></button><button id="quit" class="secondary">タイトルへ戻る</button></dialog>
+  <dialog id="result"><div class="dialog-eyebrow" id="result-label">TRIAL COMPLETE</div><h2 id="result-title"></h2><p id="result-copy"></p><div id="result-stats"></div><button id="retry" class="start">もう一度、氷獄の中へ <b>↗</b></button><button id="back" class="secondary">タイトルへ戻る</button></dialog>
+  <script src="engine.js"></script><script src="controls.js"></script><script src="renderer3d.js"></script><script src="game.js"></script>
+</body>
+</html>

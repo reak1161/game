@@ -1,5 +1,5 @@
 export type MultiRoomPhase = "lobby" | "match";
-export type AiLevel = "easy" | "normal" | "expert";
+export type AiLevel = "easy" | "normal" | "advanced" | "expert";
 
 export type MultiRoomPlayer = {
   playerId: string;
@@ -20,6 +20,36 @@ export type MultiRoomState = {
   players: MultiRoomPlayer[];
   log: string[];
   updatedAt: string;
+  matchPlayers?: Array<{
+    playerId: string;
+    displayName: string;
+    round: number;
+    phase: LocalGameState["phase"];
+    scoreThisRound: number;
+    totalScore: number;
+    replayCode?: string;
+  }>;
+  winnerPlayerIds?: string[];
+  game?: LocalGameState;
+  viewingPlayerId?: string;
+};
+
+export type ReplayRecord = {
+  code: string;
+  roomId: string;
+  seed: string;
+  playerId: string;
+  displayName: string;
+  completedAt: string;
+  roleId?: string;
+  gameSeed?: string;
+  initialGame?: LocalGameState;
+  commands?: Array<{ action: string; payload: Record<string, unknown> }>;
+  game?: LocalGameState;
+  frames?: LocalGameState[];
+  expiresAt?: string | null;
+  savedAt?: string;
+  rankingProtected?: boolean;
 };
 
 export type RoomWorkerHealth = {
@@ -109,6 +139,10 @@ export function resolveRoomWorkerBaseUrl() {
     return "http://127.0.0.1:8787";
   }
 
+  if (hostname === "hdbattle.reak1161.com" || hostname === "hdbattle.pages.dev" || hostname.endsWith(".hdbattle.pages.dev")) {
+    return "https://hdbattle-room.reak1161.com";
+  }
+
   throw new Error("VITE_ROOM_WORKER_URL is not configured for production");
 }
 
@@ -135,8 +169,46 @@ export async function fetchRoomWorkerHealth() {
   return (await response.json()) as RoomWorkerHealth;
 }
 
-export async function fetchRoomState(roomId: string) {
-  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/rooms/${roomId}`);
+export async function fetchRoomState(roomId: string, playerId?: string, viewPlayerId?: string) {
+  const url = new URL(`${resolveRoomWorkerBaseUrl()}/rooms/${roomId}`);
+  if (playerId) {
+    url.searchParams.set("playerId", playerId);
+  }
+  if (viewPlayerId) {
+    url.searchParams.set("viewPlayerId", viewPlayerId);
+  }
+  const response = await fetch(url);
+  return parseRoomResponse(response);
+}
+
+export async function fetchReplay(code: string) {
+  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/replays/${encodeURIComponent(code)}`);
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Replay request failed (${response.status})`);
+  }
+  return (await response.json()) as ReplayRecord;
+}
+
+export async function saveReplay(code: string) {
+  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/replays/${encodeURIComponent(code)}/save`, {
+    method: "POST",
+    headers: createJsonHeaders(),
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Replay save request failed (${response.status})`);
+  }
+  return (await response.json()) as ReplayRecord;
+}
+
+export async function submitMatchAction(roomId: string, payload: Record<string, unknown>) {
+  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/rooms/${roomId}/action`, {
+    method: "POST",
+    headers: createJsonHeaders(),
+    body: JSON.stringify(payload)
+  });
   return parseRoomResponse(response);
 }
 
@@ -163,6 +235,15 @@ export async function updateRoomPlayer(
 
 export async function startRoomMatch(roomId: string, playerId: string) {
   const response = await fetch(`${resolveRoomWorkerBaseUrl()}/rooms/${roomId}/start`, {
+    method: "POST",
+    headers: createJsonHeaders(),
+    body: JSON.stringify({ playerId })
+  });
+  return parseRoomResponse(response);
+}
+
+export async function returnRoomToLobby(roomId: string, playerId: string) {
+  const response = await fetch(`${resolveRoomWorkerBaseUrl()}/rooms/${roomId}/lobby`, {
     method: "POST",
     headers: createJsonHeaders(),
     body: JSON.stringify({ playerId })
@@ -220,3 +301,4 @@ export function openRoomSocket(
 
   return socket;
 }
+import type { LocalGameState } from "@hyperdimensional-battle/engine";

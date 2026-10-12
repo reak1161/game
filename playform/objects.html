@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PLAYFORM 04</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23262626'/%3E%3Ccircle cx='20' cy='20' r='9' fill='%23efd353'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="objects.css">
+  <script src="objects.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#stage">サンプルへ</a>
+  <div class="gallery">
+    <header class="gallery-header">
+      <a class="brand" href="objects.html">PLAYFORM <b>04</b></a>
+      <nav aria-label="見本帳"><a href="index.html">01</a><a href="games.html">02</a><a href="quiet.html">03</a><a href="objects.html" aria-current="page">04</a><a href="more.html">05</a><a href="parts.html">06 / 部品</a><a href="game-parts.html">07</a></nav>
+    </header>
+    <main>
+      <div class="picker">
+        <nav id="categories" aria-label="分類"></nav>
+        <nav id="games" aria-label="ゲーム"></nav>
+      </div>
+      <section id="stage" tabindex="-1" aria-label="操作サンプル"></section>
+      <div class="utilities"><span id="sample-number"></span><label id="motion-option" hidden><input id="reduce" type="checkbox">動きなし</label><button id="reset" title="リセット" aria-label="リセット">↻</button><button id="help" title="操作と補足" aria-label="操作と補足">?</button></div>
+    </main>
+  </div>
+  <dialog id="notes"><form method="dialog"><button aria-label="閉じる">×</button></form><h1 id="notes-title"></h1><p id="notes-action"></p><p id="notes-scope"></p></dialog>
+</body>
+</html>

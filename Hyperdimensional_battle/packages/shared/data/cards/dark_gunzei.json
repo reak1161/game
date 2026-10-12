@@ -20,7 +20,15 @@
       ]
     }
   ],
-  "textValueBindings": [],
+  "textValueBindings": [
+    {
+      "effectId": "dark_gunzei_consume",
+      "operationIndex": 0,
+      "occurrence": 1,
+      "writtenValueKind": "special",
+      "affectsValueKind": "special"
+    }
+  ],
   "tags": ["dark", "ability", "probability"],
   "consumeBehavior": "discard"
 }
